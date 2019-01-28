@@ -1,0 +1,90 @@
+/****** Main Styling ******/
+
+body {
+	font-family: "Segoe UI", Frutiger, "Frutiger Linotype", "Dejavu Sans", "Helvetica Neue", Arial, sans-serif;
+	font-size: 16px;
+    background-color: #F2F2F2;
+}
+
+p {
+	margin: 8px 0 0 0;
+}
+
+.container p {
+	text-align: center;
+	padding: 0;
+}
+
+/****** Logo Div Styling ******/
+
+img {
+	margin: 20px auto 0 auto;
+	display: block;
+}
+
+.clementine-text { /* Styling for the Clementine.js text */
+	padding: 0;
+	margin: -25px 0 0 0;
+	font-weight: 500;
+	font-size: 36px;
+	color: #FFA000;
+}
+
+/****** Click Styling ******/
+
+.btn-container {	/* Styling for the div that contains the buttons */
+	margin: -10px auto 0 auto;
+	text-align: center;
+}
+
+.btn {	/* Styling for buttons */
+	margin: 0 8px;
+}
+
+
+.bug {
+	background-color: #DDDDDD;
+	padding: 10px;
+	margin: 10px 100px 10px 100px;
+    display: flex;
+}
+
+.case {
+    background-color: #DDDDDD;
+    padding: 10px;
+    margin: 10px 100px 10px 100px;
+    display: flex;
+}
+
+.subtle {
+	color: #888888;
+	font-size: 10px;
+}
+
+.vote {
+    color: #111111;
+    font-size: 12px;
+}
+
+.newBugDescription {
+	width: 400px;
+}
+
+.deep-link {
+    text-decoration: underline;
+}
+
+.dep-link:hover {
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.upvotes {
+    overflow-y: auto;
+    max-height: 175px;
+}
+
+.downvotes {
+    overflow-y: auto;
+    max-height: 175px;
+}

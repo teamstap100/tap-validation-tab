@@ -6,6 +6,11 @@
     <Name>tap-validation-tab-2</Name>
     <RootNamespace>tap-validation-tab-2</RootNamespace>
     <LastActiveSolutionConfig>Debug|Any CPU</LastActiveSolutionConfig>
+    <NameOfLastUsedPublishProfile>tap-validation-tab - Web Deploy (2)</NameOfLastUsedPublishProfile>
+    <Environment>MONGO_STRING=mongodb+srv://node-user:QbRAiry8ZuT8RKHB@tap-validation-tab-e1ixx.azure.mongodb.net/clementine?retryWrites=true
+TEST_VAR=Local
+AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZHE=</Environment>
+    <SaveNodeJsSettingsInProjectFile>True</SaveNodeJsSettingsInProjectFile>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -13,7 +18,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>33a9f019-e319-40df-8822-b50cb26056aa</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>app.js</StartupFile>
+    <StartupFile>server.js</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -21,7 +26,7 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <ProjectTypeGuids>{3AF33F2E-1136-4D97-BBB7-1795711AC8B8};{349c5851-65df-11da-9384-00065b846f21};{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}</ProjectTypeGuids>
     <NodejsPort>1337</NodejsPort>
-    <StartWebBrowser>true</StartWebBrowser>
+    <StartWebBrowser>True</StartWebBrowser>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -30,25 +35,39 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="app.js" />
-    <Compile Include="routes\index.js" />
-    <Compile Include="routes\users.js" />
+    <Compile Include="app\controllers\caseController.client.js" />
+    <Compile Include="app\controllers\bugController.client.js" />
+    <Compile Include="app\controllers\caseHandler.server.js" />
+    <Compile Include="app\controllers\bugHandler.server.js" />
+    <Compile Include="app\controllers\configController.client.js" />
+    <Compile Include="app\controllers\validationController.client.js" />
+    <Compile Include="app\controllers\validationHandler.server.js" />
+    <Compile Include="app\routes\index.js" />
+    <Compile Include="server.js" />
     <Content Include="package.json" />
-    <Content Include="public\stylesheets\main.css" />
+    <Content Include="public\config.html" />
+    <Content Include="public\css\main.css" />
+    <Content Include="public\index.html" />
     <Content Include="README.md" />
+    <None Include="tap-validation-tab - Web Deploy.pubxml" />
+    <None Include="tap-validation-tab-220181210055533 - Web Deploy.pubxml" />
+    <None Include="tap-validation-tab - Web Deploy %282%29.pubxml" />
+    <Content Include="views\config.pug" />
     <Content Include="views\index.pug" />
     <Content Include="views\layout.pug" />
     <Content Include="views\error.pug" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="app\" />
+    <Folder Include="app\controllers\" />
+    <Folder Include="app\routes\" />
     <Folder Include="public\" />
-    <Folder Include="public\images\" />
-    <Folder Include="public\javascripts\" />
-    <Folder Include="public\stylesheets\" />
-    <Folder Include="routes\" />
+    <Folder Include="public\css\" />
+    <Folder Include="public\img\" />
     <Folder Include="views\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="views\validation.pug" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config" />
   </ItemGroup>

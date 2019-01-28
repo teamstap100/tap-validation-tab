@@ -1,5 +1,28 @@
-﻿extends layout
+extends layout.pug
 
 block content
-  h1= title
-  p Welcome to #{title}
+  .container
+    if success
+      .alert.alert-success Successfully submitted the validation. You can now select it from the list when creating a new TAP-Validations tab.
+    br
+    br
+    p.clementine-text Validations Portal
+  .container
+
+    br
+    .btn-container
+      form(method='post', action='/api/validations')
+        p Enter the name of the validation to perform here.
+        input(type='text', name='problem')
+        br
+        br
+        p Enter the VSO/Azure DevOps tag for this validation.
+        input(type='text', name='tag')
+        br
+        br
+        button.btn.btn-new-validation(type='submit') Submit
+        p
+          span#validation-text
+
+block morescripts
+  script(type='text/javascript', src='/controllers/validationController.client.js', )

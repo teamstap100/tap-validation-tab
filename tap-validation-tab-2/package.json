@@ -1,21 +1,27 @@
 {
-  "name": "tap-validation-tab-2",
-  "version": "0.0.0",
-  "private": true,
-  "scripts": {
-    "start": "node app"
-  },
+  "name": "tap-validation-tab",
+  "version": "1.0.0",
   "description": "tap-validation-tab-2",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1\"",
+    "start": "node server.js"
+  },
   "author": {
-    "name": ""
+    "name": "Max Silbiger"
   },
   "dependencies": {
+    "@microsoft/teams-js": "^1.3.7",
     "body-parser": "^1.15.0",
+    "bootstrap": "^4.1.3",
     "cookie-parser": "^1.4.0",
     "debug": "^2.2.0",
     "express": "^4.14.0",
-    "morgan": "^1.7.0",
+    "jquery": "^3.3.1",
+    "mongodb": "^3.1.10",
+    "morgan": "^1.9.1",
     "pug": "^2.0.0-beta6",
+    "request": "^2.88.0",
     "serve-favicon": "^2.3.0"
   },
   "engines": {

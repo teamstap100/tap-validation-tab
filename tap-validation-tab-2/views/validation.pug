@@ -1,0 +1,65 @@
+extends layout.pug
+
+block content
+  .container
+    br
+    p.clementine-text Validation for: #{validation.name}
+    p #{validation.tag}
+    p.subtle#validation-id #{validation._id}
+    br
+
+    .container
+      p
+    .container.bugList
+      if bugs
+         each bug in bugs
+            div(class="bug row" id=bug._id)
+                .col-md-3.upvotes
+                    p Repros (#{bug.upvotes.length}):
+                    if bug.upvotes
+                        each upvote in bug.upvotes
+                            p.vote #{upvote}
+                .col-md-6
+                   p.bug-text  #[strong #{bug.name}] (#{bug.vstsState})
+                   p.timestamp #{bug.timestamp.toLocaleString()}
+                   br
+                   .btn-container
+                      button.btn.btn-upvote.btn-success(type="submit") I can repro
+                      button.btn.btn-downvote.btn-danger(type="submit") Cannot repro
+                   p.subtle #{bug._id}
+                   p.subtle.deep-link
+                    i.fa.fa-link   Link
+                .col-md-3.downvotes
+                    p No-repros (#{bug.downvotes.length}):
+                    if bug.downvotes
+                        each downvote in bug.downvotes
+                            p.vote #{downvote}
+      .container.caseList
+          if cases.length > 0
+             each kase in cases
+                div(class="case row" id=kase._id)
+                    .col-md-3.upvotes
+                        p Works (#{kase.upvotes.length}):
+                        if kase.upvotes
+                            each upvote in kase.upvotes
+                                p.vote #{upvote}
+                    .col-md-6
+                       p.case-text  #{kase.name}
+                       p.timestamp #{kase.timestamp.toLocaleString()}
+                       br
+                       .btn-container
+                          button.btn.btn-upvote.btn-success(type="submit") Works
+                          button.btn.btn-downvote.btn-danger(type="submit") Fails
+                       p.subtle #{kase._id}
+                       p.subtle.deep-link
+                        i.fa.fa-link   Link
+                    .col-md-3.downvotes
+                        p Fails (#{kase.downvotes.length}):
+                        if kase.downvotes
+                            each downvote in kase.downvotes
+                                p.vote #{downvote}
+          else
+            p No scenarios have been added yet.
+
+    script(type="text/javascript", src="/controllers/bugController.client.js")
+    script(type="text/javascript", src="/controllers/caseController.client.js")
