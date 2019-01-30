@@ -49,7 +49,7 @@ block content
                        br
                        .btn-container
                           button.btn.btn-upvote.btn-success(type="submit") Works
-                          button.btn.btn-downvote.btn-danger(type="submit") Fails
+                          button.btn.btn-downvote.btn-danger(type="submit", data-toggle="modal", data-target="#report-modal") Fails
                        p.subtle #{kase._id}
                        p.subtle.deep-link
                         i.fa.fa-link   Link
@@ -60,6 +60,19 @@ block content
                                 p.vote #{downvote}
           else
             p No scenarios have been added yet.
+
+    #report-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='modalLabel', aria-hidden='true')
+      .modal-dialog(role='document')
+        .modal-content
+          .modal-header
+            h5#modalLabel.modal-title Please Report a Problem
+            button.close(type='button', data-dismiss='modal', aria-label='Close')
+              span(aria-hidden='true')
+                i.fa.fa-times
+          .modal-body
+            | Your vote has been recorded. Please submit more details through "Report a Problem" as well.
+          .modal-footer
+            button.btn.btn-primary(type='button', data-dismiss="modal") OK
 
     script(type="text/javascript", src="/controllers/bugController.client.js")
     script(type="text/javascript", src="/controllers/caseController.client.js")

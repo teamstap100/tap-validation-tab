@@ -11,12 +11,12 @@
     //var deleteButton = document.querySelector('.btn-delete');
 
     // PRODUCTION
-    var apiUrl = 'https://tap-validation-tab.azurewebsites.net//api/cases';
+    //var apiUrl = 'https://tap-validation-tab.azurewebsites.net//api/cases';
 
     // TESTING
     //var apiUrl = "https://cc2eb8a0.ngrok.io/api/cases";
 
-    //var apiUrl = "../api/cases"
+    var apiUrl = "../api/cases"
 
     var spinner = '<i class="fa fa-spinner fa-spin"></i>  ';
 
@@ -80,11 +80,13 @@
             });
 
             downvoteButton.addEventListener('click', function () {
+                console.log("downvote button got clicked");
                 downvoteButton.innerHTML = spinner + downvoteButton.innerHTML;
                 ajaxRequest('POST', voteUrl, downParams, function () {
                     ajaxRequest('GET', voteUrl, {}, updateVotes);
                 });
             });
+
 
             deepLinkButton.addEventListener('click', function () {
                 microsoftTeams.shareDeepLink(deepLinkParams);

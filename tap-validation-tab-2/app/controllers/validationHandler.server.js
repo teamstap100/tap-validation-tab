@@ -48,7 +48,12 @@ function validationHandler(dbParent) {
 
     this.getValidation = function (req, res) {
         console.log(req.params.vId);
-        var query = ObjectID(req.params.vId);
+        var query;
+        try {
+            query = ObjectID(req.params.vId);
+        } catch (error) {
+            query = { _id: parseInt(req.params.vId) };
+        }
         //console.log(query);
         validations.findOne(query, {}, function (err, validationDoc) {
             if (err) {
@@ -56,10 +61,17 @@ function validationHandler(dbParent) {
             }
             console.log(validationDoc);
 
-            var bugQuery = { "validationId": ObjectID(req.params.vId) };
-            var caseQuery = { "validationId": ObjectID(req.params.vId) };
+            var bugQuery, caseQuery;
 
-            console.log(bugs.find(bugQuery).toArray());
+            try {
+                bugQuery = { "validationId": ObjectID(req.params.vId) };
+                caseQuery = { "validationId": ObjectID(req.params.vId) };
+            } catch (error) {
+                bugQuery = { validationId: parseInt(req.params.vId) };
+                caseQuery = { validationId: parseInt(req.params.vId) };
+            }
+
+            //console.log(bugs.find(bugQuery).toArray());
 
             var caseOrder = validationDoc.caseOrder;
             var timeSort = { "_id": 1 };

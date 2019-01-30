@@ -3,10 +3,13 @@
 (function () {
 
    // PRODUCTION
-    var contentUrlBase = "https://tap-validation-tab.azurewebsites.net/validations/";
+    //var contentUrlBase = "https://tap-validation-tab.azurewebsites.net/validations/";
 
     // TESTING
-    //var contentUrlBase = "https://cc2eb8a0.ngrok.io/validations/";
+    var contentUrlBase = "https://cc2eb8a0.ngrok.io/validations/";
+
+    // This doesn't work
+    //var contentUrlBase = "../validations/";
 
   function setValid() {
     console.log("onClick called");

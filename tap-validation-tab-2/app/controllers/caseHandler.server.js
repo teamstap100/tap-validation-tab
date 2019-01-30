@@ -52,89 +52,106 @@ function caseHandler(dbParent) {
             verboseUpDown = "Fail";
         }
 
-        var query = { "_id": cId };
-        var updateOp;
-        console.log("upDown is " + upDown);
-        console.log("cId is " + cId);
-        if (upDown == "up") {
-            updateOp = { $addToSet: { "upvotes": userEmail }, $pull: { "downvotes": userEmail } }
-        } else {
-            updateOp = { $addToSet: { "downvotes": userEmail }, $pull: { "upvotes": userEmail } }
-        }
+        tenants.findOne({ tid: userTenantId }, function (err, tenantDoc) {
+            if (err) { throw err; }
+            var tenantString = "TID: " + userTenantId;
+            var clientVoteString = userEmail;
+            if (tenantDoc != null) {
+                tenantString = tenantDoc.name;
+                clientVoteString = tenantDoc.name;
+            }
 
-        cases.findAndModify(
-            query,
-            {},
-            updateOp,
-            function (err, result) {
-                if (err) { throw err; }
+            var query = { "_id": cId };
+            var updateOp;
+            console.log("upDown is " + upDown);
+            console.log("cId is " + cId);
+            if (upDown == "up") {
+                updateOp = { $addToSet: { "upvotes": clientVoteString }, $pull: { "downvotes": clientVoteString } }
+            } else {
+                updateOp = { $addToSet: { "downvotes": clientVoteString }, $pull: { "upvotes": clientVoteString } }
+            }
 
-                var update_endpoint = VSTS_WORKITEM_UPDATE_ENDPOINT.replace("{id}", cId);
+            cases.findAndModify(
+                query,
+                {},
+                updateOp,
+                function (err, result) {
+                    if (err) { throw err; }
 
-                const get_options = {
-                    url: update_endpoint,
-                    headers: {
-                        'Authorization': AUTH
-                    }
-                };
+                    var update_endpoint = VSTS_WORKITEM_UPDATE_ENDPOINT.replace("{id}", cId);
 
-                request.get(get_options, function (vstsErr, vstsStatus, vstsResponse) {
-                    var vstsJson = JSON.parse(vstsResponse);
-                    console.log(vstsJson);
-                    var reproSteps = vstsJson["fields"]["Microsoft.VSTS.TCM.ReproSteps"];
-
-                    tenants.findOne({ tid: userTenantId }, function (err, tenantDoc) {
-                        if (err) { throw err; }
-                        var tenantString = " (TID: " + userTenantId + "), ";
-                        if (tenantDoc != null) {
-                            tenantString = " (" + tenantDoc.name + "), ";
+                    const get_options = {
+                        url: update_endpoint,
+                        headers: {
+                            'Authorization': AUTH
                         }
-                        reproSteps += "<br />" + userEmail + tenantString + "on " + clientType + ", voted: " + verboseUpDown;
+                    };
 
-                        console.log(reproSteps);
-                        var reqBody = [
-                            {
-                                op: "add",
-                                path: "/fields/Microsoft.VSTS.TCM.ReproSteps",
-                                value: reproSteps
-                            }
-                        ];
+                    request.get(get_options, function (vstsErr, vstsStatus, vstsResponse) {
+                        var vstsJson = JSON.parse(vstsResponse);
+                        console.log(vstsJson);
+                        //var reproSteps = vstsJson["fields"]["Microsoft.VSTS.TCM.ReproSteps"];
+                        var voteList = vstsJson["fields"]["System.Description"];
 
-                        const options = {
-                            url: update_endpoint,
-                            headers: {
-                                'Authorization': AUTH,
-                                'Content-Type': 'application/json-patch+json'
-                            },
-                            body: JSON.stringify(reqBody)
-                        };
+                        console.log(voteList);
+                        console.log(voteList.split("</div><div id=Fails>"));
 
-                        request.patch(options, function (vstsErr, vstsStatus, vstsResponse) {
-                            if (vstsErr) { throw vstsErr; }
-                            console.log("Vsts response was: " + vstsResponse);
+                            var voteString = "* " + tenantString + ", " + userEmail + "<br>";
 
-                            var newVoteDoc = {
-                                upDown: upDown,
-                                userTenantId: userTenantId,
-                                userEmail: userEmail,
-                                validationId: req.body.validationId,
-                                timestamp: new Date(),
+                            // Remove any previous votes from this user
+                            // IMPORTANT: Won't work if you add something like a timestamp!
+                            voteList = voteList.replace(voteString, "");
+
+                            if (upDown == "up") {
+                                voteList = voteList.split("</div><div id=Fails>").join(voteString + "<br></div><div id=Fails>");
+                            } else {
+                                voteList = voteList + "* " + tenantString + ", " + userEmail + "<br>";
                             }
 
-                            votes.insertOne(newVoteDoc, function (err, voteDoc) {
-                                if (err) { throw err; }
+                            console.log(voteList);
 
-                                res.json(result.value);
+                            var reqBody = [
+                                {
+                                    op: "add",
+                                    path: "/fields/System.Description",
+                                    value: voteList
+                                }
+                            ];
+
+                            const options = {
+                                url: update_endpoint,
+                                headers: {
+                                    'Authorization': AUTH,
+                                    'Content-Type': 'application/json-patch+json'
+                                },
+                                body: JSON.stringify(reqBody)
+                            };
+
+                            request.patch(options, function (vstsErr, vstsStatus, vstsResponse) {
+                                if (vstsErr) { throw vstsErr; }
+                                console.log("Vsts response was: " + vstsResponse);
+
+                                var newVoteDoc = {
+                                    upDown: upDown,
+                                    userTenantId: userTenantId,
+                                    userEmail: userEmail,
+                                    validationId: req.body.validationId,
+                                    timestamp: new Date(),
+                                }
+
+                                votes.insertOne(newVoteDoc, function (err, voteDoc) {
+                                    if (err) { throw err; }
+
+                                    res.json(result.value);
+                                });
+
+
                             });
-
-
-                        });
-                        //res.json(result);
-                    });
-                    })
+                            //res.json(result);
+                        })
 
                     
-
+            });
 
             }
         );
