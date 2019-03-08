@@ -37,29 +37,32 @@ block content
       .container.caseList
           if cases.length > 0
              each kase in cases
-                div(class="case row" id=kase._id)
+                .panel.panel-default.case.row(id=kase._id)
                     .col-md-3.upvotes
-                        p Works (#{kase.upvotes.length}):
-                        if kase.upvotes
-                            each upvote in kase.upvotes
-                                p.vote #{upvote}
+                        p Works (#{kase.upvotes_v2.length}):
+                        if kase.upvotes_v2
+                            each upvote in kase.upvotes_v2
+                                p.vote #{upvote.email}
                     .col-md-6
-                       p.case-text  #{kase.name}
-                       p.timestamp #{kase.timestamp.toLocaleString()}
+                       h4.case-text  #{kase.name}
+                       if kase.description
+                          .well
+                             p.case-description !{kase.description}
                        br
                        .btn-container
                           button.btn.btn-upvote.btn-success(type="submit") Works
                           button.btn.btn-downvote.btn-danger(type="submit", data-toggle="modal", data-target="#report-modal") Fails
+                       p.timestamp #{kase.timestamp.toLocaleString()}
                        p.subtle #{kase._id}
                        p.subtle.deep-link
                         i.fa.fa-link   Link
                     .col-md-3.downvotes
-                        p Fails (#{kase.downvotes.length}):
-                        if kase.downvotes
-                            each downvote in kase.downvotes
-                                p.vote #{downvote}
+                        p Fails (#{kase.downvotes_v2.length}):
+                        if kase.downvotes_v2
+                            each downvote in kase.downvotes_v2
+                                p.vote #{downvote.email}
           else
-            p No scenarios have been added yet.
+            p No scenarios have been added yet. Check back later!
 
     #report-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='modalLabel', aria-hidden='true')
       .modal-dialog(role='document')

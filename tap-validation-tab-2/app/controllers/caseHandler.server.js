@@ -18,6 +18,70 @@ function caseHandler(dbParent) {
     // This one's for production
     var AUTH = process.env.AUTH;
 
+    function cleanEmail(email) {
+        email = email.replace("#EXT#@microsoft.onmicrosoft.com", "");
+        if (email.includes("@")) {
+            return email;
+
+        } else if (email.includes("_")) {
+            console.log("Going the underscore route");
+            var underscoreParts = email.split("_");
+            var domain = underscoreParts.pop();
+            var tenantString = domain.split(".")[0];
+
+            if (underscoreParts.length > 1) {
+                email = underscoreParts.join("_") + "@" + domain;
+            } else {
+                email = underscoreParts[0] + "@" + domain;
+            }
+        }
+        return email;
+    }
+
+    function getDomain(email) {
+        var domain = "?";
+        if (email.includes("@")) {
+            var atParts = email.split("@");
+            domain = atParts.pop();
+            var tenantString = domain.split(".")[0];
+
+        } else if (email.includes("_")) {
+            console.log("Going the underscore route");
+            var underscoreParts = email.split("_");
+            domain = underscoreParts.pop();
+            var tenantString = domain.split(".")[0];
+
+            if (underscoreParts.length > 1) {
+                email = underscoreParts.join("_") + "@" + domain;
+            } else {
+                email = underscoreParts[0] + "@" + domain;
+            }
+        }
+        return domain;
+    }
+
+    function getTenantString(email) {
+        var domain = "?";
+        if (email.includes("@")) {
+            var atParts = email.split("@");
+            domain = atParts.pop();
+            var tenantString = domain.split(".")[0];
+
+        } else if (email.includes("_")) {
+            console.log("Going the underscore route");
+            var underscoreParts = email.split("_");
+            domain = underscoreParts.pop();
+            var tenantString = domain.split(".")[0];
+
+            if (underscoreParts.length > 1) {
+                email = underscoreParts.join("_") + "@" + domain;
+            } else {
+                email = underscoreParts[0] + "@" + domain;
+            }
+        }
+        return tenantString;
+    }
+
     this.getOneCase = function (req, res) {
         var refUrlParts = req.url.split('/');
         const cId = parseInt(refUrlParts.pop());
@@ -52,103 +116,140 @@ function caseHandler(dbParent) {
             verboseUpDown = "Fail";
         }
 
-        tenants.findOne({ tid: userTenantId }, function (err, tenantDoc) {
-            if (err) { throw err; }
-            var tenantString = "TID: " + userTenantId;
-            var clientVoteString = userEmail;
-            if (tenantDoc != null) {
-                tenantString = tenantDoc.name;
-                clientVoteString = tenantDoc.name;
+        var tenantString = "TID: " + userTenantId;
+        var clientVoteString = userEmail;
+
+        //clientVoteString = clientVoteString.replace("#EXT#@microsoft.onmicrosoft.com", "");   // Remove the "I'm a guest" part of the user email
+
+        var originalClientVoteString = clientVoteString;
+
+        clientVoteString = cleanEmail(clientVoteString);
+        var domain = getDomain(clientVoteString);
+
+        /*
+        try {
+            if (clientVoteString.includes("_")) {
+                console.log("Going the underscore route");
+                var underscoreParts = clientVoteString.split("_");
+                domain = underscoreParts.pop();
+                tenantString = domain.split(".")[0];
+
+                if (underscoreParts.length > 1) {
+                    clientVoteString = underscoreParts.join("_") + "@" + domain;
+                } else {
+                    clientVoteString = underscoreParts[0] + "@" + domain;
+                }
+            } else if (clientVoteString.includes("@")) {
+                var atParts = clientVoteString.split("@");
+                domain = atParts.pop();
+                tenantString = domain.split(".")[0];
             }
+
+        } catch (exception) {
+            // Nothing happens
+        }
+        */
+
+
+        if (clientVoteString.includes("undefined")) {
+            clientVoteString = originalClientVoteString;
+            tenantString = clientVoteString.split("@")[1].split(".")[0];
+        }
+
+        console.log("clientVoteString is: " + clientVoteString + " tenantString is: " + tenantString + " domain is: " + domain);
+
+        tenants.findOne({ domains: domain }, function (err, tenantDoc) {
+            console.log("Here's inside the tenant results");
+            console.log("TenantDoc:", tenantDoc);
+            if (err) { throw err; }
+
+            var realTenantId = tenantDoc.tid;
 
             var query = { "_id": cId };
             var updateOp;
             console.log("upDown is " + upDown);
             console.log("cId is " + cId);
+            var voteObj = {
+                email: clientVoteString,
+                tenantId: tenantDoc.tid,
+                tenantName: tenantDoc.name,
+            }
             if (upDown == "up") {
-                updateOp = { $addToSet: { "upvotes": clientVoteString }, $pull: { "downvotes": clientVoteString } }
+                //updateOp = { $addToSet: { "upvotes": clientVoteString, "upvotes_v2": voteObj}, $pull: { "downvotes": clientVoteString, "downvotes_v2": voteObj} }
+                updateOp = { $addToSet: { "upvotes_v2": voteObj }, $pull: { "downvotes_v2": voteObj } };
             } else {
-                updateOp = { $addToSet: { "downvotes": clientVoteString }, $pull: { "upvotes": clientVoteString } }
+                //updateOp = { $addToSet: { "downvotes": clientVoteString, "downvotes_v2": voteObj}, $pull: { "upvotes": clientVoteString, "downvotes_v2": voteObj } }
+                updateOp = { $addToSet: { "downvotes_v2": voteObj }, $pull: { "upvotes_v2": voteObj } };
             }
 
-            cases.findAndModify(
+            cases.findOneAndUpdate(
                 query,
-                {},
                 updateOp,
+                {returnOriginal: false},
                 function (err, result) {
                     if (err) { throw err; }
+                    var kase = result.value;
+                    console.log(kase, kase.upvotes, kase.downvotes);
+                    
+                    var voteList = "Scenario created by " + kase.submitter + " through the a TAP Validation Tab";
+                    voteList += "<br><br><b>Works:</b><br>";
+                    if (kase.upvotes_v2.length > 0) {
+                        voteList += "<table><thead><tr><td style='border: 1px solid black;'>Tenant</td><td style='border: 1px solid black;'>User</td></tr></thead><tbody>";
+                        kase.upvotes_v2.forEach(function (upvote) {
+                            voteList += "<tr><td style='border: 1px solid black;'>" + upvote.tenantName + "</td><td style='border: 1px solid black;'>" + upvote.email + "</td></tr>"
+                        });
+                        voteList += "</tbody></table><br><br>"
+                    }
+
+                    voteList += "<br><br><b>Fails:</b><br>";
+                    if (kase.downvotes_v2.length > 0) {
+                        voteList += "<table><thead><tr><td style='border: 1px solid black;'>Tenant</td><td style='border: 1px solid black;'>User</td></tr></thead><tbody>";
+                        kase.downvotes_v2.forEach(function (downvote) {
+                            voteList += "<tr><td style='border: 1px solid black;'>" + downvote.tenantName + "</td><td style='border: 1px solid black;'>" + downvote.email + "</td></tr>"
+                        });
+                        voteList += "</tbody></table>";
+                    }
+
+
+                    var reqBody = [
+                        {
+                            op: "add",
+                            path: "/fields/System.Description",
+                            value: voteList
+                        }
+                    ];
 
                     var update_endpoint = VSTS_WORKITEM_UPDATE_ENDPOINT.replace("{id}", cId);
 
-                    const get_options = {
+                    const options = {
                         url: update_endpoint,
                         headers: {
-                            'Authorization': AUTH
-                        }
+                            'Authorization': AUTH,
+                            'Content-Type': 'application/json-patch+json'
+                        },
+                        body: JSON.stringify(reqBody)
                     };
 
-                    request.get(get_options, function (vstsErr, vstsStatus, vstsResponse) {
-                        var vstsJson = JSON.parse(vstsResponse);
-                        console.log(vstsJson);
-                        //var reproSteps = vstsJson["fields"]["Microsoft.VSTS.TCM.ReproSteps"];
-                        var voteList = vstsJson["fields"]["System.Description"];
+                    request.patch(options, function (vstsErr, vstsStatus, vstsResponse) {
+                        if (vstsErr) { throw vstsErr; }
+                        console.log("Vsts response was: " + vstsResponse);
 
-                        console.log(voteList);
-                        console.log(voteList.split("</div><div id=Fails>"));
+                        var newVoteDoc = {
+                            upDown: upDown,
+                            userTenantId: realTenantId,
+                            userEmail: userEmail,
+                            validationId: req.body.validationId,
+                            timestamp: new Date(),
+                        }
 
-                            var voteString = "* " + tenantString + ", " + userEmail + "<br>";
+                        votes.insertOne(newVoteDoc, function (err, voteDoc) {
+                            if (err) { throw err; }
 
-                            // Remove any previous votes from this user
-                            // IMPORTANT: Won't work if you add something like a timestamp!
-                            voteList = voteList.replace(voteString, "");
-
-                            if (upDown == "up") {
-                                voteList = voteList.split("</div><div id=Fails>").join(voteString + "<br></div><div id=Fails>");
-                            } else {
-                                voteList = voteList + "* " + tenantString + ", " + userEmail + "<br>";
-                            }
-
-                            console.log(voteList);
-
-                            var reqBody = [
-                                {
-                                    op: "add",
-                                    path: "/fields/System.Description",
-                                    value: voteList
-                                }
-                            ];
-
-                            const options = {
-                                url: update_endpoint,
-                                headers: {
-                                    'Authorization': AUTH,
-                                    'Content-Type': 'application/json-patch+json'
-                                },
-                                body: JSON.stringify(reqBody)
-                            };
-
-                            request.patch(options, function (vstsErr, vstsStatus, vstsResponse) {
-                                if (vstsErr) { throw vstsErr; }
-                                console.log("Vsts response was: " + vstsResponse);
-
-                                var newVoteDoc = {
-                                    upDown: upDown,
-                                    userTenantId: userTenantId,
-                                    userEmail: userEmail,
-                                    validationId: req.body.validationId,
-                                    timestamp: new Date(),
-                                }
-
-                                votes.insertOne(newVoteDoc, function (err, voteDoc) {
-                                    if (err) { throw err; }
-
-                                    res.json(result.value);
-                                });
+                            res.json(voteDoc.value);
+                        });
 
 
-                            });
-                            //res.json(result);
-                        })
+                    });
 
                     
             });

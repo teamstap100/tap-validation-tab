@@ -1,17 +1,26 @@
 /****** Main Styling ******/
 
 body {
-	font-family: "Segoe UI", Frutiger, "Frutiger Linotype", "Dejavu Sans", "Helvetica Neue", Arial, sans-serif;
-	font-size: 16px;
-    background-color: #F2F2F2;
+    font-family: "Segoe UI", Frutiger, "Frutiger Linotype", "Dejavu Sans", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    background-color: #EEF1F5;
+    color: #16233A;
+}
+
+a {
+    font-family: "Segoe UI", Frutiger, "Frutiger Linotype", "Dejavu Sans", "Helvetica Neue", Arial, sans-serif;
 }
 
 p {
 	margin: 8px 0 0 0;
+    text-align: center;
 }
 
-.container p {
-	text-align: center;
+p.not-centered {
+    text-align: unset;
+}
+
+//.container p {
 	padding: 0;
 }
 
@@ -23,11 +32,12 @@ img {
 }
 
 .clementine-text { /* Styling for the Clementine.js text */
-	padding: 0;
-	margin: -25px 0 0 0;
-	font-weight: 500;
-	font-size: 36px;
-	color: #5356aa
+    padding: 0;
+    margin: -25px 0 0 0;
+    font-weight: 500;
+    font-size: 36px;
+    color: #5356aa;
+    text-align: center;
 }
 
 /****** Click Styling ******/
@@ -43,14 +53,13 @@ img {
 
 
 .bug {
-	background-color: #DDDDDD;
 	padding: 10px;
 	margin: 10px 100px 10px 100px;
     display: flex;
 }
 
 .case {
-    background-color: #DDDDDD;
+    background-color: #DEE0E3;
     padding: 10px;
     margin: 10px 100px 10px 100px;
     display: flex;
@@ -70,11 +79,27 @@ img {
 	width: 400px;
 }
 
+.newCaseDescription {
+    width: 400px;
+    min-width: 100%;
+    max-width: 100%;
+    text-wrap: normal;
+}
+
+.longTextArea {
+    width: 400px;
+}
+
 .deep-link {
     text-decoration: underline;
 }
 
 .deep-link:hover {
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.delete:hover {
     text-decoration: none;
     cursor: pointer;
 }
@@ -88,3 +113,28 @@ img {
     overflow-y: auto;
     max-height: 175px;
 }
+
+p.editor-default {
+    text-align: left;
+}
+
+.btn-group {
+    margin: auto;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.case-text {
+    text-align: center;
+}
+
+/*
+.btn-primary {
+    background-color: #5558AF;
+}
+
+.btn-primary:hover {
+    background-color: #22267c;
+}
+    */

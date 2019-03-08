@@ -42,6 +42,7 @@ AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZ
     <Compile Include="app\controllers\configController.client.js" />
     <Compile Include="app\controllers\validationController.client.js" />
     <Compile Include="app\controllers\validationHandler.server.js" />
+    <Compile Include="app\controllers\jquery.hotkeys.js" />
     <Compile Include="app\routes\index.js" />
     <Compile Include="server.js" />
     <Content Include="package.json" />

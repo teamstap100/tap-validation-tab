@@ -10,12 +10,6 @@
 
     //var deleteButton = document.querySelector('.btn-delete');
 
-    // PRODUCTION
-    //var apiUrl = 'https://tap-validation-tab.azurewebsites.net//api/cases';
-
-    // TESTING
-    //var apiUrl = "https://cc2eb8a0.ngrok.io/api/cases";
-
     var apiUrl = "../api/cases"
 
     var spinner = '<i class="fa fa-spinner fa-spin"></i>  ';
@@ -23,7 +17,7 @@
     cases.forEach(function (kase) {
         //var cId = kase.querySelector('p.subtle').innerHTML;
         var cId = kase.id;
-        var caseText = kase.querySelector('p.case-text');
+        var caseText = kase.querySelector('.case-text');
         var upvoteButton = kase.querySelector('button.btn-upvote');
         var downvoteButton = kase.querySelector('button.btn-downvote');
         var deepLinkButton = kase.querySelector('p.deep-link');
@@ -124,16 +118,24 @@
 
     function updateVotes(data) {
         console.log("Called updateVotes");
-        console.log("Got this data: " + data);
-        console.log("It had an id of " + data._id);
         var data = JSON.parse(data);
+        console.log("Got this data: " + JSON.stringify(data, null, 4));
+        console.log("It had an id of " + data._id);
         var thisCase = document.getElementById(data._id);
 
         var upvoteButton = thisCase.querySelector('button.btn-upvote');
         var downvoteButton = thisCase.querySelector('button.btn-downvote')
 
-        thisCase.querySelector("div.upvotes").innerHTML = "<p>Works (" + data.upvotes.length + "):</p><br /><p class='vote'>" + data.upvotes.join("</p><p class='vote'>");
-        thisCase.querySelector("div.downvotes").innerHTML = "<p>Fails (" + data.downvotes.length + "):</p><br /><p class='vote'>" + data.downvotes.join("</p><p class='vote'>");
+        thisCase.querySelector("div.upvotes").innerHTML = "<p>Works (" + data.upvotes_v2.length + "):</p><br /><p class='vote'>";
+        data.upvotes_v2.forEach(function (vote) {
+           thisCase.querySelector("div.upvotes").innerHTML +=  "<p class='vote'>" + vote.email + "</p><p class='vote'>";
+        });
+
+        thisCase.querySelector("div.downvotes").innerHTML = "<p>Fails (" + data.downvotes_v2.length + "):</p><br />";
+        data.downvotes_v2.forEach(function (vote) {
+            thisCase.querySelector("div.downvotes").innerHTML += "<p class='vote'>" + vote.email + "</p><p class='vote'>";
+        });
+
         upvoteButton.innerHTML = upvoteButton.innerHTML.replace(spinner, '');
         downvoteButton.innerHTML = downvoteButton.innerHTML.replace(spinner, '');
     }
@@ -151,6 +153,8 @@
 
         });
     }
+
+    console.log("HIya");
 
     ready(scrollToSubEntity);
 })();

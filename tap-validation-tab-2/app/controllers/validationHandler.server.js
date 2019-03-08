@@ -35,14 +35,20 @@ function validationHandler(dbParent) {
                 throw err;
             }
 
-            if (results) {
-                console.log(results);
-                res.render('config', {
-                    "validations": results
-                });
-            } else {
-                res.send("Validation with that id not found.");
-            }
+            var bugValidations = [];
+            var scenarioValidations = [];
+
+            results.forEach(function (result) {
+                if (result.name.endsWith('Problems')) {
+                    console.log("It's a problem");
+                    bugValidations.push(result);
+                } else {
+                    scenarioValidations.push(result);
+                }
+            });
+            res.render('config', {
+                "validations": scenarioValidations
+            });
         });
     };
 
