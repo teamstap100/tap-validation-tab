@@ -5,21 +5,19 @@ var request = require('request');
 
 function bugHandler (dbParent) {
 
-  // "db.collection is not a function"
-  var db = dbParent.db("clementine");
-  var bugs = db.collection('bugs');
+    // "db.collection is not a function"
+    var db = dbParent.db("clementine");
+    var bugs = db.collection('bugs');
     var validations = db.collection('validations');
     var users = db.collection('users');
 
   // db used to return the db, now it returns the parent in mongo 3.0.0.
   // So, need to point it to the real db each time.
 
-  //const VSTS_API_BASE = "https://dev.azure.com/lucianooo/TestProject/_apis/wit/";
     const VSTS_API_BASE = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/";
-  const VSTS_BUGS_ENDPOINT = VSTS_API_BASE + "workitems/$bug?api-version=4.1";
-  const VSTS_WORKITEM_UPDATE_ENDPOINT = VSTS_API_BASE + "workitems/{id}?api-version=4.1";
-    // This auth is for the test azure devops
-    //const AUTH = "Basic OmdnZjVvYmx1emNqdjd3dDQydDJ6b2cyeW9oazVveTV6MmFqYXBncGc3Z2xxeGZtYW1qdnE=";
+    const VSTS_BUGS_ENDPOINT = VSTS_API_BASE + "workitems/$bug?api-version=4.1";
+    const VSTS_WORKITEM_UPDATE_ENDPOINT = VSTS_API_BASE + "workitems/{id}?api-version=4.1";
+
     // This one's for production
     var AUTH = process.env.AUTH;
 
@@ -118,6 +116,9 @@ function bugHandler (dbParent) {
             bugs.insertOne(newBug, function (err, doc) {
                 console.log("Calling insertOne");
                 if (err) {
+                    if (err.name === 'MongoError' && err.code === 11000) {
+                        return res.status(500).send({ success: false, message: 'Bug is already in the DB' });
+                    }
                     throw err;
                 }
 
