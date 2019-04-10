@@ -30,19 +30,20 @@ function validationHandler(dbParent) {
 
         var alphaSort = { name: 1 };
 
-        validations.find({}).sort(alphaSort).toArray(function (err, results) {
+        var activeNonBugValidations = {
+            active: true,
+            caseOrder: "normal"
+        };
+
+        validations.find(activeNonBugValidations).sort(alphaSort).toArray(function (err, results) {
             if (err) {
                 throw err;
             }
 
-            var bugValidations = [];
             var scenarioValidations = [];
 
             results.forEach(function (result) {
-                if (result.name.endsWith('Problems')) {
-                    console.log("It's a problem");
-                    bugValidations.push(result);
-                } else {
+                if (result.active) {
                     scenarioValidations.push(result);
                 }
             });

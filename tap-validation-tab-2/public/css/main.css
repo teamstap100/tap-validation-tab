@@ -9,11 +9,26 @@ body {
 
 a {
     font-family: "Segoe UI", Frutiger, "Frutiger Linotype", "Dejavu Sans", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
 }
 
 p {
-	margin: 8px 0 0 0;
+    margin: 8px 0 0 0;
+}
+
+.centered {
     text-align: center;
+}
+
+.case-text {
+    font-family: "Segoe UI", sans-serif;
+    font-size: 18px;
+    font-weight: normal;
+    display: inline;
+}
+
+.case-description {
+    text-align: left;
 }
 
 p.not-centered {
@@ -21,14 +36,14 @@ p.not-centered {
 }
 
 //.container p {
-	padding: 0;
+    padding: 0;
 }
 
 /****** Logo Div Styling ******/
 
 img {
-	margin: 20px auto 0 auto;
-	display: block;
+    margin: 20px auto 0 auto;
+    display: block;
 }
 
 .clementine-text { /* Styling for the Clementine.js text */
@@ -42,32 +57,59 @@ img {
 
 /****** Click Styling ******/
 
-.btn-container {	/* Styling for the div that contains the buttons */
-	margin: -10px auto 0 auto;
-	text-align: center;
+.btn-container { /* Styling for the div that contains the buttons */
+    margin: -10px auto 0 auto;
+    text-align: center;
 }
 
-.btn {	/* Styling for buttons */
-	margin: 0 8px;
+.btn {
+    margin: 0 8px;
+    border-radius: 3px;
+    color: #EEF1F5;
 }
 
+.btn-default { /* Styling for buttons */
+    background-color: #5458AF;
+}
+
+    .btn-default:hover {
+        color: #EEF1F5;
+        background-color: #4D50A1;
+    }
+
+    .btn-default:active {
+        color: #EEF1F5;
+        background-color: #444B93;
+    }
+
+    /*   These colors aren't pretty enough yet
+.btn-upvote {
+    background-color: #7FBA00;
+}
+
+.btn-downvote {
+    background-color: #C50E2E;
+}
+        */
 
 .bug {
-	padding: 10px;
-	margin: 10px 100px 10px 100px;
+    padding: 10px;
+    margin: 10px 100px 10px 100px;
     display: flex;
+    list-style-position: outside;
 }
 
 .case {
     background-color: #DEE0E3;
     padding: 10px;
-    margin: 10px 100px 10px 100px;
+    margin: 20px 10px 20px 10px;
     display: flex;
+    list-style-position: outside;
 }
 
 .subtle {
-	color: #888888;
-	font-size: 10px;
+    color: #888888;
+    font-size: 10px;
 }
 
 .vote {
@@ -76,7 +118,7 @@ img {
 }
 
 .newBugDescription {
-	width: 400px;
+    width: 400px;
 }
 
 .newCaseDescription {
@@ -84,6 +126,12 @@ img {
     min-width: 100%;
     max-width: 100%;
     text-wrap: normal;
+}
+
+.newCaseTitle {
+    width: 380px;
+    min-width: 100%;
+    max-width: 100%;
 }
 
 .longTextArea {
@@ -94,7 +142,12 @@ img {
     text-decoration: underline;
 }
 
-.deep-link:hover {
+    .deep-link:hover {
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+.showbtn:hover {
     text-decoration: none;
     cursor: pointer;
 }
@@ -125,8 +178,15 @@ p.editor-default {
     justify-content: center;
 }
 
-.case-text {
-    text-align: center;
+#validation-id {
+    display: none;
+}
+
+.caseCount {
+    margin-right: 5px;
+    position: relative;
+    float: left;
+    display: inline-block;
 }
 
 /*
@@ -138,3 +198,27 @@ p.editor-default {
     background-color: #22267c;
 }
     */
+
+.tooltip-inner {
+    max-width: 350px; /* set this to your maximum fitting width */
+    width: inherit; /* will take up least amount of space */
+}
+
+/* Collapsible things */
+
+.panel-heading a:after {
+    font-family: 'Glyphicons Halflings';
+    content: "\e114";
+    float: right;
+    color: grey;
+}
+
+.panel-heading a.collapsed:after {
+    content: "\e080";
+}
+
+.collapsing {
+    -webkit-transition: none;
+    transition: none;
+    display: none;
+}

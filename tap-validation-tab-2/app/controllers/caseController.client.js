@@ -1,18 +1,40 @@
 'use strict';
 
 (function () {
-    microsoftTeams.initialize();
+    var apiUrl = "../api/cases"
+    var commentApiUrl = "../api/cases/comments";
+    var spinner = '<i class="fa fa-spinner fa-spin"></i>  ';
+
+    function getUrlVars() {
+        var vars = {};
+        var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function (m, key, value) {
+            vars[key] = value;
+        });
+        return vars;
+    }
+
+    $(document).ready(function () {
+        microsoftTeams.initialize();
+
+        console.log(getUrlVars()["show"]);
+        var showVector = getUrlVars()["show"];
+        if (showVector != null) {
+            $('.group-panel').each(function (index) {
+                if (showVector.substring(0, 1) == 0) {
+                    $(this).find('.panel-collapse').collapse('hide');
+                }
+
+                showVector = showVector.substring(1, showVector.length);
+            });
+        }
+    });
 
     var validationId = document.querySelector('#validation-id').innerHTML;
     console.log("validationId object is:", validationId);
 
     var cases = document.querySelectorAll('.case');
 
-    //var deleteButton = document.querySelector('.btn-delete');
 
-    var apiUrl = "../api/cases"
-
-    var spinner = '<i class="fa fa-spinner fa-spin"></i>  ';
 
     cases.forEach(function (kase) {
         //var cId = kase.querySelector('p.subtle').innerHTML;
@@ -20,6 +42,7 @@
         var caseText = kase.querySelector('.case-text');
         var upvoteButton = kase.querySelector('button.btn-upvote');
         var downvoteButton = kase.querySelector('button.btn-downvote');
+        var commentButton = kase.querySelector('button.btn-comment');
         var deepLinkButton = kase.querySelector('p.deep-link');
 
         console.log(upvoteButton);
@@ -45,6 +68,7 @@
         };
 
         var voteUrl = apiUrl + '/' + cId;
+        var commentUrl = commentApiUrl + '/' + cId;
 
         console.log(voteUrl);
 
@@ -66,24 +90,33 @@
                 subEntityLabel: "'" + caseText.textContent + "'"
             };
 
-            upvoteButton.addEventListener('click', function () {
-                upvoteButton.innerHTML = spinner + upvoteButton.innerHTML;
-                ajaxRequest('POST', voteUrl, upParams, function () {
-                    ajaxRequest('GET', voteUrl, {}, updateVotes);
+            if (!upvoteButton.disabled) {
+                upvoteButton.addEventListener('click', function () {
+                    upvoteButton.innerHTML = spinner + upvoteButton.innerHTML;
+                    ajaxRequest('POST', voteUrl, upParams, function () {
+                        ajaxRequest('GET', voteUrl, {}, updateVotes);
+                    });
                 });
-            });
+            }
 
-            downvoteButton.addEventListener('click', function () {
-                console.log("downvote button got clicked");
-                downvoteButton.innerHTML = spinner + downvoteButton.innerHTML;
-                ajaxRequest('POST', voteUrl, downParams, function () {
-                    ajaxRequest('GET', voteUrl, {}, updateVotes);
+            if (!downvoteButton.disabled) {
+                downvoteButton.addEventListener('click', function () {
+                    console.log("downvote button got clicked");
+                    downvoteButton.innerHTML = spinner + downvoteButton.innerHTML;
+                    ajaxRequest('POST', voteUrl, downParams, function () {
+                        ajaxRequest('GET', voteUrl, {}, updateVotes);
+                    });
                 });
-            });
-
+            }
 
             deepLinkButton.addEventListener('click', function () {
                 microsoftTeams.shareDeepLink(deepLinkParams);
+            });
+
+            commentButton.addEventListener('click', function () {
+                commentButton.innerHTML = spinner + commentButton.innerHTML;
+                // TODO: Launch a modal with a text field in it. Like the "remember to report a problem" modal
+                console.log("Clicked a comment button");
             });
 
         });

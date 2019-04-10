@@ -8,12 +8,22 @@ block morescripts
 block content
   .container
     br
-    p.clementine-text Choose a validation for this tab.
+    p.centered Choose a validation for this tab.
     form
       if validations
         each validation in validations
-          .container
+          .container.val
             input(type='radio', name='validation', id=validation._id, value= validation.name, onclick='microsoftTeams.settings.setValidityState(true);')
             label(for=validation._id)       #{validation.name}
+            if validation.groups.length > 0
+                ul
+                    li Show the checked sections by default:
+                    each group in validation.groups
+                        - var safeGroup = group.replace(/ /g, "_");
+                        li
+                            input(type="checkbox", name="group", value=safeGroup id=safeGroup)
+                            label(for=safeGroup) #{group}
+
+            
             br
             br

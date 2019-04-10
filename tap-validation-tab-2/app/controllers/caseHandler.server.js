@@ -97,13 +97,44 @@ function caseHandler(dbParent) {
         })
     }
 
+    // Add a comemnt to the case's workitem.
+    this.addComment = function (req, res) {
+        const cId = req.body.cId;
+        const comment = req.body.comment;
+        const userEmail = req.body.userEmail;
+
+        var reqBody = [
+            {
+                op: "add",
+                path: "/fields/System.History",
+                value: "'" + comment + "' - " + userEmail 
+            }
+        ];
+
+        var update_endpoint = VSTS_WORKITEM_UPDATE_ENDPOINT.replace("{id}", cId);
+
+        const options = {
+            url: update_endpoint,
+            headers: {
+                'Authorization': AUTH,
+                'Content-Type': 'application/json-patch+json'
+            },
+            body: JSON.stringify(reqBody)
+        };
+
+        request.patch(options, function (vstsErr, vstsStatus, vstsResponse) {
+            if (vstsErr) { throw vstsErr; }
+            console.log("Vsts response was: " + vstsResponse);
+            res.json(vstsResponse);
+    }
+
     this.addVote = function (req, res) {
         console.log("addVote got called");
 
         console.log(req.body);
 
         //var refUrlParts = req.url.split('/');
-        console.log("bid was " + req.body.cId);
+        console.log("cid was " + req.body.cId);
         const cId = parseInt(req.body.cId);
         const userId = req.body.userId;
         const userTenantId = req.body.userTenantId;
@@ -126,31 +157,6 @@ function caseHandler(dbParent) {
         clientVoteString = cleanEmail(clientVoteString);
         var domain = getDomain(clientVoteString);
 
-        /*
-        try {
-            if (clientVoteString.includes("_")) {
-                console.log("Going the underscore route");
-                var underscoreParts = clientVoteString.split("_");
-                domain = underscoreParts.pop();
-                tenantString = domain.split(".")[0];
-
-                if (underscoreParts.length > 1) {
-                    clientVoteString = underscoreParts.join("_") + "@" + domain;
-                } else {
-                    clientVoteString = underscoreParts[0] + "@" + domain;
-                }
-            } else if (clientVoteString.includes("@")) {
-                var atParts = clientVoteString.split("@");
-                domain = atParts.pop();
-                tenantString = domain.split(".")[0];
-            }
-
-        } catch (exception) {
-            // Nothing happens
-        }
-        */
-
-
         if (clientVoteString.includes("undefined")) {
             clientVoteString = originalClientVoteString;
             tenantString = clientVoteString.split("@")[1].split(".")[0];
@@ -159,20 +165,26 @@ function caseHandler(dbParent) {
         console.log("clientVoteString is: " + clientVoteString + " tenantString is: " + tenantString + " domain is: " + domain);
 
         tenants.findOne({ domains: domain }, function (err, tenantDoc) {
-            console.log("Here's inside the tenant results");
             console.log("TenantDoc:", tenantDoc);
             if (err) { throw err; }
 
-            var realTenantId = tenantDoc.tid;
+            if (tenantDoc == null) {
+                var realTenantId = "?";
+                var tenantName = domain;
+            } else {
+                var realTenantId = tenantDoc.tid;
+                var tenantName = tenantDoc.name;
+            }
 
             var query = { "_id": cId };
             var updateOp;
             console.log("upDown is " + upDown);
             console.log("cId is " + cId);
+
             var voteObj = {
                 email: clientVoteString,
-                tenantId: tenantDoc.tid,
-                tenantName: tenantDoc.name,
+                tenantId: realTenantId,
+                tenantName: tenantName
             }
             if (upDown == "up") {
                 //updateOp = { $addToSet: { "upvotes": clientVoteString, "upvotes_v2": voteObj}, $pull: { "downvotes": clientVoteString, "downvotes_v2": voteObj} }
@@ -190,8 +202,14 @@ function caseHandler(dbParent) {
                     if (err) { throw err; }
                     var kase = result.value;
                     console.log(kase, kase.upvotes, kase.downvotes);
+
+                    var kaseDescription = "No description given";
+                    if (kase.description != null) {
+                        kaseDescription = kase.description;
+                    }
                     
                     var voteList = "Scenario created by " + kase.submitter + " through the a TAP Validation Tab";
+                    voteList += "<br><br>" + kaseDescription;
                     voteList += "<br><br><b>Works:</b><br>";
                     if (kase.upvotes_v2.length > 0) {
                         voteList += "<table><thead><tr><td style='border: 1px solid black;'>Tenant</td><td style='border: 1px solid black;'>User</td></tr></thead><tbody>";
