@@ -107,7 +107,7 @@ function caseHandler(dbParent) {
             {
                 op: "add",
                 path: "/fields/System.History",
-                value: "'" + comment + "' - " + userEmail 
+                value: "'" + comment + "' - " + userEmail
             }
         ];
 
@@ -126,7 +126,8 @@ function caseHandler(dbParent) {
             if (vstsErr) { throw vstsErr; }
             console.log("Vsts response was: " + vstsResponse);
             res.json(vstsResponse);
-    }
+        });
+    };
 
     this.addVote = function (req, res) {
         console.log("addVote got called");

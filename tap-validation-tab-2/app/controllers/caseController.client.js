@@ -42,7 +42,7 @@
         var caseText = kase.querySelector('.case-text');
         var upvoteButton = kase.querySelector('button.btn-upvote');
         var downvoteButton = kase.querySelector('button.btn-downvote');
-        var commentButton = kase.querySelector('button.btn-comment');
+        //var commentButton = kase.querySelector('button.btn-comment');
         var deepLinkButton = kase.querySelector('p.deep-link');
 
         console.log(upvoteButton);
@@ -113,11 +113,11 @@
                 microsoftTeams.shareDeepLink(deepLinkParams);
             });
 
-            commentButton.addEventListener('click', function () {
-                commentButton.innerHTML = spinner + commentButton.innerHTML;
+            //commentButton.addEventListener('click', function () {
+            //    commentButton.innerHTML = spinner + commentButton.innerHTML;
                 // TODO: Launch a modal with a text field in it. Like the "remember to report a problem" modal
-                console.log("Clicked a comment button");
-            });
+            //    console.log("Clicked a comment button");
+            //});
 
         });
     });
