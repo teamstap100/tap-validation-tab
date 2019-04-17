@@ -10,6 +10,9 @@ block content
     p.subtle#validation-id(style="display: none") #{validation._id}
 
     br
+    if validation.blurb
+        .container
+            .well !{validation.blurb}
 
     .container
       p
@@ -42,7 +45,7 @@ block content
             - var group_count = 1;
             .panel-group#accordion
                 each group in validation.groups
-                    - var safeGroupName = group.replace(/ /g, "_")
+                    - var safeGroupName = group.replace(/ /g, "_").replace(/,/g, "_")
                     .panel.panel-default.group-panel(id="panel-" + safeGroupName)
                         .panel-heading
                             h4.panel-title
@@ -72,9 +75,11 @@ block content
                                             .btn-container
                                                 if validation.active
                                                     button.btn.btn-upvote.btn-success(type="submit") Works
+                                                    button.btn.btn-comment.btn-default(type='submit', data-toggle="modal", data-target="#comment-modal") Comment...
                                                     button.btn.btn-downvote.btn-danger(type="submit", data-toggle="modal", data-target="#report-modal") Fails
                                                 else
                                                     button.btn.btn-upvote.btn-success(type="submit" disabled) Works
+                                                    button.btn.btn-comment.btn-default(type='submit', data-toggle="modal", data-target="#comment-modal" disabled) Comment...
                                                     button.btn.btn-downvote.btn-danger(type="submit", data-toggle="modal", data-target="#report-modal" disabled) Fails
                                             p.centered.timestamp.subtle #{kase.timestamp.toLocaleDateString()}
                                             p.subtle.deep-link(style="display: none")
@@ -90,38 +95,39 @@ block content
               - var caseCount = 1;
               if cases.length > 0
                  each kase in cases
-                    .panel.panel-default.case.row(id=kase._id)
-                        .col-xs-3.upvotes.centered
-                            p Works (#{kase.upvotes_v2.length}):
-                            if kase.upvotes_v2
-                                each upvote in kase.upvotes_v2
-                                    p.vote #{upvote.email}
-                        .col-xs-6
-                           span.badge.caseCount #{caseCount}
-                               - caseCount += 1;
-                           p.case-text  #{kase.name}
-                           br
-                           if kase.description
-                              .well
-                                 p.case-description !{kase.description}
-                           else
+                    if kase.group == null || kase.group == ""
+                        .panel.panel-default.case.row(id=kase._id)
+                            .col-xs-3.upvotes.centered
+                                p Works (#{kase.upvotes_v2.length}):
+                                if kase.upvotes_v2
+                                    each upvote in kase.upvotes_v2
+                                        p.vote #{upvote.email}
+                            .col-xs-6
+                               span.badge.caseCount #{caseCount}
+                                   - caseCount += 1;
+                               p.case-text  #{kase.name}
                                br
-                           .btn-container
-                              if validation.active
-                                button.btn.btn-upvote.btn-success(type="submit") Works
-                                button.btn.btn-downvote.btn-danger(type="submit", data-toggle="modal", data-target="#report-modal") Fails
-                              else
-                                button.btn.btn-upvote.btn-success(type="submit" disabled) Works
-                                button.btn.btn-downvote.btn-danger(type="submit", data-toggle="modal", data-target="#report-modal" disabled) Fails
-                           p.centered.timestamp.subtle #{kase.timestamp.toLocaleDateString()}
-                           p.subtle.deep-link(style="display: none")
-                            i.fa.fa-link   Link
-                           p.subtle(style="display: none") #{kase._id}
-                        .col-xs-3.downvotes.centered
-                            p Fails (#{kase.downvotes_v2.length}):
-                            if kase.downvotes_v2
-                                each downvote in kase.downvotes_v2
-                                    p.vote #{downvote.email}
+                               if kase.description
+                                  .well
+                                     p.case-description !{kase.description}
+                               else
+                                   br
+                               .btn-container
+                                  if validation.active
+                                    button.btn.btn-upvote.btn-success(type="submit") Works
+                                    button.btn.btn-downvote.btn-danger(type="submit", data-toggle="modal", data-target="#report-modal") Fails
+                                  else
+                                    button.btn.btn-upvote.btn-success(type="submit" disabled) Works
+                                    button.btn.btn-downvote.btn-danger(type="submit", data-toggle="modal", data-target="#report-modal" disabled) Fails
+                               p.centered.timestamp.subtle #{kase.timestamp.toLocaleDateString()}
+                               p.subtle.deep-link(style="display: none")
+                                i.fa.fa-link   Link
+                               p.subtle(style="display: none") #{kase._id}
+                            .col-xs-3.downvotes.centered
+                                p Fails (#{kase.downvotes_v2.length}):
+                                if kase.downvotes_v2
+                                    each downvote in kase.downvotes_v2
+                                        p.vote #{downvote.email}
               else
                 p No scenarios have been added yet. Check back later!
 
@@ -137,6 +143,22 @@ block content
             | Your vote has been recorded. Please submit more details through "Report a Problem" as well.
           .modal-footer
             button.btn.btn-primary(type='button', data-dismiss="modal") OK
+
+    #comment-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='commentLabel', aria-hidden='true')
+      #comment-id(style="display: none") Test
+      .modal-dialog(role='document')
+        .modal-content
+          .modal-header
+            h5.modal-title#commentLabel Submit a comment for this scenario
+            button.close(type='button', data-dismiss='modal', aria-label='Close')
+              span(aria-hidden='true')
+                i.fa.fa-times
+          .modal-body
+            | Your comment will be shared with the team.
+            input.text#commentField(placeholder="Comment")
+          .modal-footer
+            button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
+            button.btn.btn-primary#submitComment(type='button', data-dismiss="modal") Submit
 
     script(type="text/javascript", src="/controllers/bugController.client.js")
     script(type="text/javascript", src="/controllers/caseController.client.js")

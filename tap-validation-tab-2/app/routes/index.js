@@ -34,7 +34,7 @@ module.exports = function (app, db) {
         .get(caseHandler.getOneCase)
         .post(caseHandler.addVote);
 
-    app.route('api/cases/comments/:cId')
+    app.route('/api/comments')
         .post(caseHandler.addComment);
 
     app.route('/config')

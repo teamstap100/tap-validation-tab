@@ -17,13 +17,11 @@ block content
             label(for=validation._id)       #{validation.name}
             if validation.groups.length > 0
                 ul
-                    li Show the checked sections by default:
+                    li Show the checked sections by default (others will be collapsed):
                     each group in validation.groups
                         - var safeGroup = group.replace(/ /g, "_");
                         li
                             input(type="checkbox", name="group", value=safeGroup id=safeGroup)
-                            label(for=safeGroup) #{group}
-
-            
+                            label.safe-label(for=safeGroup) #{group}
             br
             br

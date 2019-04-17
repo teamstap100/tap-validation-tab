@@ -27,6 +27,30 @@
                 showVector = showVector.substring(1, showVector.length);
             });
         }
+
+        var commentModalButton = document.querySelector('#submitComment');
+        commentModalButton.addEventListener('click', function () {
+            // TODO: Get the context, to get the Team and Channel ID. Launch a modal. Clicking submit on the modal creates or contributes to a thread of that item
+            console.log("Clicked the comment submit button");
+            var cId = $('#comment-id').text();
+            var addCommentUrl = "../api/comments";
+            console.log(addCommentUrl);
+            microsoftTeams.getContext(function (context) {
+                var params = {
+                    cId: cId,
+                    comment: $('#commentField').val(),
+                    userEmail: context["userPrincipalName"],
+                    tId: context["tid"]
+                }
+                ajaxRequest('POST', addCommentUrl, params, function () {
+                    console.log("Submitted");
+                    $('#commentField').val("");
+
+                });
+            })
+
+
+        });
     });
 
     var validationId = document.querySelector('#validation-id').innerHTML;
@@ -42,7 +66,8 @@
         var caseText = kase.querySelector('.case-text');
         var upvoteButton = kase.querySelector('button.btn-upvote');
         var downvoteButton = kase.querySelector('button.btn-downvote');
-        //var commentButton = kase.querySelector('button.btn-comment');
+        var commentButton = kase.querySelector('button.btn-comment');
+        
         var deepLinkButton = kase.querySelector('p.deep-link');
 
         console.log(upvoteButton);
@@ -113,12 +138,9 @@
                 microsoftTeams.shareDeepLink(deepLinkParams);
             });
 
-            //commentButton.addEventListener('click', function () {
-            //    commentButton.innerHTML = spinner + commentButton.innerHTML;
-                // TODO: Launch a modal with a text field in it. Like the "remember to report a problem" modal
-            //    console.log("Clicked a comment button");
-            //});
-
+            commentButton.addEventListener('click', function () {
+                $('#comment-id').text(cId);
+            })
         });
     });
 

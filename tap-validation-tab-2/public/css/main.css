@@ -68,7 +68,12 @@ img {
     color: #EEF1F5;
 }
 
+.btn-secondary {
+    color: #000000;
+}
+
 .btn-default { /* Styling for buttons */
+    color: #EEF1F5;
     background-color: #5458AF;
 }
 
@@ -80,6 +85,16 @@ img {
     .btn-default:active {
         color: #EEF1F5;
         background-color: #444B93;
+    }
+
+    .btn-default:visited {
+        color: #EEF1F5;
+        background-color: #444B93;
+    }
+
+    .btn-default:focus {
+        color: #EEF1F5;
+        background-color: #5458AF;
     }
 
     /*   These colors aren't pretty enough yet
@@ -221,4 +236,12 @@ p.editor-default {
     -webkit-transition: none;
     transition: none;
     display: none;
+}
+
+#commentField {
+    width: 100%;
+}
+
+.safe-label {
+    display: inline;
 }

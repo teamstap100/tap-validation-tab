@@ -55,11 +55,15 @@ function validationHandler(dbParent) {
 
     this.getValidation = function (req, res) {
         console.log(req.params.vId);
+        var safevId = req.params.vId;
+        if (req.params.vId.includes("&")) {
+            safevId = safevId.split("&")[0];
+        }
         var query;
         try {
-            query = ObjectID(req.params.vId);
+            query = ObjectID(safevId);
         } catch (error) {
-            query = { _id: parseInt(req.params.vId) };
+            query = { _id: parseInt(safevId) };
         }
         //console.log(query);
         validations.findOne(query, {}, function (err, validationDoc) {
@@ -71,15 +75,14 @@ function validationHandler(dbParent) {
             var bugQuery, caseQuery;
 
             try {
-                bugQuery = { "validationId": ObjectID(req.params.vId) };
-                caseQuery = { "validationId": ObjectID(req.params.vId) };
+                bugQuery = { "validationId": ObjectID(safevId) };
+                caseQuery = { "validationId": ObjectID(safevId) };
             } catch (error) {
-                bugQuery = { validationId: parseInt(req.params.vId) };
-                caseQuery = { validationId: parseInt(req.params.vId) };
+                bugQuery = { validationId: parseInt(safevId) };
+                caseQuery = { validationId: parseInt(safevId) };
             }
 
             //console.log(bugs.find(bugQuery).toArray());
-
             var caseOrder = validationDoc.caseOrder;
             var timeSort = { "_id": 1 };
             var reverseTimeSort = { "_id": -1 };

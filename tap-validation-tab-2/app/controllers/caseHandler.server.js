@@ -57,7 +57,7 @@ function caseHandler(dbParent) {
                 email = underscoreParts[0] + "@" + domain;
             }
         }
-        return domain;
+        return domain.toLowerCase();
     }
 
     function getTenantString(email) {
@@ -99,33 +99,49 @@ function caseHandler(dbParent) {
 
     // Add a comemnt to the case's workitem.
     this.addComment = function (req, res) {
-        const cId = req.body.cId;
+        console.log("Called addComment");
+        const cId = parseInt(req.body.cId);
+        const tId = req.body.tId;
         const comment = req.body.comment;
         const userEmail = req.body.userEmail;
 
-        var reqBody = [
-            {
-                op: "add",
-                path: "/fields/System.History",
-                value: "'" + comment + "' - " + userEmail
-            }
-        ];
+        var commentDoc = {
+            comment: comment,
+            userEmail: userEmail,
+            tId: tId,
+            timestamp: new Date()
+        }
 
-        var update_endpoint = VSTS_WORKITEM_UPDATE_ENDPOINT.replace("{id}", cId);
+        cases.updateOne({ _id: cId }, { $push: { comments: commentDoc } }, function (err, result) {
+            if (err) { throw err; }
+            console.log(result);
 
-        const options = {
-            url: update_endpoint,
-            headers: {
-                'Authorization': AUTH,
-                'Content-Type': 'application/json-patch+json'
-            },
-            body: JSON.stringify(reqBody)
-        };
+            console.log("Now putting this in VSTS");
+            var reqBody = [
+                {
+                    op: "add",
+                    path: "/fields/System.History",
+                    value: "'" + comment + "' - " + userEmail
+                }
+            ];
 
-        request.patch(options, function (vstsErr, vstsStatus, vstsResponse) {
-            if (vstsErr) { throw vstsErr; }
-            console.log("Vsts response was: " + vstsResponse);
-            res.json(vstsResponse);
+            var update_endpoint = VSTS_WORKITEM_UPDATE_ENDPOINT.replace("{id}", cId);
+            console.log(update_endpoint);
+
+            const options = {
+                url: update_endpoint,
+                headers: {
+                    'Authorization': AUTH,
+                    'Content-Type': 'application/json-patch+json'
+                },
+                body: JSON.stringify(reqBody)
+            };
+
+            request.patch(options, function (vstsErr, vstsStatus, vstsResponse) {
+                if (vstsErr) { throw vstsErr; }
+                console.log("Vsts response was: " + vstsResponse);
+                res.json(vstsResponse);
+            });
         });
     };
 
