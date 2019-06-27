@@ -31,6 +31,10 @@ p {
     text-align: left;
 }
 
+.well {
+    word-break: break-word;
+}
+
 p.not-centered {
     text-align: unset;
 }

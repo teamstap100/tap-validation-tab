@@ -5,7 +5,7 @@
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
     <Name>tap-validation-tab-2</Name>
     <RootNamespace>tap-validation-tab-2</RootNamespace>
-    <LastActiveSolutionConfig>Release|Any CPU</LastActiveSolutionConfig>
+    <LastActiveSolutionConfig>Debug|Any CPU</LastActiveSolutionConfig>
     <NameOfLastUsedPublishProfile>tap-validation-tab - Web Deploy (2)</NameOfLastUsedPublishProfile>
     <Environment>MONGO_STRING=mongodb+srv://node-user:QbRAiry8ZuT8RKHB@tap-validation-tab-e1ixx.azure.mongodb.net/clementine?retryWrites=true
 TEST_VAR=Local

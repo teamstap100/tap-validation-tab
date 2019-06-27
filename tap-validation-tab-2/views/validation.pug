@@ -45,7 +45,7 @@ block content
             - var group_count = 1;
             .panel-group#accordion
                 each group in validation.groups
-                    - var safeGroupName = group.replace(/ /g, "_").replace(/,/g, "_")
+                    - var safeGroupName = group.replace(/ /g, "_").replace(/,/g, "_").replace(/-/g, "_").replace(/\(|\)/g, "_");
                     .panel.panel-default.group-panel(id="panel-" + safeGroupName)
                         .panel-heading
                             h4.panel-title

@@ -204,11 +204,16 @@ function caseHandler(dbParent) {
                 tenantName: tenantName
             }
             if (upDown == "up") {
+                // The pull op needs to just look for email address, incase the tenant name has changed in our database.
                 //updateOp = { $addToSet: { "upvotes": clientVoteString, "upvotes_v2": voteObj}, $pull: { "downvotes": clientVoteString, "downvotes_v2": voteObj} }
-                updateOp = { $addToSet: { "upvotes_v2": voteObj }, $pull: { "downvotes_v2": voteObj } };
+                updateOp = {
+                    $addToSet: { "upvotes_v2": voteObj }, $pull: { "downvotes_v2": { "email": clientVoteString } }
+                };
             } else {
                 //updateOp = { $addToSet: { "downvotes": clientVoteString, "downvotes_v2": voteObj}, $pull: { "upvotes": clientVoteString, "downvotes_v2": voteObj } }
-                updateOp = { $addToSet: { "downvotes_v2": voteObj }, $pull: { "upvotes_v2": voteObj } };
+                updateOp = {
+                    $addToSet: { "downvotes_v2": voteObj }, $pull: { "upvotes_v2": { "email": clientVoteString } }
+                };
             }
 
             cases.findOneAndUpdate(
