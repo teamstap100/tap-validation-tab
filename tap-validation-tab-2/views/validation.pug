@@ -115,9 +115,11 @@ block content
                                .btn-container
                                   if validation.active
                                     button.btn.btn-upvote.btn-success(type="submit") Works
+                                    button.btn.btn-comment.btn-default(type='submit', data-toggle="modal", data-target="#comment-modal") Comment...
                                     button.btn.btn-downvote.btn-danger(type="submit", data-toggle="modal", data-target="#report-modal") Fails
                                   else
                                     button.btn.btn-upvote.btn-success(type="submit" disabled) Works
+                                    button.btn.btn-comment.btn-default(type='submit', data-toggle="modal", data-target="#comment-modal" disabled) Comment...
                                     button.btn.btn-downvote.btn-danger(type="submit", data-toggle="modal", data-target="#report-modal" disabled) Fails
                                p.centered.timestamp.subtle #{kase.timestamp.toLocaleDateString()}
                                p.subtle.deep-link(style="display: none")

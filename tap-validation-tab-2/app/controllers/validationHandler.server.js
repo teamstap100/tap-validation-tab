@@ -44,7 +44,9 @@ function validationHandler(dbParent) {
 
             results.forEach(function (result) {
                 if (result.active) {
-                    scenarioValidations.push(result);
+                    if (result.test != true) {
+                        scenarioValidations.push(result);
+                    }
                 }
             });
             res.render('config', {
