@@ -13,6 +13,26 @@
         return vars;
     }
 
+    function cleanEmail(email) {
+        email = email.replace("#EXT#@microsoft.onmicrosoft.com", "");
+        if (email.includes("@")) {
+            return email;
+
+        } else if (email.includes("_")) {
+            console.log("Going the underscore route");
+            var underscoreParts = email.split("_");
+            var domain = underscoreParts.pop();
+            var tenantString = domain.split(".")[0];
+
+            if (underscoreParts.length > 1) {
+                email = underscoreParts.join("_") + "@" + domain;
+            } else {
+                email = underscoreParts[0] + "@" + domain;
+            }
+        }
+        return email;
+    }
+
     $(document).ready(function () {
         microsoftTeams.initialize();
 
@@ -67,6 +87,8 @@
         var upvoteButton = kase.querySelector('button.btn-upvote');
         var downvoteButton = kase.querySelector('button.btn-downvote');
         var commentButton = kase.querySelector('button.btn-comment');
+        var upvoteList = kase.querySelector('.upvotes');
+        var downvoteList = kase.querySelector('.downvotes');
         
         var deepLinkButton = kase.querySelector('p.deep-link');
 
@@ -141,6 +163,18 @@
             commentButton.addEventListener('click', function () {
                 $('#comment-id').text(cId);
             })
+
+            // Figure out which cases the user has voted on
+            var emailForVoteLists = cleanEmail(context["userPrincipalName"]);
+            console.log(emailForVoteLists);
+
+            if (upvoteList.innerHTML.includes(emailForVoteLists)) {
+                upvoteButton.disabled = true;
+            }
+
+            if (downvoteList.innerHTML.includes(emailForVoteLists)) {
+                downvoteButton.disabled = true;
+            }
         });
     });
 
@@ -181,18 +215,38 @@
         var upvoteButton = thisCase.querySelector('button.btn-upvote');
         var downvoteButton = thisCase.querySelector('button.btn-downvote')
 
-        thisCase.querySelector("div.upvotes").innerHTML = "<p>Works (" + data.upvotes_v2.length + "):</p><br /><p class='vote'>";
+
+        thisCase.querySelector("div.upvotes").innerHTML = "<p>Works (" + data.upvotes_v2.length + "):</p><p class='vote'>";
         data.upvotes_v2.forEach(function (vote) {
            thisCase.querySelector("div.upvotes").innerHTML +=  "<p class='vote'>" + vote.email + "</p><p class='vote'>";
         });
 
-        thisCase.querySelector("div.downvotes").innerHTML = "<p>Fails (" + data.downvotes_v2.length + "):</p><br />";
+        thisCase.querySelector("div.downvotes").innerHTML = "<p>Fails (" + data.downvotes_v2.length + "):</p>";
         data.downvotes_v2.forEach(function (vote) {
             thisCase.querySelector("div.downvotes").innerHTML += "<p class='vote'>" + vote.email + "</p><p class='vote'>";
         });
 
         upvoteButton.innerHTML = upvoteButton.innerHTML.replace(spinner, '');
         downvoteButton.innerHTML = downvoteButton.innerHTML.replace(spinner, '');
+
+        microsoftTeams.getContext(function (context) {
+            // Figure out which cases the user has voted on
+            var emailForVoteLists = cleanEmail(context["userPrincipalName"]);
+            console.log(emailForVoteLists);
+
+            var upvoteList = thisCase.querySelector('div.upvotes');
+            var downvoteList = thisCase.querySelector('div.downvotes');
+
+            if (upvoteList.innerHTML.includes(emailForVoteLists)) {
+                upvoteButton.disabled = true;
+                downvoteButton.disabled = false;
+            }
+
+            if (downvoteList.innerHTML.includes(emailForVoteLists)) {
+                downvoteButton.disabled = true;
+                upvoteButton.disabled = false;
+            }
+        })
     }
 
     //ready(ajaxRequest('GET', apiUrl, addCaseDiv));
@@ -208,8 +262,6 @@
 
         });
     }
-
-    console.log("HIya");
 
     ready(scrollToSubEntity);
 })();

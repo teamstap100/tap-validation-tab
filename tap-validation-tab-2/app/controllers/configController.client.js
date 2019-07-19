@@ -6,13 +6,18 @@
     var contentUrlBase = "https://tap-validation-tab.azurewebsites.net/validations/";
 
     // TESTING
-    //var contentUrlBase = "https://5ddc1aba.ngrok.io/validations/";
+    //var contentUrlBase = "https://213b9289.ngrok.io/validations/";
 
     // This doesn't work
     //var contentUrlBase = "../validations/";
 
     $(function () {
-
+        microsoftTeams.getContext(function (context) {
+            var alias = context["userPrincipalName"].split("@")[0];
+            console.log($('#your-validations').find(".owner-" + alias));
+            $('#your-validations').find('.owner-' + alias).css('display', '');
+            $('#other-validations').find('.owner-' + alias).css('display', 'none');
+        });
     });
 
   function setValid() {
@@ -52,26 +57,6 @@
               microsoftTeams.settings.setSettings(settings);
           }
       });
-
-      /*
-      var radios = document.getElementsByName("validation");
-
-
-      radios.forEach(function(radio) {
-          if (radio.checked) {
-
-            var thisRadioValue = radio.value;
-            console.log(thisRadioValue);
-            var settings = {
-                entityId: thisRadioValue,
-                contentUrl: contentUrlBase + radio.id,
-                suggestedDisplayName: "V " + thisRadioValue,
-            }
-            console.log(settings);
-            microsoftTeams.settings.setSettings(settings);
-        }
-          });
-      */
 
       saveEvent.notifySuccess();
   });

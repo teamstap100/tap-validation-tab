@@ -8,19 +8,35 @@ block morescripts
 block content
   .container
     br
-    p.centered Choose a validation for this tab.
+    p.centered #[strong Choose a validation for this tab.]
     p.centered For validations with sections: Check sections to show by default. Others will be collapsed.
     form
       if validations
-        each validation in validations
-          .container.val
-            input(type='radio', name='validation', id=validation._id, value= validation.name, onclick='microsoftTeams.settings.setValidityState(true);')
-            label(for=validation._id)       #{validation.name}
-            if validation.groups.length > 0
-                ul
-                    each group in validation.groups
-                        - var safeGroup = group.replace(/ /g, "_").replace(/,/g, "_").replace(/-/g, "_").replace(/\(|\)/g, "_");
-                            input(type="checkbox", name="group", value=safeGroup, id=safeGroup, checked)
-                            label.safe-label(for=safeGroup, style="font-size: 12px;") #{group}
-                            br
-            br
+        h4 Your Validations
+            .container#your-validations
+                each validation in validations
+                  .container.val(class="owner-" + validation.owner.split("@")[0], style="display: none")
+                    input(type='radio', name='validation', id=validation._id, value= validation.name, onclick='microsoftTeams.settings.setValidityState(true);')
+                    label(for=validation._id)       #{validation.name}
+                    if validation.groups.length > 0
+                        ul
+                            each group in validation.groups
+                                - var safeGroup = group.replace(/ /g, "_").replace(/,/g, "_").replace(/-/g, "_").replace(/\(|\)/g, "_");
+                                    input(type="checkbox", name="group", value=safeGroup, id=safeGroup, checked)
+                                    label.safe-label(for=safeGroup, style="font-size: 12px;") #{group}
+                                    br
+                    br
+        h4 Other Validations
+            .container#other-validations
+                each validation in validations
+                  .container.val(class="owner-" + validation.owner.split("@")[0])
+                    input(type='radio', name='validation', id=validation._id, value= validation.name, onclick='microsoftTeams.settings.setValidityState(true);')
+                    label(for=validation._id)       #{validation.name}
+                    if validation.groups.length > 0
+                        ul
+                            each group in validation.groups
+                                - var safeGroup = group.replace(/ /g, "_").replace(/,/g, "_").replace(/-/g, "_").replace(/\(|\)/g, "_");
+                                    input(type="checkbox", name="group", value=safeGroup, id=safeGroup, checked)
+                                    label.safe-label(for=safeGroup, style="font-size: 12px;") #{group}
+                                    br
+                    br

@@ -43,6 +43,10 @@ p.not-centered {
     padding: 0;
 }
 
+.panel-body {
+    background-color: #f5f5f5;
+}
+
 /****** Logo Div Styling ******/
 
 img {
