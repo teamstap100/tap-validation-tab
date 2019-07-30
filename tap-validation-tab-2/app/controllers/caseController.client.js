@@ -4,6 +4,8 @@
     var apiUrl = "../api/cases"
     var commentApiUrl = "../api/cases/comments";
     var spinner = '<i class="fa fa-spinner fa-spin"></i>  ';
+    var thumbsUp = '<i class="fa fa-thumbs-up"> </i>';
+    var thumbsDown = '<i class="fa fa-thumbs-down"> </i>';
 
     function getUrlVars() {
         var vars = {};
@@ -41,7 +43,8 @@
         if (showVector != null) {
             $('.group-panel').each(function (index) {
                 if (showVector.substring(0, 1) == 0) {
-                    $(this).find('.panel-collapse').collapse('hide');
+                    $(this).find('.panel-collapse').removeClass("in");
+                    //$(this).find('.panel-collapse').collapse('hide');
                 }
 
                 showVector = showVector.substring(1, showVector.length);
@@ -76,13 +79,15 @@
     var validationId = document.querySelector('#validation-id').innerHTML;
     console.log("validationId object is:", validationId);
 
-    var cases = document.querySelectorAll('.case');
+    var cases = document.querySelectorAll('.case-panel');
 
+    var totalCaseCount = cases.length;
+    var totalVotedCount = 0;
 
 
     cases.forEach(function (kase) {
         //var cId = kase.querySelector('p.subtle').innerHTML;
-        var cId = kase.id;
+        var cId = kase.id.replace("panel-", "");
         var caseText = kase.querySelector('.case-text');
         var upvoteButton = kase.querySelector('button.btn-upvote');
         var downvoteButton = kase.querySelector('button.btn-downvote');
@@ -92,7 +97,7 @@
         
         var deepLinkButton = kase.querySelector('p.deep-link');
 
-        console.log(upvoteButton);
+        //console.log(upvoteButton);
 
         var upParams = {
             validationId: validationId,
@@ -117,7 +122,7 @@
         var voteUrl = apiUrl + '/' + cId;
         var commentUrl = commentApiUrl + '/' + cId;
 
-        console.log(voteUrl);
+        //console.log(voteUrl);
 
         microsoftTeams.getContext(function (context) {
             upParams.userId = context["userObjectId"];
@@ -139,7 +144,8 @@
 
             if (!upvoteButton.disabled) {
                 upvoteButton.addEventListener('click', function () {
-                    upvoteButton.innerHTML = spinner + upvoteButton.innerHTML;
+                    console.log(upvoteButton.innerHTML);
+                    upvoteButton.innerHTML = upvoteButton.innerHTML.replace(thumbsUp, spinner);
                     ajaxRequest('POST', voteUrl, upParams, function () {
                         ajaxRequest('GET', voteUrl, {}, updateVotes);
                     });
@@ -149,7 +155,7 @@
             if (!downvoteButton.disabled) {
                 downvoteButton.addEventListener('click', function () {
                     console.log("downvote button got clicked");
-                    downvoteButton.innerHTML = spinner + downvoteButton.innerHTML;
+                    downvoteButton.innerHTML = downvoteButton.innerHTML.replace(thumbsDown, spinner);
                     ajaxRequest('POST', voteUrl, downParams, function () {
                         ajaxRequest('GET', voteUrl, {}, updateVotes);
                     });
@@ -170,13 +176,37 @@
 
             if (upvoteList.innerHTML.includes(emailForVoteLists)) {
                 upvoteButton.disabled = true;
+                $(kase).find('.panel-collapse').removeClass("in");
+                //$(kase).find('.panel-collapse').collapse('hide');
+                $(kase).find('.case-text').html($(kase).find('.case-text').html() + " <span style='color: green'>(Works)</span>");
+                $(kase).find('.panel-heading').addClass('case-works');
+
+                totalVotedCount++;
             }
 
             if (downvoteList.innerHTML.includes(emailForVoteLists)) {
                 downvoteButton.disabled = true;
+
+                $(kase).find('.case-text').html($(kase).find('.case-text').html() + " <span style='color: red'>(Fails)</span>");
+                $(kase).find('.panel-heading').addClass('case-fails');
+
+                totalVotedCount++;
             }
+
+            $('.group-panel').each(function () {
+                var caseCount = $(this).find('.case-panel').length;
+                var worksCount = $(this).find('.case-works').length;
+                var failsCount = $(this).find('.case-fails').length;
+                var votedCount = worksCount + failsCount;
+                console.log(caseCount, worksCount, failsCount);
+                $(this).find('.group-progress').text("Progress: (" + votedCount + " / " + caseCount + ")");
+            })
+
+            $('.validation-progress').text("Scenarios Evaluated: (" + totalVotedCount + " / " + totalCaseCount + ")");
         });
     });
+
+
 
     function ready(fn) {
         if (typeof fn !== 'function') {
@@ -210,42 +240,77 @@
         var data = JSON.parse(data);
         console.log("Got this data: " + JSON.stringify(data, null, 4));
         console.log("It had an id of " + data._id);
-        var thisCase = document.getElementById(data._id);
+        var kase = document.getElementById("panel-" + data._id);
 
-        var upvoteButton = thisCase.querySelector('button.btn-upvote');
-        var downvoteButton = thisCase.querySelector('button.btn-downvote')
+        console.log(kase, data._id);
+
+        var upvoteButton = kase.querySelector('button.btn-upvote');
+        var downvoteButton = kase.querySelector('button.btn-downvote')
+
+        // Reset the vote columns
+        kase.querySelector("div.upvotes").innerHTML = "";
+        kase.querySelector("div.downvotes").innerHTML = "";
 
 
-        thisCase.querySelector("div.upvotes").innerHTML = "<p>Works (" + data.upvotes_v2.length + "):</p><p class='vote'>";
+        kase.querySelector(".upvotes-header").innerHTML = "<p>Works (" + data.upvotes_v2.length + "):</p>";
         data.upvotes_v2.forEach(function (vote) {
-           thisCase.querySelector("div.upvotes").innerHTML +=  "<p class='vote'>" + vote.email + "</p><p class='vote'>";
+           kase.querySelector("div.upvotes").innerHTML +=  "<p class='vote'>" + vote.email + "</p><p class='vote'>";
         });
 
-        thisCase.querySelector("div.downvotes").innerHTML = "<p>Fails (" + data.downvotes_v2.length + "):</p>";
+        kase.querySelector(".downvotes-header").innerHTML = "<p>Fails (" + data.downvotes_v2.length + "):</p>";
         data.downvotes_v2.forEach(function (vote) {
-            thisCase.querySelector("div.downvotes").innerHTML += "<p class='vote'>" + vote.email + "</p><p class='vote'>";
+            kase.querySelector("div.downvotes").innerHTML += "<p class='vote'>" + vote.email + "</p><p class='vote'>";
         });
 
-        upvoteButton.innerHTML = upvoteButton.innerHTML.replace(spinner, '');
-        downvoteButton.innerHTML = downvoteButton.innerHTML.replace(spinner, '');
+        upvoteButton.innerHTML = upvoteButton.innerHTML.replace(spinner, thumbsUp);
+        downvoteButton.innerHTML = downvoteButton.innerHTML.replace(spinner, thumbsDown);
 
         microsoftTeams.getContext(function (context) {
             // Figure out which cases the user has voted on
             var emailForVoteLists = cleanEmail(context["userPrincipalName"]);
             console.log(emailForVoteLists);
 
-            var upvoteList = thisCase.querySelector('div.upvotes');
-            var downvoteList = thisCase.querySelector('div.downvotes');
+            var upvoteList = kase.querySelector('div.upvotes');
+            var downvoteList = kase.querySelector('div.downvotes');
+
+            var originalCaseText = $(kase).find('.case-text').html();
+            originalCaseText = originalCaseText.replace('<span style="color: red">(Fails)</span>', "");
+            originalCaseText = originalCaseText.replace('<span style="color: green">(Works)</span>', "");
 
             if (upvoteList.innerHTML.includes(emailForVoteLists)) {
                 upvoteButton.disabled = true;
                 downvoteButton.disabled = false;
+
+                $(kase).find('.panel-collapse').collapse('hide');
+                $(kase).find('.case-text').html(originalCaseText + " <span style='color: green'>(Works)</span>");
+                $(kase).find('.panel-heading').addClass('case-works');
+                $(kase).find('.panel-heading').removeClass('case-fails');
             }
 
             if (downvoteList.innerHTML.includes(emailForVoteLists)) {
                 downvoteButton.disabled = true;
                 upvoteButton.disabled = false;
+
+                $(kase).find('.case-text').html(originalCaseText + " <span style='color: red'>(Fails)</span>");
+                $(kase).find('.panel-heading').addClass('case-fails');
+                $(kase).find('.panel-heading').removeClass('case-works');
+
             }
+
+            // TODO: Update the group and total progress values
+
+            var thisGroupPanel = $($(kase).parents()[2]);
+            console.log(thisGroupPanel);
+            var caseCount = thisGroupPanel.find('.case-panel').length;
+            var worksCount = thisGroupPanel.find('.case-works').length;
+            var failsCount = thisGroupPanel.find('.case-fails').length;
+            var votedCount = worksCount + failsCount;
+            console.log(caseCount, worksCount, failsCount);
+            thisGroupPanel.find('.group-progress').text("Progress: (" + votedCount + " / " + caseCount + ")");
+
+            var totalCaseCount = cases.length;
+            var totalVotedCount = $('.case-works').length + $('.case-fails').length;
+            $('.validation-progress').text("Scenarios Evaluated: (" + totalVotedCount + " / " + totalCaseCount + ")");
         })
     }
 

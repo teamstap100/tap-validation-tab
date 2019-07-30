@@ -5,131 +5,140 @@ block content
     if !validation.active
         .alert.alert-warning This validation has ended. You will not be able to sign-off on any more scenarios.
     br
-    p.clementine-text Validation for: #{validation.name}
+    p.heading-text Validation for: #{validation.name}
+    p.validation-progress.centered
     p(style="display: none") #{validation.tag}
     p.subtle#validation-id(style="display: none") #{validation._id}
 
     br
     if validation.blurb
         .container
-            .well !{validation.blurb}
+            .well.blurb !{validation.blurb}
 
     .container
-      p
-    .container.bugList
-      if bugs
-         each bug in bugs
-            div(class="bug row" id=bug._id)
-                .col-md-3.upvotes
-                    p Repros (#{bug.upvotes.length}):
-                    if bug.upvotes
-                        each upvote in bug.upvotes
-                            p.vote #{upvote}
-                .col-md-6
-                   p.bug-text  #[strong #{bug.name}] (#{bug.vstsState})
-                   p.timestamp #{bug.timestamp.toLocaleString()}
-                   br
-                   .btn-container
-                      button.btn.btn-upvote.btn-success(type="submit") I can repro
-                      button.btn.btn-downvote.btn-danger(type="submit") Cannot repro
-                   p.subtle #{bug._id}
-                   p.subtle.deep-link
-                     i.fa.fa-link   Link
-                .col-md-3.downvotes
-                    p No-repros (#{bug.downvotes.length}):
-                    if bug.downvotes
-                        each downvote in bug.downvotes
-                            p.vote #{downvote}
       .container.caseList
           if validation.groups.length > 0
-            - var group_count = 1;
+            - var groupCount = 0;
             .panel-group#accordion
                 each group in validation.groups
                     - var safeGroupName = group.replace(/ /g, "_").replace(/,/g, "_").replace(/-/g, "_").replace(/\(|\)/g, "_");
+                    - groupCount++;
                     .panel.panel-default.group-panel(id="panel-" + safeGroupName)
-                        .panel-heading
-                            h4.panel-title
-                                a(data-toggle="collapse" data-target="#collapse-" + safeGroupName href="#collapse-" + safeGroupName) #{group_count}. #{group}
-                        - group_count++;
+                        .panel-heading.group-panel-heading
+                            a.panel-title.toggle-collapse(data-toggle="collapse" data-target="#collapse-" + safeGroupName) #[strong #{groupCount}. #{group}] 
+                            span.group-progress
+                        
                         .panel-collapse.collapse.in(id="collapse-" + safeGroupName)
-                            .panel-body
+                            .panel-body.group-panel-body
+                                .panel-group(id="accordion-" + safeGroupname)
                                 - var caseCount = 1;
                                 each kase in cases
                                   if kase.group == group
-                                    .panel.panel-default.case.row(id=kase._id)
-                                        .col-xs-3.upvotes.centered
-                                            p Works (#{kase.upvotes_v2.length}):
-                                            if kase.upvotes_v2
-                                                each upvote in kase.upvotes_v2
-                                                    p.vote #{upvote.email}
-                                        .col-xs-6
-                                            span.badge.caseCount #{caseCount}
-                                            - caseCount += 1;
-                                            p.case-text  #{kase.name}
-                                            br
-                                            if kase.description
-                                                .well
-                                                    p.case-description !{kase.description}
-                                            else
-                                                br
-                                            .btn-container
-                                                if validation.active
-                                                    button.btn.btn-upvote.btn-success(type="submit") Works
-                                                    button.btn.btn-comment.btn-default(type='submit', data-toggle="modal", data-target="#comment-modal") Comment...
-                                                    button.btn.btn-downvote.btn-danger(type="submit", data-toggle="modal", data-target="#report-modal") Fails
-                                                else
-                                                    button.btn.btn-upvote.btn-success(type="submit" disabled) Works
-                                                    button.btn.btn-comment.btn-default(type='submit', data-toggle="modal", data-target="#comment-modal" disabled) Comment...
-                                                    button.btn.btn-downvote.btn-danger(type="submit", data-toggle="modal", data-target="#report-modal" disabled) Fails
-                                            p.centered.timestamp.subtle #{kase.timestamp.toLocaleDateString()}
-                                            p.subtle.deep-link(style="display: none")
-                                                i.fa.fa-link   Link
-                                            p.subtle(style="display: none") #{kase._id}
-                                        .col-xs-3.downvotes.centered
-                                            p Fails (#{kase.downvotes_v2.length}):
-                                            if kase.downvotes_v2
-                                                each downvote in kase.downvotes_v2
-                                                    p.vote #{downvote.email}
+
+                                    // New style collapsible case
+                                    .panel.panel-default.case-panel(id="panel-" + kase._id)
+                                        .panel-heading
+                                            a.toggle-collapse(data-toggle="collapse" data-target="#collapse-" + kase._id, style="color: black")
+                                                p.case-text #{groupCount}-#{caseCount}. #{kase.name}
+                                                - caseCount += 1;
+                                        .panel-collapse.collapse.in(id="collapse-" + kase._id)
+                                            .panel-body
+                                                .col-xs-3.centered
+                                                    p.upvotes-header Works (#{kase.upvotes_v2.length}):
+                                                    .upvotes
+                                                        if kase.upvotes_v2
+                                                            each upvote in kase.upvotes_v2
+                                                                p.vote #{upvote.email}
+
+                                                .col-xs-6
+                                                    if kase.description
+                                                        .well
+                                                            p.case-description !{kase.description}
+                                                    else
+                                                        br
+                                                    .btn-container
+                                                        if validation.active
+                                                            button.btn.btn-upvote(type="submit")
+                                                                i.fa.fa-thumbs-up 
+                                                                |   Works
+                                                            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal") Comment
+                                                            button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal")
+                                                                i.fa.fa-thumbs-down 
+                                                                |   Fails
+                                                        else
+                                                            button.btn.btn-upvote(type="submit" disabled)
+                                                                i.fa.fa-thumbs-up 
+                                                                |   Works
+                                                            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal" disabled) Comment
+                                                            button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal" disabled)
+                                                                i.fa.fa-thumbs-down 
+                                                                |   Fails
+                                                    //p.centered.timestamp.subtle #{kase.timestamp.toLocaleDateString()}
+                                                    p.subtle.deep-link(style="display: none")
+                                                        i.fa.fa-link   Link
+                                                    p.subtle(style="display: none") #{kase._id}
+
+                                                .col-xs-3.centered
+                                                    p.downvotes-header Fails (#{kase.downvotes_v2.length}):
+                                                    .downvotes
+                                                        if kase.downvotes_v2
+                                                            each downvote in kase.downvotes_v2
+                                                                p.vote #{downvote.email}
                     
           else
               - var caseCount = 1;
               if cases.length > 0
                  each kase in cases
                     if kase.group == null || kase.group == ""
-                        .panel.panel-default.case.row(id=kase._id)
-                            .col-xs-3.upvotes.centered
-                                p Works (#{kase.upvotes_v2.length}):
-                                if kase.upvotes_v2
-                                    each upvote in kase.upvotes_v2
-                                        p.vote #{upvote.email}
-                            .col-xs-6
-                               span.badge.caseCount #{caseCount}
-                                   - caseCount += 1;
-                               p.case-text  #{kase.name}
-                               br
-                               if kase.description
-                                  .well
-                                     p.case-description !{kase.description}
-                               else
-                                   br
-                               .btn-container
-                                  if validation.active
-                                    button.btn.btn-upvote.btn-success(type="submit") Works
-                                    button.btn.btn-comment.btn-default(type='submit', data-toggle="modal", data-target="#comment-modal") Comment...
-                                    button.btn.btn-downvote.btn-danger(type="submit", data-toggle="modal", data-target="#report-modal") Fails
-                                  else
-                                    button.btn.btn-upvote.btn-success(type="submit" disabled) Works
-                                    button.btn.btn-comment.btn-default(type='submit', data-toggle="modal", data-target="#comment-modal" disabled) Comment...
-                                    button.btn.btn-downvote.btn-danger(type="submit", data-toggle="modal", data-target="#report-modal" disabled) Fails
-                               p.centered.timestamp.subtle #{kase.timestamp.toLocaleDateString()}
-                               p.subtle.deep-link(style="display: none")
-                                i.fa.fa-link   Link
-                               p.subtle(style="display: none") #{kase._id}
-                            .col-xs-3.downvotes.centered
-                                p Fails (#{kase.downvotes_v2.length}):
-                                if kase.downvotes_v2
-                                    each downvote in kase.downvotes_v2
-                                        p.vote #{downvote.email}
+                        // New style collapsible case
+                        .panel.panel-default.case-panel(id="panel-" + kase._id)
+                            .panel-heading
+                                a.toggle-collapse(data-toggle="collapse" data-target="#collapse-" + kase._id, style="color: black")
+                                    p.case-text #{caseCount}. #{kase.name}
+                                    - caseCount += 1;
+                            .panel-collapse.collapse.in(id="collapse-" + kase._id)
+                                .panel-body
+                                    .col-xs-3.centered
+                                        p.upvotes-header Works (#{kase.upvotes_v2.length}):
+                                        .upvotes
+                                            if kase.upvotes_v2
+                                                each upvote in kase.upvotes_v2
+                                                    p.vote #{upvote.email}
+
+                                    .col-xs-6
+                                        if kase.description
+                                            .well
+                                                p.case-description !{kase.description}
+                                        else
+                                            br
+                                        .btn-container
+                                            if validation.active
+                                                button.btn.btn-upvote(type="submit")
+                                                    i.fa.fa-thumbs-up 
+                                                    |   Works
+                                                button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal") Comment
+                                                button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal")
+                                                    i.fa.fa-thumbs-down 
+                                                    |   Fails
+                                            else
+                                                button.btn.btn-upvote(type="submit" disabled)
+                                                    i.fa.fa-thumbs-up 
+                                                    |   Works
+                                                button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal" disabled) Comment
+                                                button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal" disabled)
+                                                    i.fa.fa-thumbs-down 
+                                                    |   Fails
+                                        //p.centered.timestamp.subtle #{kase.timestamp.toLocaleDateString()}
+                                        p.subtle.deep-link(style="display: none")
+                                            i.fa.fa-link   Link
+                                        p.subtle(style="display: none") #{kase._id}
+
+                                    .col-xs-3.centered
+                                        p.downvotes-header Fails (#{kase.downvotes_v2.length}):
+                                        .downvotes
+                                            if kase.downvotes_v2
+                                                each downvote in kase.downvotes_v2
+                                                    p.vote #{downvote.email}
               else
                 p No scenarios have been added yet. Check back later!
 
