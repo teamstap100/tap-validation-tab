@@ -43,20 +43,26 @@ block content
                                                 - caseCount += 1;
                                         .panel-collapse.collapse.in(id="collapse-" + kase._id)
                                             .panel-body
-                                                .col-xs-3.centered
-                                                    p.upvotes-header Works (#{kase.upvotes_v2.length}):
+                                                .col-sm-3.hidden-xs.centered
+                                                    p.upvotes-header Works (#{kase.upvotes_v2.length})
                                                     .upvotes
                                                         if kase.upvotes_v2
-                                                            each upvote in kase.upvotes_v2
-                                                                p.vote #{upvote.email}
+                                                            each vote in kase.upvotes_v2
+                                                                p.vote #{vote.email}
+                                                                    //span.tenant(class=vote.tenantId + "-tenant", style="display: none") #{vote.tenantName}
+                                                                    //span.email(class=vote.tenantId + "-email", style="display: none") #{vote.email}
 
-                                                .col-xs-6
+                                                .col-sm-6
                                                     if kase.description
                                                         .well
                                                             p.case-description !{kase.description}
                                                     else
                                                         br
+                                                        br
+                                                        br
                                                     .btn-container
+                                                        .hidden-sm.hidden-lg.hidden-xl
+                                                            p Works (#{kase.upvotes_v2.length}) | Fails (#{kase.downvotes_v2.length})
                                                         if validation.active
                                                             button.btn.btn-upvote(type="submit")
                                                                 i.fa.fa-thumbs-up 
@@ -78,12 +84,14 @@ block content
                                                         i.fa.fa-link   Link
                                                     p.subtle(style="display: none") #{kase._id}
 
-                                                .col-xs-3.centered
-                                                    p.downvotes-header Fails (#{kase.downvotes_v2.length}):
+                                                .col-sm-3.hidden-xs.centered
+                                                    p.downvotes-header Fails (#{kase.downvotes_v2.length})
                                                     .downvotes
                                                         if kase.downvotes_v2
-                                                            each downvote in kase.downvotes_v2
-                                                                p.vote #{downvote.email}
+                                                            each vote in kase.downvotes_v2
+                                                                p.vote #{vote.email}
+                                                                    //span.tenant(class=vote.tenantId + "-tenant", style="display: none") #{vote.tenantName}
+                                                                    //span.email(class=vote.tenantId + "-email", style="display: none") #{vote.email}
                     
           else
               - var caseCount = 1;
@@ -98,18 +106,22 @@ block content
                                     - caseCount += 1;
                             .panel-collapse.collapse.in(id="collapse-" + kase._id)
                                 .panel-body
-                                    .col-xs-3.centered
-                                        p.upvotes-header Works (#{kase.upvotes_v2.length}):
+                                    .col-sm-3.hidden-xs.centered
+                                        p.upvotes-header Works (#{kase.upvotes_v2.length})
                                         .upvotes
                                             if kase.upvotes_v2
-                                                each upvote in kase.upvotes_v2
-                                                    p.vote #{upvote.email}
+                                                each vote in kase.upvotes_v2
+                                                    p.vote #{vote.email}
+                                                        //span.tenant(class=vote.tenantId + "-tenant", style="display: none") #{vote.tenantName}
+                                                        //span.email(class=vote.tenantId + "-email", style="display: none") #{vote.email}
 
-                                    .col-xs-6
+                                    .col-sm-6
                                         if kase.description
                                             .well
                                                 p.case-description !{kase.description}
                                         else
+                                            br
+                                            br
                                             br
                                         .btn-container
                                             if validation.active
@@ -133,12 +145,14 @@ block content
                                             i.fa.fa-link   Link
                                         p.subtle(style="display: none") #{kase._id}
 
-                                    .col-xs-3.centered
-                                        p.downvotes-header Fails (#{kase.downvotes_v2.length}):
+                                    .col-sm-3.hidden-xs.centered
+                                        p.downvotes-header Fails (#{kase.downvotes_v2.length})
                                         .downvotes
                                             if kase.downvotes_v2
-                                                each downvote in kase.downvotes_v2
-                                                    p.vote #{downvote.email}
+                                                each vote in kase.downvotes_v2
+                                                    p.vote #{vote.email}
+                                                        //span.tenant(class=vote.tenantId + "-tenant", style="display: none") #{vote.tenantName}
+                                                        //span.email(class=vote.tenantId + "-email", style="display: none") #{vote.email}
               else
                 p No scenarios have been added yet. Check back later!
 

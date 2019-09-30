@@ -3,9 +3,26 @@
 (function () {
     var apiUrl = "../api/cases"
     var commentApiUrl = "../api/cases/comments";
+    var deepLinkUrl = "../api/deeplink";
+    var updateValidationTabUrlUrl = "../api/validations";
     var spinner = '<i class="fa fa-spinner fa-spin"></i>  ';
     var thumbsUp = '<i class="fa fa-thumbs-up"> </i>';
     var thumbsDown = '<i class="fa fa-thumbs-down"> </i>';
+
+    var MSFT_TENANT_ID = "72f988bf-86f1-41af-91ab-2d7cd011db47";
+
+    // TESTING
+    //var APP_ID = "b846239c-20f9-452b-b121-8ab17c91b24e";
+    //var TAB_URL_BASE = "https%3A%2F%2Fc0e3bd7d.ngrok.io%2Fvalidations%2F";
+
+    // PRODUCTION
+    var APP_ID = "28769a3c-0a17-4c2a-a118-680af5e7a8be";
+    var TAB_URL_BASE = "https%3A%2F%2Ftap-validation-tab.azurewebsites.net%2Fvalidations%2F";
+
+    var emailToTidUrl = "../api/tenants";
+
+    var userTenantId = "";
+    var userCleanEmail = "";
 
     function getUrlVars() {
         var vars = {};
@@ -33,6 +50,22 @@
             }
         }
         return email;
+    }
+
+    // Link to a tab needs a djb2 hash of the app ID and the entity ID.
+    // This isn't documented anywhere... I got it from an open-source library, source here:
+    // https://github.com/ydogandjiev/microsoft-teams-deep-link/blob/master/lib/index.ts
+
+    const deeplinkDjb2Prefix = "_djb2_msteams_prefix_";
+
+    function djb2_hash(str) {
+        let hash = 5381;
+
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash << 5) + hash + str.charCodeAt(i);
+        }
+
+        return hash >>> 0; // Ensure positive number
     }
 
     $(document).ready(function () {
@@ -74,6 +107,68 @@
 
 
         });
+
+        var validationId = document.querySelector('#validation-id').innerHTML;
+
+        microsoftTeams.getContext(function (context) {
+            // Template for a link to this tab
+            var tabUrl = "https://teams.microsoft.com/l/entity/{APP_ID}/{ENTITY_HASH}?context=%7B%22subEntityId%22%3Anull%2C%22canvasUrl%22%3A%22{TAB_URL_BASE}{VALIDATION_ID}%26show%3D{SHOW_VECTOR}%22%2C%22channelId%22%3A%22{CHANNEL_ID}%22%7D&groupId={GROUP_ID}&tenantId={TENANT_ID}";
+
+            var entityId = context.entityId;
+            //console.log(entityId);
+
+            var channelId = context.channelId;
+            //console.log(channelId);
+            // Make it url-safe
+            channelId = channelId.replace(":", "%3A");
+            channelId = channelId.replace("@", "%40");
+
+            var groupId = context.groupId;
+
+            var tid = context.tid;
+
+            if (tid != MSFT_TENANT_ID) {
+                return;
+            }
+
+            //console.log(context);
+
+            var entityHash = djb2_hash(APP_ID + ":" + entityId.replace(/\+/g, " "));
+            //console.log(entityHash);
+
+            tabUrl = tabUrl.replace('{APP_ID}', APP_ID);
+            tabUrl = tabUrl.replace('{ENTITY_HASH}', deeplinkDjb2Prefix + entityHash);
+            tabUrl = tabUrl.replace('{CHANNEL_ID}', channelId);
+            tabUrl = tabUrl.replace('{TAB_URL_BASE}', TAB_URL_BASE);
+            if (showVector != null) {
+                tabUrl = tabUrl.replace("{SHOW_VECTOR}", showVector);
+            } else {
+                tabUrl = tabUrl.replace("{SHOW_VECTOR}", "");
+            }
+            tabUrl = tabUrl.replace("{VALIDATION_ID}", validationId);
+            tabUrl = tabUrl.replace('{GROUP_ID}', groupId);
+            tabUrl = tabUrl.replace('{TENANT_ID}', tid);
+            //tabUrl = encodeURI(tabUrl);
+            console.log(tabUrl);
+
+            var params = {
+                tabUrl: tabUrl,
+                validationId: validationId
+            }
+            ajaxRequest('POST', updateValidationTabUrlUrl, params, function () {
+                console.log("Updated tab url");
+            });
+
+            // Get the user's tenant from their email address
+            ajaxRequest('POST', emailToTidUrl, { email: context['userPrincipalName'] }, function (data) {
+                let result = JSON.parse(data);
+                //console.log(result.tid);
+                userTenantId = result.tid;
+
+                //$('.' + userTenantId + "-tenant").hide();
+                //$('.' + userTenantId + "-email").show();
+            });
+        })
     });
 
     var validationId = document.querySelector('#validation-id').innerHTML;
@@ -252,15 +347,20 @@
         kase.querySelector("div.downvotes").innerHTML = "";
 
 
-        kase.querySelector(".upvotes-header").innerHTML = "<p>Works (" + data.upvotes_v2.length + "):</p>";
+        kase.querySelector(".upvotes-header").innerHTML = "<p>Works (" + data.upvotes_v2.length + ")</p>";
         data.upvotes_v2.forEach(function (vote) {
-           kase.querySelector("div.upvotes").innerHTML +=  "<p class='vote'>" + vote.email + "</p><p class='vote'>";
+            //kase.querySelector("div.upvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + "</span></p>";
+            kase.querySelector("div.upvotes").innerHTML += "<p class='vote'>" + emailForVoteLists + "</p>";
         });
 
-        kase.querySelector(".downvotes-header").innerHTML = "<p>Fails (" + data.downvotes_v2.length + "):</p>";
+        kase.querySelector(".downvotes-header").innerHTML = "<p>Fails (" + data.downvotes_v2.length + ")</p>";
         data.downvotes_v2.forEach(function (vote) {
-            kase.querySelector("div.downvotes").innerHTML += "<p class='vote'>" + vote.email + "</p><p class='vote'>";
+            //kase.querySelector("div.downvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + "</span></p>";
+            kase.querySelector("div.downvotes").innerHTML += "<p class='vote'>" + emailForVoteLists + "</p>";
         });
+
+        //$('.' + userTenantId + "-tenant").hide();
+        //$('.' + userTenantId + "-email").show();
 
         upvoteButton.innerHTML = upvoteButton.innerHTML.replace(spinner, thumbsUp);
         downvoteButton.innerHTML = downvoteButton.innerHTML.replace(spinner, thumbsDown);
@@ -296,8 +396,6 @@
                 $(kase).find('.panel-heading').removeClass('case-works');
 
             }
-
-            // TODO: Update the group and total progress values
 
             var thisGroupPanel = $($(kase).parents()[2]);
             console.log(thisGroupPanel);

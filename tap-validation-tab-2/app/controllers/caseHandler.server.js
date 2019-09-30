@@ -101,46 +101,63 @@ function caseHandler(dbParent) {
     this.addComment = function (req, res) {
         console.log("Called addComment");
         const cId = parseInt(req.body.cId);
-        const tId = req.body.tId;
         const comment = req.body.comment;
         const userEmail = req.body.userEmail;
 
-        var commentDoc = {
-            comment: comment,
-            userEmail: userEmail,
-            tId: tId,
-            timestamp: new Date()
+        clientVoteString = cleanEmail(userEmail);
+        var domain = getDomain(clientVoteString);
+
+        if (clientVoteString.includes("undefined")) {
+            clientVoteString = userEmail;
+            tenantString = clientVoteString.split("@")[1].split(".")[0];
         }
 
-        cases.updateOne({ _id: cId }, { $push: { comments: commentDoc } }, function (err, result) {
+        tenants.findOne({ domains: domain }, function (err, tenantDoc) {
+            console.log("TenantDoc:", tenantDoc);
             if (err) { throw err; }
-            console.log(result);
 
-            console.log("Now putting this in VSTS");
-            var reqBody = [
-                {
-                    op: "add",
-                    path: "/fields/System.History",
-                    value: "'" + comment + "' - " + userEmail
-                }
-            ];
+            if (tenantDoc == null) {
+                var realTenantId = "?";
+            } else {
+                var realTenantId = tenantDoc.tid;
+            }
 
-            var update_endpoint = VSTS_WORKITEM_UPDATE_ENDPOINT.replace("{id}", cId);
-            console.log(update_endpoint);
+            var commentDoc = {
+                comment: comment,
+                userEmail: clientVoteString,
+                userTenantId: realTenantId,
+                timestamp: Date.now()
+            }
 
-            const options = {
-                url: update_endpoint,
-                headers: {
-                    'Authorization': AUTH,
-                    'Content-Type': 'application/json-patch+json'
-                },
-                body: JSON.stringify(reqBody)
-            };
+            cases.updateOne({ _id: cId }, { $push: { comments: commentDoc } }, function (err, result) {
+                if (err) { throw err; }
+                console.log(result);
 
-            request.patch(options, function (vstsErr, vstsStatus, vstsResponse) {
-                if (vstsErr) { throw vstsErr; }
-                console.log("Vsts response was: " + vstsResponse);
-                res.json(vstsResponse);
+                console.log("Now putting this in VSTS");
+                var reqBody = [
+                    {
+                        op: "add",
+                        path: "/fields/System.History",
+                        value: "'" + comment + "' - " + clientVoteString
+                    }
+                ];
+
+                var update_endpoint = VSTS_WORKITEM_UPDATE_ENDPOINT.replace("{id}", cId);
+
+                const options = {
+                    url: update_endpoint,
+                    headers: {
+                        'Authorization': AUTH,
+                        'Content-Type': 'application/json-patch+json'
+                    },
+                    body: JSON.stringify(reqBody)
+                };
+
+                request.patch(options, function (vstsErr, vstsStatus, vstsResponse) {
+                    if (vstsErr) { throw vstsErr; }
+                    console.log("Vsts response was: " + vstsResponse);
+                    res.json(vstsResponse);
+                });
             });
         });
     };

@@ -35,12 +35,15 @@ AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZ
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="app\controllers\issueConfigController.client.js" />
+    <Compile Include="app\controllers\issueHandler.server.js" />
     <Compile Include="app\controllers\caseController.client.js" />
     <Compile Include="app\controllers\bugController.client.js" />
     <Compile Include="app\controllers\caseHandler.server.js" />
     <Compile Include="app\controllers\bugHandler.server.js" />
     <Compile Include="app\controllers\configController.client.js" />
     <Compile Include="app\controllers\validationController.client.js" />
+    <Compile Include="app\controllers\tenantHandler.server.js" />
     <Compile Include="app\controllers\validationHandler.server.js" />
     <Compile Include="app\controllers\jquery.hotkeys.js" />
     <Compile Include="app\routes\index.js" />
@@ -54,6 +57,7 @@ AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZ
     <None Include="tap-validation-tab-220181210055533 - Web Deploy.pubxml" />
     <None Include="tap-validation-tab - Web Deploy %282%29.pubxml" />
     <Content Include="views\config.pug" />
+    <Content Include="views\issueConfig.pug" />
     <Content Include="views\index.pug" />
     <Content Include="views\layout.pug" />
     <Content Include="views\error.pug" />
@@ -68,6 +72,7 @@ AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZ
     <Folder Include="views\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="views\issue.pug" />
     <Content Include="views\validation.pug" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config" />

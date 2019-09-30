@@ -323,3 +323,7 @@ p.editor-default {
     float: right;
     margin-right: 20px;
 }
+
+span.tenant, span.email {
+    font-size: 11px;
+}

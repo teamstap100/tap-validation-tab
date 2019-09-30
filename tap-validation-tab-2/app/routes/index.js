@@ -4,23 +4,22 @@
 var ValidationHandler = require(process.cwd() + '/app/controllers/validationHandler.server.js');
 var BugHandler = require(process.cwd() + '/app/controllers/bugHandler.server.js');
 var CaseHandler = require(process.cwd() + '/app/controllers/caseHandler.server.js');
+var IssueHandler = require(process.cwd() + '/app/controllers/issueHandler.server.js');
+var TenantHandler = require(process.cwd() + '/app/controllers/tenantHandler.server.js');
 
 module.exports = function (app, db) {
 
-    //var clickHandler = new ClickHandler(db);
     var validationHandler = new ValidationHandler(db);
+    var issueHandler = new IssueHandler(db);
     var bugHandler = new BugHandler(db);
     var caseHandler = new CaseHandler(db);
+    var tenantHandler = new TenantHandler(db);
 
     app.route('/')
         .get(validationHandler.getIndex);
 
     app.route('/validations/:vId')
         .get(validationHandler.getValidation);
-
-    //app.route('/api/validations')
-    //    //.get(validationHandler.getValidations)
-    //    .post(validationHandler.addValidation);
 
     app.route('/api/bugs')
         .get(bugHandler.getBug)
@@ -37,6 +36,20 @@ module.exports = function (app, db) {
     app.route('/api/comments')
         .post(caseHandler.addComment);
 
+    app.route('/api/validations')
+        .post(validationHandler.updateValidation);
+
+    app.route('/api/tenants')
+        .post(tenantHandler.getTenant);
+
     app.route('/config')
         .get(validationHandler.getValidations);
+
+    app.route('/issues-config')
+        .get(issueHandler.getIssueConfig);
+
+    app.route('/issues/:validationIds')
+        .get(issueHandler.getIssue);
+
+
 };

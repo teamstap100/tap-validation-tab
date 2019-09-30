@@ -6,7 +6,7 @@
     var contentUrlBase = "https://tap-validation-tab.azurewebsites.net/validations/";
 
     // TESTING
-    //var contentUrlBase = "https://213b9289.ngrok.io/validations/";
+    //var contentUrlBase = "https://e16eecd1.ngrok.io/validations/";
 
     // This doesn't work
     //var contentUrlBase = "../validations/";

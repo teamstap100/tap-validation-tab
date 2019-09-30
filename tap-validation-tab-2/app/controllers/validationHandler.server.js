@@ -1,6 +1,7 @@
 'use strict';
 
 var ObjectID = require('mongodb').ObjectID;
+var teamsDeepLink = require('microsoft-teams-deep-link');
 
 function validationHandler(dbParent) {
 
@@ -114,6 +115,34 @@ function validationHandler(dbParent) {
             });
         });
     };
+
+    this.updateValidation = function (req, res) {
+        console.log(req.body.validationId, req.body.tabUrl);
+
+        validations.updateOne({ _id: parseInt(req.body.validationId) }, { $set: { tabUrl: req.body.tabUrl } }, function (err, doc) {
+            if (err) { throw err; }
+
+            console.log(doc);
+            res.status(200);
+        });
+    }
+    /*
+    this.getDeepLink = function (req, res) {
+        console.log(req.body);
+
+        var deepLink = teamsDeepLink.getEntityDeepLink(
+            {
+                entityId: req.body.entityId,
+                entityWebUrl: req.body.contentUrl,
+                entityLabel: req.body.entityLabel,
+            },
+            req.body.appId
+        );
+
+        console.log(deepLink);
+        res.status(200);
+    }
+    */
 };
 
 module.exports = validationHandler;
