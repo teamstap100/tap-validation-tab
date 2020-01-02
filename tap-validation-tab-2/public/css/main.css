@@ -116,7 +116,6 @@ img {
     width: auto;
     max-width: calc(100% - 2 * .4rem);
     margin: .4rem;
-
     font-weight: 600;
     position: relative;
     border-color: #e2e2f6;
@@ -131,11 +130,13 @@ img {
     .btn:hover {
         background-color: #F4F4FC;
         border-color: #BDBDE6;
+        box-shadow: none !important;
     }
 
-    .btn:active {
-        background-color: #E2E2F6;
-        border-color: #5558AF;
+    .btn.active {
+        background-color: #E4E4EC;
+        border-color: #BDBDE6;
+        box-shadow: none !important;
     }
 
 .btn-secondary {
@@ -144,12 +145,12 @@ img {
 
 .btn-default { /* Styling for buttons */
     color: #EEF1F5;
-    background-color: #5458AF;
+    background-color: #6264a7;
 }
 
     .btn-default:hover {
         color: #EEF1F5;
-        background-color: #4D50A1;
+        background-color: #4B4F9D;
     }
 
     .btn-default:active {
@@ -165,6 +166,14 @@ img {
     .btn-default:focus {
         color: #EEF1F5;
         background-color: #5458AF;
+    }
+
+    .btn-default[disabled]:hover {
+        background-color: #9596C1;
+    }
+
+    .btn-default[disabled]:focus {
+        background-color: #9596C1;
     }
 
 .bug {
@@ -267,15 +276,16 @@ p.editor-default {
     display: inline-block;
 }
 
-/*
+
 .btn-primary {
     background-color: #5558AF;
+    color: #FFFFFF;
 }
 
 .btn-primary:hover {
     background-color: #22267c;
+    color: #FFFFFF;
 }
-    */
 
 .tooltip-inner {
     max-width: 350px; /* set this to your maximum fitting width */
@@ -326,4 +336,50 @@ p.editor-default {
 
 span.tenant, span.email {
     font-size: 11px;
+}
+
+.bug-modal-launch:hover {
+    cursor: pointer
+}
+
+.thumb-label {
+    display: inline;
+}
+
+.fa-thumbs-up {
+    color: #5558AF;
+    font-size: 12px;
+    line-height: 32px;
+    display: inline !important;
+}
+
+.fa-thumbs-down {
+    color: red;
+    font-size: 12px;
+    line-height: 32px;
+    display: inline !important;
+}
+
+.client-checkboxes {
+    font-size: 14px;
+    text-align: center;
+}
+
+.inline-icon {
+    width: 24px;
+    margin: 0px 2px 0px 0px;
+    display: inline-block;
+    float: left;
+}
+
+.btn-group label {
+    line-height: 32px;
+}
+
+.radio-btn {
+    text-overflow: clip !important;
+}
+
+.greyed-out {
+    color: #aaaaaa !important;
 }

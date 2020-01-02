@@ -19,6 +19,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const request = require('request');
 
+app.use(require('express-log-url'));
+
 // Local
 //mongo.connect('mongodb://localhost:27017/clementinejs', function (err, db) {
 

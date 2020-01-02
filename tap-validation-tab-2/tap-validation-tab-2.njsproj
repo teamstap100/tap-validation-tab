@@ -5,7 +5,7 @@
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
     <Name>tap-validation-tab-2</Name>
     <RootNamespace>tap-validation-tab-2</RootNamespace>
-    <LastActiveSolutionConfig>Debug|Any CPU</LastActiveSolutionConfig>
+    <LastActiveSolutionConfig>Release|Any CPU</LastActiveSolutionConfig>
     <NameOfLastUsedPublishProfile>tap-validation-tab - Web Deploy (2)</NameOfLastUsedPublishProfile>
     <Environment>MONGO_STRING=mongodb+srv://node-user:QbRAiry8ZuT8RKHB@tap-validation-tab-e1ixx.azure.mongodb.net/clementine?retryWrites=true
 TEST_VAR=Local
@@ -35,28 +35,37 @@ AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZ
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="app\controllers\performanceHandler.server.js" />
+    <Compile Include="app\controllers\performanceConfigController.client.js" />
+    <Compile Include="app\controllers\bugsConfigController.client.js" />
     <Compile Include="app\controllers\issueConfigController.client.js" />
     <Compile Include="app\controllers\issueHandler.server.js" />
     <Compile Include="app\controllers\caseController.client.js" />
-    <Compile Include="app\controllers\bugController.client.js" />
+    <Compile Include="app\controllers\performanceController.client.js" />
+    <Compile Include="app\controllers\tenantBugsController.client.js" />
     <Compile Include="app\controllers\caseHandler.server.js" />
     <Compile Include="app\controllers\bugHandler.server.js" />
     <Compile Include="app\controllers\configController.client.js" />
-    <Compile Include="app\controllers\validationController.client.js" />
     <Compile Include="app\controllers\tenantHandler.server.js" />
     <Compile Include="app\controllers\validationHandler.server.js" />
     <Compile Include="app\controllers\jquery.hotkeys.js" />
     <Compile Include="app\routes\index.js" />
     <Compile Include="server.js" />
     <Content Include="package.json" />
-    <Content Include="public\config.html" />
     <Content Include="public\css\main.css" />
-    <Content Include="public\index.html" />
+    <Content Include="public\img\anrdoid-logo.png" />
+    <Content Include="public\img\ios-logo.png" />
+    <Content Include="public\img\mac-logo.png" />
+    <Content Include="public\img\windows-logo.png" />
     <Content Include="README.md" />
     <None Include="tap-validation-tab - Web Deploy.pubxml" />
     <None Include="tap-validation-tab-220181210055533 - Web Deploy.pubxml" />
     <None Include="tap-validation-tab - Web Deploy %282%29.pubxml" />
+    <Content Include="views\performance.pug" />
+    <Content Include="views\performanceConfig.pug" />
     <Content Include="views\config.pug" />
+    <Content Include="views\bugs.pug" />
+    <Content Include="views\bugsConfig.pug" />
     <Content Include="views\issueConfig.pug" />
     <Content Include="views\index.pug" />
     <Content Include="views\layout.pug" />

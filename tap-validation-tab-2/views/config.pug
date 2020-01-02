@@ -2,6 +2,8 @@ extends layout.pug
 
 block morescripts
   script(src='https://unpkg.com/@microsoft/teams-js@1.3.7/dist/MicrosoftTeams.min.js', integrity='sha384-glExfvkpce98dO2oN+diZ/Luv/5qrZJiOvWCeR8ng/ZxlhpvBgHKeVFRURrh+NEC', crossorigin='anonymous')
+  link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/v/bs/dt-1.10.18/datatables.min.css')
+  script(type='text/javascript', src='https://cdn.datatables.net/v/bs/dt-1.10.18/datatables.min.js')
   script(type="text/javascript", src="/controllers/configController.client.js")
 
 
@@ -9,34 +11,115 @@ block content
   .container
     br
     p.centered #[strong Choose a validation for this tab.]
-    p.centered For validations with sections: Check sections to show by default. Others will be collapsed.
+    p.centered For validations with sections: Check the boxes next to the sections you'd like to show in the tab. The other sections not appear.
+    p.centered If you want customers to sign-off by client, check the clients you want available in each section.
     form
       if validations
         h4 Your Validations
-            .container#your-validations
-                each validation in validations
-                  .container.val(class="owner-" + validation.owner.split("@")[0], style="display: none")
-                    input(type='radio', name='validation', id=validation._id, value= validation.name, onclick='microsoftTeams.settings.setValidityState(true);')
-                    label(for=validation._id)       #{validation.name}
-                    if validation.groups.length > 0
-                        ul
-                            each group in validation.groups
-                                - var safeGroup = group.replace(/ /g, "_").replace(/,/g, "_").replace(/-/g, "_").replace(/\(|\)/g, "_");
-                                    input(type="checkbox", name="group", value=safeGroup, id=safeGroup, checked)
-                                    label.safe-label(for=safeGroup, style="font-size: 12px;") #{group}
-                                    br
-                    br
+        table.table.table-striped.table-responsive#your-validations
+            thead
+                tr
+                    th(scope="col")
+                    th(scope="col") Name
+                    th(scope="col") Sections
+                    //th(scope="col") Options
+            each validation in validations
+                tr(class="val owner-" + validation.owner.split("@")[0] style="display: none")
+                    td
+                        input(type='radio', name='validation', id=validation._id, value= validation.name, onclick='microsoftTeams.settings.setValidityState(true);')
+                    td
+                        label(for=validation._id, style="font-size: 12px") #{validation.name}
+                    td.sectionCell
+                        if validation.groups.length > 0
+                            table.table.table-responsive.sections-table(style="display: none")
+                                - var groupCount = 0;
+                                each group in validation.groups
+                                    tr
+                                        td
+                                            - var safeGroup = group.replace(/ /g, "_").replace(/,/g, "_").replace(/-/g, "_").replace(/\(|\)/g, "_");
+                                            
+                                                .row
+                                                    .col-xs-12
+                                                        input(type="checkbox", name="group", value=safeGroup, id=safeGroup, checked)
+                                                        label.safe-label(for=safeGroup, style="font-size: 10px;") #[strong #{group}]
+                                                .row
+                                                    .col-xs-12
+                                                        input.toggle-all(type="checkbox", name="toggleAll", value=validation._id + "-" + groupCount + "-all", id=validation._id + "-" + groupCount + "-all")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-all", style="font-size: 10px;") (Toggle All Clients) 
+                                                .row
+                                                    .col-xs-6
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-windows", id=validation._id + "-" + groupCount + "-windows")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-windows", style="font-size: 10px;") Win  
+                                                    .col-xs-6
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-mac", id=validation._id + "-" + groupCount + "-mac")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-mac", style="font-size: 10px;") Mac  
+                                                .row
+                                                    .col-xs-6
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-android", id=validation._id + "-" + groupCount + "-android")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-android", style="font-size: 10px;") Android  
+                                                    .col-xs-6
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-ios", id=validation._id + "-" + groupCount + "-ios")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-", style="font-size: 10px;") iOS  
+                                                .row
+                                                    .col-xs-6
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-chrome", id=validation._id + "-" + groupCount + "-chrome")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-", style="font-size: 10px;") Chrome  
+                                                    .col-xs-6
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-linux", id=validation._id + "-" + groupCount + "-linux")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-", style="font-size: 10px;") Linux  
+
+                                                - groupCount += 1;
+
         h4 Other Validations
-            .container#other-validations
-                each validation in validations
-                  .container.val(class="owner-" + validation.owner.split("@")[0])
-                    input(type='radio', name='validation', id=validation._id, value= validation.name, onclick='microsoftTeams.settings.setValidityState(true);')
-                    label(for=validation._id)       #{validation.name}
-                    if validation.groups.length > 0
-                        ul
-                            each group in validation.groups
-                                - var safeGroup = group.replace(/ /g, "_").replace(/,/g, "_").replace(/-/g, "_").replace(/\(|\)/g, "_");
-                                    input(type="checkbox", name="group", value=safeGroup, id=safeGroup, checked)
-                                    label.safe-label(for=safeGroup, style="font-size: 12px;") #{group}
-                                    br
-                    br
+        table.table.table-striped.table-responsive#other-validations
+            thead
+                tr
+                    th(scope="col")
+                    th(scope="col") Name
+                    th(scope="col") Sections
+            each validation in validations
+                tr(class="val owner-" + validation.owner.split("@")[0])
+                    td
+                        input(type='radio', name='validation', id=validation._id, value= validation.name, onclick='microsoftTeams.settings.setValidityState(true);')
+                    td
+                        label(for=validation._id, style="font-size: 12px") #{validation.name}
+                    td.sectionCell
+                        if validation.groups.length > 0
+                            table.table.table-responsive.sections-table(style="display: none")
+                                - var groupCount = 0;
+                                each group in validation.groups
+                                    tr
+                                        td
+                                            - var safeGroup = group.replace(/ /g, "_").replace(/,/g, "_").replace(/-/g, "_").replace(/\(|\)/g, "_");
+                                            
+                                                .row
+                                                    .col-xs-12
+                                                        input(type="checkbox", name="group", value=safeGroup, id=safeGroup, checked)
+                                                        label.safe-label(for=safeGroup, style="font-size: 10px;") #[strong #{group}]
+                                                .row
+                                                    .col-xs-12
+                                                        input.toggle-all(type="checkbox", name="toggleAll", value=validation._id + "-" + groupCount + "-all", id=validation._id + "-" + groupCount + "-all")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-all", style="font-size: 10px;") (Toggle All Clients) 
+                                                .row
+                                                    .col-xs-6
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-windows", id=validation._id + "-" + groupCount + "-windows")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-windows", style="font-size: 10px;") Win  
+                                                    .col-xs-6
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-mac", id=validation._id + "-" + groupCount + "-mac")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-mac", style="font-size: 10px;") Mac  
+                                                .row
+                                                    .col-xs-6
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-android", id=validation._id + "-" + groupCount + "-android")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-android", style="font-size: 10px;") Android  
+                                                    .col-xs-6
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-ios", id=validation._id + "-" + groupCount + "-ios")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-", style="font-size: 10px;") iOS  
+                                                .row
+                                                    .col-xs-6
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-chrome", id=validation._id + "-" + groupCount + "-chrome")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-", style="font-size: 10px;") Chrome  
+                                                    .col-xs-6
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-linux", id=validation._id + "-" + groupCount + "-linux")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-", style="font-size: 10px;") Linux  
+
+                                                - groupCount += 1;

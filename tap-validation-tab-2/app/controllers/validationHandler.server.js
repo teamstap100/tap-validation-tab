@@ -10,7 +10,7 @@ function validationHandler(dbParent) {
     var db = dbParent.db("clementine");
     var validations = db.collection('validations');
 
-    var bugs = db.collection('bugs');
+    //var bugs = db.collection('bugs');
     var cases = db.collection('cases');
 
     // db used to return the db, now it returns the parent in mongo 3.0.0.
@@ -45,6 +45,7 @@ function validationHandler(dbParent) {
 
             results.forEach(function (result) {
                 if (result.active) {
+                    //scenarioValidations.push(result);
                     if (result.test != true) {
                         scenarioValidations.push(result);
                     }
@@ -97,20 +98,14 @@ function validationHandler(dbParent) {
             }
 
             console.log("caseOrder is " + validationDoc.caseOrder);
-
-            bugs.find(bugQuery).sort(caseSort).toArray(function (err, bugDoc) {
+            cases.find(caseQuery).sort(caseSort).toArray(function (err, caseDoc) {
                 if (err) { throw err; }
-                console.log(bugDoc);
-                cases.find(caseQuery).sort(caseSort).toArray(function (err, caseDoc) {
-                    if (err) { throw err; }
 
-                    console.log(caseDoc);
+                console.log(caseDoc);
 
-                    res.render('validation', {
-                        "validation": validationDoc,
-                        "bugs": bugDoc,
-                        "cases": caseDoc
-                    });
+                res.render('validation', {
+                    "validation": validationDoc,
+                    "cases": caseDoc
                 });
             });
         });
@@ -122,27 +117,10 @@ function validationHandler(dbParent) {
         validations.updateOne({ _id: parseInt(req.body.validationId) }, { $set: { tabUrl: req.body.tabUrl } }, function (err, doc) {
             if (err) { throw err; }
 
-            console.log(doc);
             res.status(200);
+            res.send();
         });
     }
-    /*
-    this.getDeepLink = function (req, res) {
-        console.log(req.body);
-
-        var deepLink = teamsDeepLink.getEntityDeepLink(
-            {
-                entityId: req.body.entityId,
-                entityWebUrl: req.body.contentUrl,
-                entityLabel: req.body.entityLabel,
-            },
-            req.body.appId
-        );
-
-        console.log(deepLink);
-        res.status(200);
-    }
-    */
 };
 
 module.exports = validationHandler;

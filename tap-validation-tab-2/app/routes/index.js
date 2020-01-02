@@ -6,6 +6,7 @@ var BugHandler = require(process.cwd() + '/app/controllers/bugHandler.server.js'
 var CaseHandler = require(process.cwd() + '/app/controllers/caseHandler.server.js');
 var IssueHandler = require(process.cwd() + '/app/controllers/issueHandler.server.js');
 var TenantHandler = require(process.cwd() + '/app/controllers/tenantHandler.server.js');
+var PerformanceHandler = require(process.cwd() + '/app/controllers/performanceHandler.server.js');
 
 module.exports = function (app, db) {
 
@@ -14,6 +15,7 @@ module.exports = function (app, db) {
     var bugHandler = new BugHandler(db);
     var caseHandler = new CaseHandler(db);
     var tenantHandler = new TenantHandler(db);
+    var performanceHandler = new PerformanceHandler(db);
 
     app.route('/')
         .get(validationHandler.getIndex);
@@ -21,6 +23,7 @@ module.exports = function (app, db) {
     app.route('/validations/:vId')
         .get(validationHandler.getValidation);
 
+    // TODO: Determine if this gets used
     app.route('/api/bugs')
         .get(bugHandler.getBug)
         .post(bugHandler.addBug);
@@ -50,6 +53,24 @@ module.exports = function (app, db) {
 
     app.route('/issues/:validationIds')
         .get(issueHandler.getIssue);
+
+    app.route('/bugs-config')
+        .get(bugHandler.getBugsConfig);
+
+    app.route('/bugs/:tid')
+        .get(bugHandler.getTenantBugsTemplate);
+
+    app.route('/performance-config')
+        .get(performanceHandler.getPerformanceConfig);
+
+    app.route('/performance/:tid')
+        .get(performanceHandler.renderPerformanceTemplate);
+
+    app.route('/api/bugComments')
+        .post(bugHandler.addComment);
+
+    app.route('/api/tenantBugs/:tid')
+        .get(bugHandler.getTenantBugs);
 
 
 };

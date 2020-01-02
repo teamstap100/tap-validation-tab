@@ -19,7 +19,12 @@ function caseHandler(dbParent) {
     var AUTH = process.env.AUTH;
 
     function cleanEmail(email) {
-        email = email.replace("#EXT#@microsoft.onmicrosoft.com", "");
+        console.log("Cleaning email");
+        console.log(email);
+        email = email.toLowerCase();
+        console.log(email);
+        email = email.replace("#ext#@microsoft.onmicrosoft.com", "");
+        console.log(email);
         if (email.includes("@")) {
             return email;
 
@@ -104,7 +109,9 @@ function caseHandler(dbParent) {
         const comment = req.body.comment;
         const userEmail = req.body.userEmail;
 
-        clientVoteString = cleanEmail(userEmail);
+        console.log(userEmail);
+
+        var clientVoteString = cleanEmail(userEmail);
         var domain = getDomain(clientVoteString);
 
         if (clientVoteString.includes("undefined")) {
@@ -176,6 +183,8 @@ function caseHandler(dbParent) {
         const clientType = req.body.clientType;
         const upDown = req.body.upDown;
 
+        const client = req.body.client;
+
         var verboseUpDown = "Pass";
         if (upDown == "down") {
             verboseUpDown = "Fail";
@@ -183,8 +192,6 @@ function caseHandler(dbParent) {
 
         var tenantString = "TID: " + userTenantId;
         var clientVoteString = userEmail;
-
-        //clientVoteString = clientVoteString.replace("#EXT#@microsoft.onmicrosoft.com", "");   // Remove the "I'm a guest" part of the user email
 
         var originalClientVoteString = clientVoteString;
 
@@ -211,34 +218,49 @@ function caseHandler(dbParent) {
             }
 
             var query = { "_id": cId };
-            var updateOp;
+            var updateOp = {};
+            var updateOp2 = {};
             console.log("upDown is " + upDown);
             console.log("cId is " + cId);
 
             var voteObj = {
                 email: clientVoteString,
                 tenantId: realTenantId,
-                tenantName: tenantName
-            }
-            if (upDown == "up") {
-                // The pull op needs to just look for email address, incase the tenant name has changed in our database.
-                //updateOp = { $addToSet: { "upvotes": clientVoteString, "upvotes_v2": voteObj}, $pull: { "downvotes": clientVoteString, "downvotes_v2": voteObj} }
-                updateOp = {
-                    $addToSet: { "upvotes_v2": voteObj }, $pull: { "downvotes_v2": { "email": clientVoteString } }
-                };
-            } else {
-                //updateOp = { $addToSet: { "downvotes": clientVoteString, "downvotes_v2": voteObj}, $pull: { "upvotes": clientVoteString, "downvotes_v2": voteObj } }
-                updateOp = {
-                    $addToSet: { "downvotes_v2": voteObj }, $pull: { "upvotes_v2": { "email": clientVoteString } }
-                };
+                tenantName: tenantName,
+                client: client,
+                timestamp: new Date()
             }
 
-            cases.findOneAndUpdate(
-                query,
-                updateOp,
-                {returnOriginal: false},
-                function (err, result) {
-                    if (err) { throw err; }
+
+            if (upDown == "up") {
+                // The pull op needs to just look for email address, incase the tenant name has changed in our database.
+                updateOp = { $pull: { "upvotes_v2": { "email": clientVoteString } } }
+                updateOp2 = {
+                    $addToSet: { "upvotes_v2": voteObj },
+                    $pull: { "downvotes_v2": { "email": clientVoteString, } }
+                };
+                if (client) {
+                    updateOp['$pull']['upvotes_v2'].client = client;
+                    updateOp2['$pull']["downvotes_v2"].client = client;
+                }
+            } else if (upDown == "down") {
+                updateOp = { $pull: { "downvotes_v2": { "email": clientVoteString } } }
+                updateOp2 = {
+                    $addToSet: { "downvotes_v2": voteObj },
+                    $pull: { "upvotes_v2": { "email": clientVoteString } }
+                };
+                if (client) {
+                    updateOp['$pull']['downvotes_v2'].client = client;
+                    updateOp2['$pull']["upvotes_v2"].client = client;
+                }
+            }
+
+            console.log(updateOp);
+            console.log(updateOp2);
+            cases.findOneAndUpdate(query, updateOp, { returnOriginal: false }, function (err, result) {
+                if (err) { throw err; }
+                cases.findOneAndUpdate(query, updateOp2, { returnOriginal: false }, function (err2, result) {
+                    if (err2) { throw err2; }
                     var kase = result.value;
                     console.log(kase, kase.upvotes, kase.downvotes);
 
@@ -246,23 +268,31 @@ function caseHandler(dbParent) {
                     if (kase.description != null) {
                         kaseDescription = kase.description;
                     }
-                    
+
                     var voteList = "Scenario created by " + kase.submitter + " through the a TAP Validation Tab";
                     voteList += "<br><br>" + kaseDescription;
                     voteList += "<br><br><b>Works:</b><br>";
                     if (kase.upvotes_v2.length > 0) {
-                        voteList += "<table><thead><tr><td style='border: 1px solid black;'>Tenant</td><td style='border: 1px solid black;'>User</td></tr></thead><tbody>";
+                        voteList += "<table><thead><tr><td style='border: 1px solid black;'>Tenant</td><td style='border: 1px solid black;'>User</td><td style='border: 1px solid black;'>Client</td></tr></thead><tbody>";
                         kase.upvotes_v2.forEach(function (upvote) {
-                            voteList += "<tr><td style='border: 1px solid black;'>" + upvote.tenantName + "</td><td style='border: 1px solid black;'>" + upvote.email + "</td></tr>"
+                            voteList += "<tr><td style='border: 1px solid black;'>" + upvote.tenantName + "</td><td style='border: 1px solid black;'>" + upvote.email + "</td>";
+                            if (upvote.client) {
+                                voteList += "<td style='border: 1px solid black;'>" + upvote.client + "</td>";
+                            }
+                            voteList += "</tr>";
                         });
                         voteList += "</tbody></table><br><br>"
                     }
 
                     voteList += "<br><br><b>Fails:</b><br>";
                     if (kase.downvotes_v2.length > 0) {
-                        voteList += "<table><thead><tr><td style='border: 1px solid black;'>Tenant</td><td style='border: 1px solid black;'>User</td></tr></thead><tbody>";
+                        voteList += "<table><thead><tr><td style='border: 1px solid black;'>Tenant</td><td style='border: 1px solid black;'>User</td><td style='border: 1px solid black;'>Client</td></tr></thead><tbody>";
                         kase.downvotes_v2.forEach(function (downvote) {
-                            voteList += "<tr><td style='border: 1px solid black;'>" + downvote.tenantName + "</td><td style='border: 1px solid black;'>" + downvote.email + "</td></tr>"
+                            voteList += "<tr><td style='border: 1px solid black;'>" + downvote.tenantName + "</td><td style='border: 1px solid black;'>" + downvote.email + "</td>";
+                            if (downvote.client) {
+                                voteList += "<td style='border: 1px solid black;'>" + downvote.client + "</td>";
+                            }
+                            voteList += "</tr>";
                         });
                         voteList += "</tbody></table>";
                     }
@@ -296,6 +326,8 @@ function caseHandler(dbParent) {
                             userTenantId: realTenantId,
                             userEmail: userEmail,
                             validationId: req.body.validationId,
+                            caseId: cId,
+                            client: client,
                             timestamp: new Date(),
                         }
 
@@ -304,15 +336,10 @@ function caseHandler(dbParent) {
 
                             res.json(voteDoc.value);
                         });
-
-
                     });
-
-                    
+                })
             });
-
-            }
-        );
+        });
     };
 }
 

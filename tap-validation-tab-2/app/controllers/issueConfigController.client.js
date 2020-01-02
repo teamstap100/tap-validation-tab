@@ -3,10 +3,10 @@
 (function () {
 
    // PRODUCTION
-    //var contentUrlBase = "https://tap-validation-tab.azurewebsites.net/issues/";
+    var contentUrlBase = "https://tap-validation-tab.azurewebsites.net/issues/";
 
     // TESTING
-    var contentUrlBase = "https://e16eecd1.ngrok.io/issues/";
+    //var contentUrlBase = "https://c852da2a.ngrok.io/issues/";
 
     // This doesn't work
     //var contentUrlBase = "../validations/";

@@ -24,6 +24,11 @@
     var userTenantId = "";
     var userCleanEmail = "";
 
+    const old_clients = ["windows", "mac", "android", "ios",];
+    const clients = ["windows", "mac", "android", "ios", "chrome", "linux"];
+
+    var caseClients = {};
+
     function getUrlVars() {
         var vars = {};
         var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function (m, key, value) {
@@ -33,22 +38,26 @@
     }
 
     function cleanEmail(email) {
-        email = email.replace("#EXT#@microsoft.onmicrosoft.com", "");
-        if (email.includes("@")) {
-            return email;
+        if (email) {
+            email = email.toLowerCase();
+            email = email.replace("#ext#@microsoft.onmicrosoft.com", "");
+            if (email.includes("@")) {
+                return email;
 
-        } else if (email.includes("_")) {
-            console.log("Going the underscore route");
-            var underscoreParts = email.split("_");
-            var domain = underscoreParts.pop();
-            var tenantString = domain.split(".")[0];
+            } else if (email.includes("_")) {
+                console.log("Going the underscore route");
+                var underscoreParts = email.split("_");
+                var domain = underscoreParts.pop();
+                var tenantString = domain.split(".")[0];
 
-            if (underscoreParts.length > 1) {
-                email = underscoreParts.join("_") + "@" + domain;
-            } else {
-                email = underscoreParts[0] + "@" + domain;
+                if (underscoreParts.length > 1) {
+                    email = underscoreParts.join("_") + "@" + domain;
+                } else {
+                    email = underscoreParts[0] + "@" + domain;
+                }
             }
         }
+
         return email;
     }
 
@@ -71,17 +80,78 @@
     $(document).ready(function () {
         microsoftTeams.initialize();
 
-        console.log(getUrlVars()["show"]);
+        scrollToSubEntity();
+
         var showVector = getUrlVars()["show"];
-        if (showVector != null) {
+        if ((showVector != null) && (showVector != "")) {
             $('.group-panel').each(function (index) {
                 if (showVector.substring(0, 1) == 0) {
-                    $(this).find('.panel-collapse').removeClass("in");
-                    //$(this).find('.panel-collapse').collapse('hide');
+                    // Option 1: Collapse the section
+                    //$(this).find('.panel-collapse').removeClass("in");
+
+                    // Option 2: Hide the section completely
+                    $(this).hide();
                 }
 
                 showVector = showVector.substring(1, showVector.length);
             });
+        }
+
+        var clientsVector = getUrlVars()["clients"];
+        console.log("ClientsVector is: " + clientsVector);
+        
+
+        let groupCount = $('.group-panel').length;
+
+        // In case this tab was configured a long time ago when there were only a few clients, need to use the vector differently
+        let configured_clients = clients;
+
+        if (clientsVector) {
+            if (clientsVector.length == groupCount * clients.length) {
+                configured_clients = clients;
+            } else if (clientsVector.length == groupCount * old_clients.length) {
+                configured_clients = old_clients;
+            }
+            let skipped_clients = clients.filter(e => !configured_clients.includes(e));
+            console.log(skipped_clients);
+
+            // If clientsVector is all zeroes for a section, need to reveal the clients
+            $('.group-panel').each(function (index) {
+                let thisGroupVector = clientsVector.substring(index * configured_clients.length, (index * configured_clients.length) + configured_clients.length);
+                console.log(thisGroupVector);
+
+
+                if (thisGroupVector != "0".repeat(configured_clients.length)) {
+                    console.log("At least one client specified");
+                    $(this).find('.no-client-checkboxes').hide();
+                    $(this).find('.client-checkboxes').show();
+                } else {
+                    console.log("Hiding all client stuff");
+                    console.log($(this).find('.client-checkboxes'));
+                    $(this).find('.no-client-checkboxes').show();
+                    $(this).find('.client-checkboxes').hide();
+                }
+
+                for (let i = 0; i < configured_clients.length; i++) {
+                    let client = configured_clients[i];
+                    if (thisGroupVector[i] == "1") {
+                        $(this).find('.' + client + '-group').show();
+                    } else {
+                        $(this).find('.' + client + '-group').hide();
+                    }
+                } 
+
+                let this_group = this;
+
+                skipped_clients.forEach(function (client) {
+                    console.log("Hiding this client: " + client);
+                    $(this_group).find('.' + client + '-group').hide();
+                })
+            })
+        } else {
+            console.log("No clients");
+            $('.no-client-checkboxes').show();
+            $('.client-checkboxes').hide();
         }
 
         var commentModalButton = document.querySelector('#submitComment');
@@ -109,10 +179,11 @@
         });
 
         var validationId = document.querySelector('#validation-id').innerHTML;
+        console.log(validationId);
 
         microsoftTeams.getContext(function (context) {
             // Template for a link to this tab
-            var tabUrl = "https://teams.microsoft.com/l/entity/{APP_ID}/{ENTITY_HASH}?context=%7B%22subEntityId%22%3Anull%2C%22canvasUrl%22%3A%22{TAB_URL_BASE}{VALIDATION_ID}%26show%3D{SHOW_VECTOR}%22%2C%22channelId%22%3A%22{CHANNEL_ID}%22%7D&groupId={GROUP_ID}&tenantId={TENANT_ID}";
+            var tabUrl = "https://teams.microsoft.com/l/entity/{APP_ID}/{ENTITY_HASH}?context=%7B%22subEntityId%22%3Anull%2C%22canvasUrl%22%3A%22{TAB_URL_BASE}{VALIDATION_ID}%26show%3D{SHOW_VECTOR}%26clients%3D{CLIENTS_VECTOR}%22%2C%22channelId%22%3A%22{CHANNEL_ID}%22%7D&groupId={GROUP_ID}&tenantId={TENANT_ID}";
 
             var entityId = context.entityId;
             //console.log(entityId);
@@ -145,6 +216,12 @@
             } else {
                 tabUrl = tabUrl.replace("{SHOW_VECTOR}", "");
             }
+            if (clientsVector != null) {
+                tabUrl = tabUrl.replace("{CLIENTS_VECTOR}", clientsVector);
+            } else {
+                tabUrl = tabUrl.replace("{CLIENTS_VECTOR}", "");
+            }
+
             tabUrl = tabUrl.replace("{VALIDATION_ID}", validationId);
             tabUrl = tabUrl.replace('{GROUP_ID}', groupId);
             tabUrl = tabUrl.replace('{TENANT_ID}', tid);
@@ -165,143 +242,248 @@
                 //console.log(result.tid);
                 userTenantId = result.tid;
 
-                //$('.' + userTenantId + "-tenant").hide();
-                //$('.' + userTenantId + "-email").show();
+                $('.' + userTenantId + "-tenant").hide();
+                $('.' + userTenantId + "-email").show();
+
+                // Show all results to Microsoft viewers
+                console.log("Email is: " + context['userPrincipalName']);
+                console.log("Email includes microsoft.com: " + context['userPrincipalName'].includes("@microsoft.com"));
+                if (context['userPrincipalName'].includes("@microsoft.com")) {
+                    $('.tenant').hide();
+                    $('.email').show();
+                }
+
+
             });
         })
-    });
+        var validationId = document.querySelector('#validation-id').innerHTML;
+        console.log("validationId object is:", validationId);
 
-    var validationId = document.querySelector('#validation-id').innerHTML;
-    console.log("validationId object is:", validationId);
+        var cases = document.querySelectorAll('.case-panel');
 
-    var cases = document.querySelectorAll('.case-panel');
-
-    var totalCaseCount = cases.length;
-    var totalVotedCount = 0;
+        var totalCaseCount = cases.length;
+        var totalVotedCount = 0;
 
 
-    cases.forEach(function (kase) {
-        //var cId = kase.querySelector('p.subtle').innerHTML;
-        var cId = kase.id.replace("panel-", "");
-        var caseText = kase.querySelector('.case-text');
-        var upvoteButton = kase.querySelector('button.btn-upvote');
-        var downvoteButton = kase.querySelector('button.btn-downvote');
-        var commentButton = kase.querySelector('button.btn-comment');
-        var upvoteList = kase.querySelector('.upvotes');
-        var downvoteList = kase.querySelector('.downvotes');
-        
-        var deepLinkButton = kase.querySelector('p.deep-link');
+        cases.forEach(function (kase) {
+            //var cId = kase.querySelector('p.subtle').innerHTML;
+            var cId = kase.id.replace("panel-", "");
+            var caseText = kase.querySelector('.case-text');
+            var upvoteButton = kase.querySelector('button.btn-upvote');
+            var downvoteButton = kase.querySelector('button.btn-downvote');
 
-        //console.log(upvoteButton);
+            var commentButton = kase.querySelector('button.btn-comment');
+            var upvoteList = kase.querySelector('.upvotes');
+            var downvoteList = kase.querySelector('.downvotes');
 
-        var upParams = {
-            validationId: validationId,
-            userId: "me",
-            userEmail: "someone@gmail.com",
-            userTenantId: "???",
-            clientType: "dunno",
-            upDown: "up",
-            cId: cId
-        };
+            var deepLinkButton = kase.querySelector('p.deep-link');
 
-        var downParams = {
-            validationId: validationId,
-            userId: "me",
-            userEmail: "someone@gmail.com",
-            userTenantId: "???",
-            clientType: "dunno",
-            upDown: "down",
-            cId: cId
-        };
+            var radios = $(kase).find('button:radio');
 
-        var voteUrl = apiUrl + '/' + cId;
-        var commentUrl = commentApiUrl + '/' + cId;
-
-        //console.log(voteUrl);
-
-        microsoftTeams.getContext(function (context) {
-            upParams.userId = context["userObjectId"];
-            downParams.userId = context["userObjectId"];
-
-            upParams.userEmail = context["userPrincipalName"];
-            downParams.userEmail = context["userPrincipalName"];
-
-            upParams.userTenantId = context["tid"];
-            downParams.userTenantId = context["tid"];
-
-            upParams.clientType = context["hostClientType"];
-            downParams.clientType = context["hostClientType"];
-
-            var deepLinkParams = {
-                subEntityId: cId,
-                subEntityLabel: "'" + caseText.textContent + "'"
+            var upParams = {
+                validationId: validationId,
+                userId: "me",
+                userEmail: "someone@gmail.com",
+                userTenantId: "???",
+                clientType: "dunno",
+                upDown: "up",
+                cId: cId
             };
 
-            if (!upvoteButton.disabled) {
-                upvoteButton.addEventListener('click', function () {
-                    console.log(upvoteButton.innerHTML);
-                    upvoteButton.innerHTML = upvoteButton.innerHTML.replace(thumbsUp, spinner);
-                    ajaxRequest('POST', voteUrl, upParams, function () {
+            var downParams = {
+                validationId: validationId,
+                userId: "me",
+                userEmail: "someone@gmail.com",
+                userTenantId: "???",
+                clientType: "dunno",
+                upDown: "down",
+                cId: cId
+            };
+
+            var clientParams = {
+                validationId: validationId,
+                userId: "me",
+                userEmail: "someone@gmail.com",
+                userTenantId: "???",
+                clientType: "dunno",
+                upDown: "up",
+                cId: cId
+            };
+
+            var voteUrl = apiUrl + '/' + cId;
+            var commentUrl = commentApiUrl + '/' + cId;
+
+            //console.log(voteUrl);
+
+            microsoftTeams.getContext(function (context) {
+                var emailForVoteLists = cleanEmail(context["userPrincipalName"]);
+                //console.log(emailForVoteLists);
+
+                upParams.userId = context["userObjectId"];
+                downParams.userId = context["userObjectId"];
+                clientParams.userId = context["userObjectId"];
+                
+
+                upParams.userEmail = context["userPrincipalName"];
+                downParams.userEmail = context["userPrincipalName"];
+                clientParams.userEmail = context["userPrincipalName"];
+
+                upParams.userTenantId = context["tid"];
+                downParams.userTenantId = context["tid"];
+                clientParams.userTenantId = context["tid"];
+
+                upParams.clientType = context["hostClientType"];
+                downParams.clientType = context["hostClientType"];
+                clientParams.clientType = context["hostClientType"];
+
+                upParams.context = context;
+                downParams.context = context;
+                clientParams.context = context;
+
+                var deepLinkParams = {
+                    subEntityId: cId,
+                    subEntityLabel: "'" + caseText.textContent + "'"
+                };
+
+                if (!upvoteButton.disabled) {
+                    upvoteButton.addEventListener('click', function () {
+                        console.log(upvoteButton.innerHTML);
+                        upvoteButton.innerHTML = upvoteButton.innerHTML.replace(thumbsUp, spinner);
+                        ajaxRequest('POST', voteUrl, upParams, function () {
+                            ajaxRequest('GET', voteUrl, {}, updateVotes);
+                        });
+                    });
+                }
+
+                if (!downvoteButton.disabled) {
+                    downvoteButton.addEventListener('click', function () {
+                        console.log("downvote button got clicked");
+                        downvoteButton.innerHTML = downvoteButton.innerHTML.replace(thumbsDown, spinner);
+                        ajaxRequest('POST', voteUrl, downParams, function () {
+                            ajaxRequest('GET', voteUrl, {}, updateVotes);
+                        });
+                    });
+                }
+
+                $(kase).find('input:radio').change(function () {
+                    console.log("Clicked a radio");
+                    let cId = $(this)[0].id.split("-")[0];
+                    let name = $(this).attr('name');
+
+                    console.log(cId);
+
+                    let upDown = $(this)[0].id.split("-")[2];
+                    if (upDown == "works") {
+                        upDown = "up";
+                    } else {
+                        upDown = "down";
+                    }
+
+                    clientParams.upDown = upDown;
+                    clientParams.client = name;
+                    console.log(clientParams);
+
+                    this.innerHTML = spinner + this.innerHTML;
+
+                    ajaxRequest('POST', voteUrl, clientParams, function () {
                         ajaxRequest('GET', voteUrl, {}, updateVotes);
                     });
-                });
-            }
 
-            if (!downvoteButton.disabled) {
-                downvoteButton.addEventListener('click', function () {
-                    console.log("downvote button got clicked");
-                    downvoteButton.innerHTML = downvoteButton.innerHTML.replace(thumbsDown, spinner);
-                    ajaxRequest('POST', voteUrl, downParams, function () {
-                        ajaxRequest('GET', voteUrl, {}, updateVotes);
-                    });
-                });
-            }
+                })
 
-            deepLinkButton.addEventListener('click', function () {
-                microsoftTeams.shareDeepLink(deepLinkParams);
+                deepLinkButton.addEventListener('click', function () {
+                    microsoftTeams.shareDeepLink(deepLinkParams);
+                });
+
+                commentButton.addEventListener('click', function () {
+                    $('#comment-id').text(cId);
+                })
+
+                var clientsVector = getUrlVars()["clients"];
+
+                // Figure out which cases the user has voted on
+
+                if (upvoteList.innerHTML.includes(emailForVoteLists)) {
+                    upvoteButton.disabled = true;
+                    
+                    //$(kase).find('.panel-collapse').collapse('hide');
+                    $(kase).find('.case-text').html($(kase).find('.case-text').html() + " <span style='color: green'>(Works)</span>");
+                    $(kase).find('.panel-heading').addClass('case-works');
+
+                    if (clientsVector == null) {
+                        $(kase).find('.panel-collapse').removeClass("in");
+                    } else {
+                        let groupCount = $('.group-panel').length;
+                        let configured_clients = clients;
+
+                        if (clientsVector.length == groupCount * clients.length) {
+                            configured_clients = clients;
+                        } else if (clientsVector.length == groupCount * old_clients.length) {
+                            configured_clients = old_clients;
+                        }
+
+                        if (upvoteList.innerHTML.includes(emailForVoteLists + " (Windows)")) {
+                            $(kase).find('#' + cId + '-windows-works').parent().addClass('active');
+                        } else if (downvoteList.innerHTML.includes(emailForVoteLists + " (Windows)")) {
+                            $(kase).find('#' + cId + '-windows-fails').parent().addClass('active');
+                        }
+
+                        if (upvoteList.innerHTML.includes(emailForVoteLists + " (Mac)")) {
+                            $(kase).find('#' + cId + '-mac-works').parent().addClass('active');
+                        } else if (downvoteList.innerHTML.includes(emailForVoteLists + " (Mac)")) {
+                            $(kase).find('#' + cId + '-mac-fails').parent().addClass('active');
+                        }
+
+                        if (upvoteList.innerHTML.includes(emailForVoteLists + " (Android)")) {
+                            $(kase).find('#' + cId + '-android-works').parent().addClass('active');
+                        } else if (downvoteList.innerHTML.includes(emailForVoteLists + " (Android)")) {
+                            $(kase).find('#' + cId + '-android-fails').parent().addClass('active');
+                        }
+
+                        if (upvoteList.innerHTML.includes(emailForVoteLists + " (iOS)")) {
+                            $(kase).find('#' + cId + '-ios-works').parent().addClass('active');
+                        } else if (downvoteList.innerHTML.includes(emailForVoteLists + " (iOS)")) {
+                            $(kase).find('#' + cId + '-ios-fails').parent().addClass('active');
+                        }
+
+                        // TODO: Too lazy to deal with caps stuff right now, so copy pasting these
+                        if (upvoteList.innerHTML.includes(emailForVoteLists + " (Chrome)")) {
+                            $(kase).find('#' + cId + '-chrome-works').parent().addClass('active');
+                        } else if (downvoteList.innerHTML.includes(emailForVoteLists + " (Chrome)")) {
+                            $(kase).find('#' + cId + '-chrome-fails').parent().addClass('active');
+                        }
+
+                        if (upvoteList.innerHTML.includes(emailForVoteLists + " (Linux)")) {
+                            $(kase).find('#' + cId + '-linux-works').parent().addClass('active');
+                        } else if (downvoteList.innerHTML.includes(emailForVoteLists + " (Linux)")) {
+                            $(kase).find('#' + cId + '-linux-fails').parent().addClass('active');
+                        }
+                    }
+
+
+                    totalVotedCount++;
+                } else if (downvoteList.innerHTML.includes(emailForVoteLists)) {
+                    downvoteButton.disabled = true;
+
+                    $(kase).find('.case-text').html($(kase).find('.case-text').html() + " <span style='color: red'>(Fails)</span>");
+                    $(kase).find('.panel-heading').addClass('case-fails');
+
+                    totalVotedCount++;
+                }
+
+                $('.group-panel').each(function () {
+                    var caseCount = $(this).find('.case-panel').length;
+                    var worksCount = $(this).find('.case-works').length;
+                    var failsCount = $(this).find('.case-fails').length;
+                    var votedCount = worksCount + failsCount;
+                    //console.log(caseCount, worksCount, failsCount);
+                    $(this).find('.group-progress').text("Progress: (" + votedCount + " / " + caseCount + ")");
+                })
+
+                $('.validation-progress').text("Scenarios Evaluated: (" + totalVotedCount + " / " + totalCaseCount + ")");
             });
-
-            commentButton.addEventListener('click', function () {
-                $('#comment-id').text(cId);
-            })
-
-            // Figure out which cases the user has voted on
-            var emailForVoteLists = cleanEmail(context["userPrincipalName"]);
-            console.log(emailForVoteLists);
-
-            if (upvoteList.innerHTML.includes(emailForVoteLists)) {
-                upvoteButton.disabled = true;
-                $(kase).find('.panel-collapse').removeClass("in");
-                //$(kase).find('.panel-collapse').collapse('hide');
-                $(kase).find('.case-text').html($(kase).find('.case-text').html() + " <span style='color: green'>(Works)</span>");
-                $(kase).find('.panel-heading').addClass('case-works');
-
-                totalVotedCount++;
-            }
-
-            if (downvoteList.innerHTML.includes(emailForVoteLists)) {
-                downvoteButton.disabled = true;
-
-                $(kase).find('.case-text').html($(kase).find('.case-text').html() + " <span style='color: red'>(Fails)</span>");
-                $(kase).find('.panel-heading').addClass('case-fails');
-
-                totalVotedCount++;
-            }
-
-            $('.group-panel').each(function () {
-                var caseCount = $(this).find('.case-panel').length;
-                var worksCount = $(this).find('.case-works').length;
-                var failsCount = $(this).find('.case-fails').length;
-                var votedCount = worksCount + failsCount;
-                console.log(caseCount, worksCount, failsCount);
-                $(this).find('.group-progress').text("Progress: (" + votedCount + " / " + caseCount + ")");
-            })
-
-            $('.validation-progress').text("Scenarios Evaluated: (" + totalVotedCount + " / " + totalCaseCount + ")");
         });
     });
-
-
 
     function ready(fn) {
         if (typeof fn !== 'function') {
@@ -340,27 +522,38 @@
         console.log(kase, data._id);
 
         var upvoteButton = kase.querySelector('button.btn-upvote');
-        var downvoteButton = kase.querySelector('button.btn-downvote')
+        var downvoteButton = kase.querySelector('button.btn-downvote');
+
+        let mobileVoteCounts = kase.querySelector('div.mobile-works-fails');
 
         // Reset the vote columns
         kase.querySelector("div.upvotes").innerHTML = "";
         kase.querySelector("div.downvotes").innerHTML = "";
 
-
+        var clientsVector = getUrlVars()["clients"];
         kase.querySelector(".upvotes-header").innerHTML = "<p>Works (" + data.upvotes_v2.length + ")</p>";
         data.upvotes_v2.forEach(function (vote) {
-            //kase.querySelector("div.upvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + "</span></p>";
-            kase.querySelector("div.upvotes").innerHTML += "<p class='vote'>" + emailForVoteLists + "</p>";
+            if (vote.client) {
+                kase.querySelector("div.upvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + " (" + vote.client + ")" + "</span></p>";
+            } else {
+                kase.querySelector("div.upvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + "</span></p>";
+            }
         });
 
         kase.querySelector(".downvotes-header").innerHTML = "<p>Fails (" + data.downvotes_v2.length + ")</p>";
         data.downvotes_v2.forEach(function (vote) {
-            //kase.querySelector("div.downvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + "</span></p>";
-            kase.querySelector("div.downvotes").innerHTML += "<p class='vote'>" + emailForVoteLists + "</p>";
+            if (vote.client) {
+                kase.querySelector("div.downvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + " (" + vote.client + ")" + "</span></p>";
+            } else {
+                kase.querySelector("div.downvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + "</span></p>";
+            }
         });
 
-        //$('.' + userTenantId + "-tenant").hide();
-        //$('.' + userTenantId + "-email").show();
+        mobileVoteCounts.innerHTML = "<p>Works (" + data.upvotes_v2.length + ") | Fails (" + data.downvotes_v2.length + ")</p><br />";
+
+
+        $('.' + userTenantId + "-tenant").hide();
+        $('.' + userTenantId + "-email").show();
 
         upvoteButton.innerHTML = upvoteButton.innerHTML.replace(spinner, thumbsUp);
         downvoteButton.innerHTML = downvoteButton.innerHTML.replace(spinner, thumbsDown);
@@ -381,13 +574,14 @@
                 upvoteButton.disabled = true;
                 downvoteButton.disabled = false;
 
-                $(kase).find('.panel-collapse').collapse('hide');
                 $(kase).find('.case-text').html(originalCaseText + " <span style='color: green'>(Works)</span>");
                 $(kase).find('.panel-heading').addClass('case-works');
                 $(kase).find('.panel-heading').removeClass('case-fails');
-            }
 
-            if (downvoteList.innerHTML.includes(emailForVoteLists)) {
+                if (clientsVector == null) {
+                    $(kase).find('.panel-collapse').collapse('hide');
+                } 
+            } else if (downvoteList.innerHTML.includes(emailForVoteLists)) {
                 downvoteButton.disabled = true;
                 upvoteButton.disabled = false;
 
@@ -406,9 +600,16 @@
             console.log(caseCount, worksCount, failsCount);
             thisGroupPanel.find('.group-progress').text("Progress: (" + votedCount + " / " + caseCount + ")");
 
+            var cases = document.querySelectorAll('.case-panel');
             var totalCaseCount = cases.length;
             var totalVotedCount = $('.case-works').length + $('.case-fails').length;
             $('.validation-progress').text("Scenarios Evaluated: (" + totalVotedCount + " / " + totalCaseCount + ")");
+
+            // Show all results to Microsoft viewers
+            if (context['userPrincipalName'].includes("@microsoft.com")) {
+                $('.tenant').hide();
+                $('.email').show();
+            }
         })
     }
 
@@ -425,6 +626,4 @@
 
         });
     }
-
-    ready(scrollToSubEntity);
 })();

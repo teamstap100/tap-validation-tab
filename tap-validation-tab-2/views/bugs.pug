@@ -1,0 +1,71 @@
+extends layout.pug
+
+block content
+  .container
+    br
+    if tenant
+        p.heading-text Bugs Submitted by #{tenant.name}
+        p.validation-progress.centered
+        p#tenantId(style="display: none") #{tenant.tid}
+    else
+        p.heading-text Bugs Submitted by a test tenant
+        p.validation-progress.centered
+        p#tenantId(style="display: none") aaaa-aaaa-aaaa-aaaa-aaaa
+
+    br
+
+    .container
+        table.table.table-bordered.table-responsive.table-striped#bugsTable
+            thead(style="display: table-header-group;")
+                tr
+                    th(scope="col") ID
+                    th(scope="col") Date Reported
+                    th(scope="col") Name
+                    th(scope="col") Status
+                    th(scope="col") Triaged?
+                    th(scope="col", style="display: none") Comments
+                        
+            tbody
+                if bugs
+                    each bug in bugs
+                        tr
+                            td #{bug.id}
+                            td #{new Date(bug.fields["System.CreatedDate"]).toLocaleDateString()}
+                            td 
+                                a.bug-modal-launch(id=bug.id, data-toggle="modal", data-target="#bug-modal", data-bug=JSON.stringify(bug), data-comments=JSON.stringify(bugComments[bug.id])) #{bug.fields["System.Title"]}
+                            td #{bug.fields["System.State"]}
+                            - let triage = bug.fields["MicrosoftTeamsCMMI.TeamTriage"];
+                            if triage == "Untriaged"
+                                - triage = "No";
+                                if bug.fields["System.Tags"].includes("TAPITAdminTriaged")
+                                    - triage = "ITAdminTriaged";
+                            td #{triage}    
+                            td(style="display: none") Comments
+
+    #bug-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='commentLabel', aria-hidden='true')
+      #bug-id(style="display: none") Test
+      .modal-dialog(role='document')
+        .modal-content
+          .modal-header
+            h5.modal-title#bugLabelHeader
+            button.close(type='button', data-dismiss='modal', aria-label='Close')
+              span(aria-hidden='true')
+                i.fa.fa-times
+          .modal-body
+            #existingComments
+                p Comments:
+                br
+                p No comments submitted yet.
+                br
+            br
+            input.text#commentField(placeholder="Write a comment...")
+          .modal-footer
+            button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
+            button.btn.btn-default#submitComment(type='button', data-dismiss="modal") Submit
+                
+    script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js')
+    script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap.min.js')
+    link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap.min.css')
+    script(type="text/javascript", src="/controllers/tenantBugsController.client.js")
+
+  

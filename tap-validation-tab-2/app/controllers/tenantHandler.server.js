@@ -12,7 +12,12 @@ function tenantHandler(dbParent) {
     var tenants = db.collection('tenants');
 
     function cleanEmail(email) {
-        email = email.replace("#EXT#@microsoft.onmicrosoft.com", "");
+        console.log("Cleaning email");
+        console.log(email);
+        email = email.toLowerCase();
+        console.log(email);
+        email = email.replace("#ext#@microsoft.onmicrosoft.com", "");
+        console.log(email);
         if (email.includes("@")) {
             return email;
 
@@ -57,16 +62,22 @@ function tenantHandler(dbParent) {
     // So, need to point it to the real db each time.
 
     this.getTenant = function (req, res) {
+        console.log("Calling getTenant on " + req.body.email);
+        console.log("Full req body is: " + JSON.stringify(req.body, null, 2));
+        //if (req.body.email == null) {
+        //    res.json({});
+        //    return;
+        //}
         var email = req.body.email;
 
         var clientVoteString = cleanEmail(email);
         var domain = getDomain(clientVoteString);
 
         if (clientVoteString.includes("undefined")) {
-            clientVoteString = userEmail;
+            clientVoteString = email;
             tenantString = clientVoteString.split("@")[1].split(".")[0];
         }
-
+        // TODO: Use a projection to return just name/TID
         tenants.findOne({ domains: domain }, function (err, tenantDoc) {
             res.json(tenantDoc);
         });

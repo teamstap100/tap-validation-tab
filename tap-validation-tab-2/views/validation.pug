@@ -21,7 +21,7 @@ block content
             - var groupCount = 0;
             .panel-group#accordion
                 each group in validation.groups
-                    - var safeGroupName = group.replace(/ /g, "_").replace(/,/g, "_").replace(/-/g, "_").replace(/\(|\)/g, "_");
+                    - var safeGroupName = group.replace(/[^\w]/gi, '_');
                     - groupCount++;
                     .panel.panel-default.group-panel(id="panel-" + safeGroupName)
                         .panel-heading.group-panel-heading
@@ -48,9 +48,13 @@ block content
                                                     .upvotes
                                                         if kase.upvotes_v2
                                                             each vote in kase.upvotes_v2
-                                                                p.vote #{vote.email}
-                                                                    //span.tenant(class=vote.tenantId + "-tenant", style="display: none") #{vote.tenantName}
-                                                                    //span.email(class=vote.tenantId + "-email", style="display: none") #{vote.email}
+                                                                p.vote
+                                                                    span.tenant(class=vote.tenantId + "-tenant", style="display: none") #{vote.tenantName}
+                                                                    span.email(class=vote.tenantId + "-email", style="display: none") #{vote.email} 
+                                                                        if vote.client
+                                                                            | (#{vote.client})
+
+
 
                                                 .col-sm-6
                                                     if kase.description
@@ -58,16 +62,87 @@ block content
                                                             p.case-description !{kase.description}
                                                     else
                                                         br
+
+                                                    .hidden-sm.hidden-md.hidden-lg.hidden-xl.mobile-works-fails(style="text-align: center")
+                                                        p Works (#{kase.upvotes_v2.length}) | Fails (#{kase.downvotes_v2.length})
                                                         br
+                                                    .client-checkboxes(style="display: none")
+                                                        .row
+                                                            .col-sm-6.windows-group
+                                                                .btn-group(data-toggle="buttons")
+                                                                    label(for=kase._id + '-windows-works') Windows:   
+                                                                    label.btn.radio-btn
+                                                                        input(type="radio", name="Windows", value='works', id=kase._id + '-windows-works')
+                                                                        span.align-middle
+                                                                            i.fa.fa-thumbs-up
+                                                                    label.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
+                                                                        input(type="radio", name="Windows", value='fails', id=kase._id + '-windows-fails')
+                                                                        span.align-middle
+                                                                            i.fa.fa-thumbs-down
+                                                            .col-sm-6.mac-group
+                                                                .btn-group(data-toggle="buttons")
+                                                                    label(for=kase._id + '-mac-works') Mac:  
+                                                                    label.btn.radio-btn
+                                                                        input(type="radio", name="Mac", value='works', id=kase._id + '-mac-works')
+                                                                        span.align-middle
+                                                                            i.fa.fa-thumbs-up
+                                                                    label.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
+                                                                        input(type="radio", name="Mac", value='fails', id=kase._id + '-mac-fails')
+                                                                        span.align-middle
+                                                                            i.fa.fa-thumbs-down
+                                                            .col-sm-6.android-group
+                                                                .btn-group(data-toggle="buttons")
+                                                                    label(for=kase._id + '-android-works') Android:   
+                                                                    label.btn.radio-btn
+                                                                        input(type="radio", name="Android", value='works', id=kase._id + '-android-works')
+                                                                        span.align-middle
+                                                                            i.fa.fa-thumbs-up
+                                                                    label.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
+                                                                        input(type="radio", name="Android", value='fails', id=kase._id + '-android-fails')
+                                                                        span.align-middle
+                                                                            i.fa.fa-thumbs-down
+                                                            .col-sm-6.ios-group
+                                                                .btn-group(data-toggle="buttons")
+                                                                    label(for=kase._id + '-ios-works') iOS:   
+                                                                    label.btn.radio-btn
+                                                                        input(type="radio", name="iOS", value='works', id=kase._id + '-ios-works')
+                                                                        span.align-middle
+                                                                            i.fa.fa-thumbs-up
+                                                                    label.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
+                                                                        input(type="radio", name="iOS", value='fails', id=kase._id + '-ios-fails')
+                                                                        span.align-middle
+                                                                            i.fa.fa-thumbs-down
+                                                            .col-sm-6.chrome-group
+                                                                .btn-group(data-toggle="buttons")
+                                                                    label(for=kase._id + '-chrome-works') Chrome:   
+                                                                    label.btn.radio-btn
+                                                                        input(type="radio", name="chrome", value='works', id=kase._id + '-chrome-works')
+                                                                        span.align-middle
+                                                                            i.fa.fa-thumbs-up
+                                                                    label.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
+                                                                        input(type="radio", name="chrome", value='fails', id=kase._id + '-chrome-fails')
+                                                                        span.align-middle
+                                                                            i.fa.fa-thumbs-down
+                                                            .col-sm-6.linux-group
+                                                                .btn-group(data-toggle="buttons")
+                                                                    label(for=kase._id + '-linux-works') Linux:   
+                                                                    label.btn.radio-btn
+                                                                        input(type="radio", name="linux", value='works', id=kase._id + '-linux-works')
+                                                                        span.align-middle
+                                                                            i.fa.fa-thumbs-up
+                                                                    label.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
+                                                                        input(type="radio", name="linux", value='fails', id=kase._id + '-linux-fails')
+                                                                        span.align-middle
+                                                                            i.fa.fa-thumbs-down
                                                         br
-                                                    .btn-container
-                                                        .hidden-sm.hidden-lg.hidden-xl
-                                                            p Works (#{kase.upvotes_v2.length}) | Fails (#{kase.downvotes_v2.length})
+                                                        .row.btn-container
+                                                            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal") Comment...
+                                                    .no-client-checkboxes.btn-container
                                                         if validation.active
                                                             button.btn.btn-upvote(type="submit")
                                                                 i.fa.fa-thumbs-up 
                                                                 |   Works
-                                                            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal") Comment
+                                                            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal") Comment...
                                                             button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal")
                                                                 i.fa.fa-thumbs-down 
                                                                 |   Fails
@@ -75,23 +150,26 @@ block content
                                                             button.btn.btn-upvote(type="submit" disabled)
                                                                 i.fa.fa-thumbs-up 
                                                                 |   Works
-                                                            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal" disabled) Comment
+                                                            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal" disabled) Comment...
                                                             button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal" disabled)
                                                                 i.fa.fa-thumbs-down 
                                                                 |   Fails
-                                                    //p.centered.timestamp.subtle #{kase.timestamp.toLocaleDateString()}
-                                                    p.subtle.deep-link(style="display: none")
-                                                        i.fa.fa-link   Link
-                                                    p.subtle(style="display: none") #{kase._id}
+                                                //p.centered.timestamp.subtle #{kase.timestamp.toLocaleDateString()}
+                                                p.subtle.deep-link(style="display: none")
+                                                    i.fa.fa-link   Link
+                                                p.subtle(style="display: none") #{kase._id}
 
                                                 .col-sm-3.hidden-xs.centered
                                                     p.downvotes-header Fails (#{kase.downvotes_v2.length})
                                                     .downvotes
                                                         if kase.downvotes_v2
                                                             each vote in kase.downvotes_v2
-                                                                p.vote #{vote.email}
-                                                                    //span.tenant(class=vote.tenantId + "-tenant", style="display: none") #{vote.tenantName}
-                                                                    //span.email(class=vote.tenantId + "-email", style="display: none") #{vote.email}
+                                                                p.vote 
+                                                                    span.tenant(class=vote.tenantId + "-tenant", style="display: none") #{vote.tenantName}
+                                                                    span.email(class=vote.tenantId + "-email", style="display: none") #{vote.email} 
+                                                                        if vote.client
+                                                                            | (#{vote.client})
+
                     
           else
               - var caseCount = 1;
@@ -111,9 +189,9 @@ block content
                                         .upvotes
                                             if kase.upvotes_v2
                                                 each vote in kase.upvotes_v2
-                                                    p.vote #{vote.email}
-                                                        //span.tenant(class=vote.tenantId + "-tenant", style="display: none") #{vote.tenantName}
-                                                        //span.email(class=vote.tenantId + "-email", style="display: none") #{vote.email}
+                                                    p.vote
+                                                        span.tenant(class=vote.tenantId + "-tenant", style="display: none") #{vote.tenantName}
+                                                        span.email(class=vote.tenantId + "-email", style="display: none") #{vote.email} 
 
                                     .col-sm-6
                                         if kase.description
@@ -121,14 +199,15 @@ block content
                                                 p.case-description !{kase.description}
                                         else
                                             br
-                                            br
-                                            br
                                         .btn-container
+                                            .hidden-sm.hidden-md.hidden-lg.hidden-xl.mobile-works-fails(style="text-align: center")
+                                                p Works (#{kase.upvotes_v2.length}) | Fails (#{kase.downvotes_v2.length})
+                                                br
                                             if validation.active
                                                 button.btn.btn-upvote(type="submit")
                                                     i.fa.fa-thumbs-up 
                                                     |   Works
-                                                button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal") Comment
+                                                button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal") Comment...
                                                 button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal")
                                                     i.fa.fa-thumbs-down 
                                                     |   Fails
@@ -136,7 +215,7 @@ block content
                                                 button.btn.btn-upvote(type="submit" disabled)
                                                     i.fa.fa-thumbs-up 
                                                     |   Works
-                                                button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal" disabled) Comment
+                                                button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal" disabled) Comment...
                                                 button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal" disabled)
                                                     i.fa.fa-thumbs-down 
                                                     |   Fails
@@ -150,9 +229,9 @@ block content
                                         .downvotes
                                             if kase.downvotes_v2
                                                 each vote in kase.downvotes_v2
-                                                    p.vote #{vote.email}
-                                                        //span.tenant(class=vote.tenantId + "-tenant", style="display: none") #{vote.tenantName}
-                                                        //span.email(class=vote.tenantId + "-email", style="display: none") #{vote.email}
+                                                    p.vote
+                                                        span.tenant(class=vote.tenantId + "-tenant", style="display: none") #{vote.tenantName}
+                                                        span.email(class=vote.tenantId + "-email", style="display: none") #{vote.email}
               else
                 p No scenarios have been added yet. Check back later!
 
@@ -165,7 +244,7 @@ block content
               span(aria-hidden='true')
                 i.fa.fa-times
           .modal-body
-            | Your vote has been recorded. Please submit more details through "Report a Problem" as well.
+            | Your vote has been recorded. Please submit more details through "Report a Problem" on the device you used for the scenario as well.
           .modal-footer
             button.btn.btn-primary(type='button', data-dismiss="modal") OK
 
@@ -185,5 +264,4 @@ block content
             button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
             button.btn.btn-primary#submitComment(type='button', data-dismiss="modal") Submit
 
-    script(type="text/javascript", src="/controllers/bugController.client.js")
     script(type="text/javascript", src="/controllers/caseController.client.js")
