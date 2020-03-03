@@ -181,6 +181,70 @@
         var validationId = document.querySelector('#validation-id').innerHTML;
         console.log(validationId);
 
+        var collectDeviceFeedback = false;
+
+        if ((validationId == "711068") || (validationId == "713637")) {
+            collectDeviceFeedback = true;
+            console.log("Collecting device feedback");
+
+            $('.panel-collapse').removeClass("in");
+
+            $('.device-select-group').show();
+            $('.teams-mode').show();
+
+            $('.btn-upvote').attr('disabled', true);
+            $('.btn-downvote').attr('disabled', true);
+            $('.btn-comment').attr('disabled', true);
+
+            let teamsMode;
+            let device;
+
+            let deviceFields = $('.device-select');
+            deviceFields.change(function (event) {
+                device = this.value;
+                $('.device-select').val(this.value);
+                if (device && teamsMode) {
+                    console.log("Value, so enabling buttons");
+                    $('.btn-upvote').attr('disabled', false);
+                    $('.btn-downvote').attr('disabled', false);
+                    $('.btn-comment').attr('disabled', false);
+                } else {
+                    console.log("No value, so disabling buttons");
+                    $('.btn-upvote').attr('disabled', true);
+                    $('.btn-downvote').attr('disabled', true);
+                    $('.btn-comment').attr('disabled', true);
+                }
+            });
+
+            let modeField = $('#teamsMode');
+            modeField.change(function (event) {
+                console.log(this);
+                console.log(this.value);
+                teamsMode = this.value;
+
+                if (teamsMode) {
+                    $('.panel-collapse').addClass("in");
+                }
+
+                if (device && teamsMode) {
+                    console.log("Value, so enabling buttons");
+                    $('.btn-upvote').attr('disabled', false);
+                    $('.btn-downvote').attr('disabled', false);
+                    $('.btn-comment').attr('disabled', false);
+                } else {
+                    console.log("No value, so disabling buttons");
+                    $('.btn-upvote').attr('disabled', true);
+                    $('.btn-downvote').attr('disabled', true);
+                    $('.btn-comment').attr('disabled', true);
+                }
+            })
+
+        } else {
+            collectDeviceFeedback = false;
+            $('.device-select-group').hide();
+            $('.teams-mode').hide();
+        }
+
         microsoftTeams.getContext(function (context) {
             // Template for a link to this tab
             var tabUrl = "https://teams.microsoft.com/l/entity/{APP_ID}/{ENTITY_HASH}?context=%7B%22subEntityId%22%3Anull%2C%22canvasUrl%22%3A%22{TAB_URL_BASE}{VALIDATION_ID}%26show%3D{SHOW_VECTOR}%26clients%3D{CLIENTS_VECTOR}%22%2C%22channelId%22%3A%22{CHANNEL_ID}%22%7D&groupId={GROUP_ID}&tenantId={TENANT_ID}";
@@ -278,6 +342,10 @@
 
             var deepLinkButton = kase.querySelector('p.deep-link');
 
+            var deviceSelect = kase.querySelector('input.device-select');
+
+            var teamsModeSelect = document.querySelector('#teamsMode');
+
             var radios = $(kase).find('button:radio');
 
             var upParams = {
@@ -287,7 +355,9 @@
                 userTenantId: "???",
                 clientType: "dunno",
                 upDown: "up",
-                cId: cId
+                cId: cId,
+                device: "",
+                teamsMode: "",
             };
 
             var downParams = {
@@ -297,7 +367,10 @@
                 userTenantId: "???",
                 clientType: "dunno",
                 upDown: "down",
-                cId: cId
+                cId: cId,
+                device: "",
+                teamsMode: "",
+
             };
 
             var clientParams = {
@@ -307,7 +380,10 @@
                 userTenantId: "???",
                 clientType: "dunno",
                 upDown: "up",
-                cId: cId
+                cId: cId,
+                device: "",
+                teamsMode: "",
+
             };
 
             var voteUrl = apiUrl + '/' + cId;
@@ -323,7 +399,6 @@
                 downParams.userId = context["userObjectId"];
                 clientParams.userId = context["userObjectId"];
                 
-
                 upParams.userEmail = context["userPrincipalName"];
                 downParams.userEmail = context["userPrincipalName"];
                 clientParams.userEmail = context["userPrincipalName"];
@@ -345,25 +420,34 @@
                     subEntityLabel: "'" + caseText.textContent + "'"
                 };
 
-                if (!upvoteButton.disabled) {
-                    upvoteButton.addEventListener('click', function () {
-                        console.log(upvoteButton.innerHTML);
-                        upvoteButton.innerHTML = upvoteButton.innerHTML.replace(thumbsUp, spinner);
-                        ajaxRequest('POST', voteUrl, upParams, function () {
-                            ajaxRequest('GET', voteUrl, {}, updateVotes);
-                        });
-                    });
-                }
+                upvoteButton.addEventListener('click', function () {
+                    console.log(upvoteButton.innerHTML);
+                    upvoteButton.innerHTML = upvoteButton.innerHTML.replace(thumbsUp, spinner);
+                    if (collectDeviceFeedback) {
+                        upParams.device = deviceSelect.value;
+                        upParams.teamsMode = teamsModeSelect.value;
+                    }
 
-                if (!downvoteButton.disabled) {
-                    downvoteButton.addEventListener('click', function () {
-                        console.log("downvote button got clicked");
-                        downvoteButton.innerHTML = downvoteButton.innerHTML.replace(thumbsDown, spinner);
-                        ajaxRequest('POST', voteUrl, downParams, function () {
-                            ajaxRequest('GET', voteUrl, {}, updateVotes);
-                        });
+
+                    ajaxRequest('POST', voteUrl, upParams, function () {
+                        ajaxRequest('GET', voteUrl, {}, updateVotes);
                     });
-                }
+                });
+
+                downvoteButton.addEventListener('click', function () {
+                    console.log("downvote button got clicked");
+                    downvoteButton.innerHTML = downvoteButton.innerHTML.replace(thumbsDown, spinner);
+
+                    if (collectDeviceFeedback) {
+                        downParams.device = deviceSelect.value;
+                        downParams.teamsMode = teamsModeSelect.value;
+                    }
+
+
+                    ajaxRequest('POST', voteUrl, downParams, function () {
+                        ajaxRequest('GET', voteUrl, {}, updateVotes);
+                    });
+                });
 
                 $(kase).find('input:radio').change(function () {
                     console.log("Clicked a radio");
@@ -404,7 +488,9 @@
                 // Figure out which cases the user has voted on
 
                 if (upvoteList.innerHTML.includes(emailForVoteLists)) {
-                    upvoteButton.disabled = true;
+                    if (!collectDeviceFeedback) {
+                        upvoteButton.disabled = true;
+                    }
                     
                     //$(kase).find('.panel-collapse').collapse('hide');
                     $(kase).find('.case-text').html($(kase).find('.case-text').html() + " <span style='color: green'>(Works)</span>");
@@ -424,49 +510,76 @@
 
                         if (upvoteList.innerHTML.includes(emailForVoteLists + " (Windows)")) {
                             $(kase).find('#' + cId + '-windows-works').parent().addClass('active');
-                        } else if (downvoteList.innerHTML.includes(emailForVoteLists + " (Windows)")) {
-                            $(kase).find('#' + cId + '-windows-fails').parent().addClass('active');
                         }
 
                         if (upvoteList.innerHTML.includes(emailForVoteLists + " (Mac)")) {
                             $(kase).find('#' + cId + '-mac-works').parent().addClass('active');
-                        } else if (downvoteList.innerHTML.includes(emailForVoteLists + " (Mac)")) {
-                            $(kase).find('#' + cId + '-mac-fails').parent().addClass('active');
                         }
 
                         if (upvoteList.innerHTML.includes(emailForVoteLists + " (Android)")) {
                             $(kase).find('#' + cId + '-android-works').parent().addClass('active');
-                        } else if (downvoteList.innerHTML.includes(emailForVoteLists + " (Android)")) {
-                            $(kase).find('#' + cId + '-android-fails').parent().addClass('active');
                         }
 
                         if (upvoteList.innerHTML.includes(emailForVoteLists + " (iOS)")) {
                             $(kase).find('#' + cId + '-ios-works').parent().addClass('active');
-                        } else if (downvoteList.innerHTML.includes(emailForVoteLists + " (iOS)")) {
-                            $(kase).find('#' + cId + '-ios-fails').parent().addClass('active');
                         }
 
                         // TODO: Too lazy to deal with caps stuff right now, so copy pasting these
-                        if (upvoteList.innerHTML.includes(emailForVoteLists + " (Chrome)")) {
+                        if ((upvoteList.innerHTML.includes(emailForVoteLists + " (Chrome)")) || (upvoteList.innerHTML.includes(emailForVoteLists + " (chrome)"))) {
                             $(kase).find('#' + cId + '-chrome-works').parent().addClass('active');
-                        } else if (downvoteList.innerHTML.includes(emailForVoteLists + " (Chrome)")) {
-                            $(kase).find('#' + cId + '-chrome-fails').parent().addClass('active');
                         }
 
-                        if (upvoteList.innerHTML.includes(emailForVoteLists + " (Linux)")) {
+                        if ((upvoteList.innerHTML.includes(emailForVoteLists + " (Linux)")) || (upvoteList.innerHTML.includes(emailForVoteLists + " (linux)"))) {
                             $(kase).find('#' + cId + '-linux-works').parent().addClass('active');
-                        } else if (downvoteList.innerHTML.includes(emailForVoteLists + " (Linux)")) {
-                            $(kase).find('#' + cId + '-linux-fails').parent().addClass('active');
                         }
                     }
 
 
                     totalVotedCount++;
                 } else if (downvoteList.innerHTML.includes(emailForVoteLists)) {
-                    downvoteButton.disabled = true;
+                    if (!collectDeviceFeedback) {
+                        downvoteButton.disabled = true;
+                    }
 
                     $(kase).find('.case-text').html($(kase).find('.case-text').html() + " <span style='color: red'>(Fails)</span>");
                     $(kase).find('.panel-heading').addClass('case-fails');
+
+                    if (clientsVector == null) {
+
+                    } else {
+                        let groupCount = $('.group-panel').length;
+                        let configured_clients = clients;
+
+                        if (clientsVector.length == groupCount * clients.length) {
+                            configured_clients = clients;
+                        } else if (clientsVector.length == groupCount * old_clients.length) {
+                            configured_clients = old_clients;
+                        }
+
+                        if (downvoteList.innerHTML.includes(emailForVoteLists + " (Windows)")) {
+                            $(kase).find('#' + cId + '-windows-fails').parent().addClass('active');
+                        }
+
+                        if (downvoteList.innerHTML.includes(emailForVoteLists + " (Mac)")) {
+                            $(kase).find('#' + cId + '-mac-fails').parent().addClass('active');
+                        }
+
+                        if (downvoteList.innerHTML.includes(emailForVoteLists + " (Android)")) {
+                            $(kase).find('#' + cId + '-android-fails').parent().addClass('active');
+                        }
+
+                        if (downvoteList.innerHTML.includes(emailForVoteLists + " (iOS)")) {
+                            $(kase).find('#' + cId + '-ios-fails').parent().addClass('active');
+                        }
+
+                        if ((downvoteList.innerHTML.includes(emailForVoteLists + " (Chrome)")) || (downvoteList.innerHTML.includes(emailForVoteLists + " (chrome)"))) {
+                            $(kase).find('#' + cId + '-chrome-fails').parent().addClass('active');
+                        }
+
+                        if ((downvoteList.innerHTML.includes(emailForVoteLists + " (Linux)")) || (downvoteList.innerHTML.includes(emailForVoteLists + " (linux)"))) {
+                            $(kase).find('#' + cId + '-linux-fails').parent().addClass('active');
+                        }
+                    }
 
                     totalVotedCount++;
                 }
@@ -535,6 +648,8 @@
         data.upvotes_v2.forEach(function (vote) {
             if (vote.client) {
                 kase.querySelector("div.upvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + " (" + vote.client + ")" + "</span></p>";
+            } else if (vote.device) {
+                kase.querySelector("div.upvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + " (" + vote.device + " - " + vote.teamsMode + ")" + "</span></p>";
             } else {
                 kase.querySelector("div.upvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + "</span></p>";
             }
@@ -544,6 +659,8 @@
         data.downvotes_v2.forEach(function (vote) {
             if (vote.client) {
                 kase.querySelector("div.downvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + " (" + vote.client + ")" + "</span></p>";
+            } else if (vote.device) {
+                kase.querySelector("div.downvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + " (" + vote.device + " - " + vote.teamsMode + ")" + "</span></p>";
             } else {
                 kase.querySelector("div.downvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + "</span></p>";
             }

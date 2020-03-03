@@ -17,6 +17,12 @@ module.exports = function (app, db) {
     var tenantHandler = new TenantHandler(db);
     var performanceHandler = new PerformanceHandler(db);
 
+    app.use(function (req, res, next) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+        next();
+    });
+
     app.route('/')
         .get(validationHandler.getIndex);
 
@@ -71,6 +77,11 @@ module.exports = function (app, db) {
 
     app.route('/api/tenantBugs/:tid')
         .get(bugHandler.getTenantBugs);
+
+    app.route('/unsubscribe')
+        .get(function (req, res) {
+            res.render('unsubscribe');
+        });
 
 
 };

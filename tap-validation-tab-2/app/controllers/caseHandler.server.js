@@ -184,6 +184,8 @@ function caseHandler(dbParent) {
         const upDown = req.body.upDown;
 
         const client = req.body.client;
+        const device = req.body.device;
+        const teamsMode = req.body.teamsMode;
 
         var verboseUpDown = "Pass";
         if (upDown == "down") {
@@ -228,6 +230,8 @@ function caseHandler(dbParent) {
                 tenantId: realTenantId,
                 tenantName: tenantName,
                 client: client,
+                device: device,
+                teamsMode: teamsMode,
                 timestamp: new Date()
             }
 
@@ -243,6 +247,16 @@ function caseHandler(dbParent) {
                     updateOp['$pull']['upvotes_v2'].client = client;
                     updateOp2['$pull']["downvotes_v2"].client = client;
                 }
+                if (device) {
+                    updateOp['$pull']['upvotes_v2'].device = device;
+                    updateOp2['$pull']["downvotes_v2"].device = device;
+                }
+
+                if (teamsMode) {
+                    updateOp['$pull']['upvotes_v2'].teamsMode = teamsMode;
+                    updateOp2['$pull']["downvotes_v2"].teamsMode = teamsMode;
+                }
+
             } else if (upDown == "down") {
                 updateOp = { $pull: { "downvotes_v2": { "email": clientVoteString } } }
                 updateOp2 = {
@@ -252,6 +266,15 @@ function caseHandler(dbParent) {
                 if (client) {
                     updateOp['$pull']['downvotes_v2'].client = client;
                     updateOp2['$pull']["upvotes_v2"].client = client;
+                }
+                if (device) {
+                    updateOp['$pull']['downvotes_v2'].device = device;
+                    updateOp2['$pull']["upvotes_v2"].device = device;
+                }
+
+                if (teamsMode) {
+                    updateOp['$pull']['downvotes_v2'].teamsMode = teamsMode;
+                    updateOp2['$pull']["upvotes_v2"].teamsMode = teamsMode;
                 }
             }
 
@@ -273,11 +296,19 @@ function caseHandler(dbParent) {
                     voteList += "<br><br>" + kaseDescription;
                     voteList += "<br><br><b>Works:</b><br>";
                     if (kase.upvotes_v2.length > 0) {
-                        voteList += "<table><thead><tr><td style='border: 1px solid black;'>Tenant</td><td style='border: 1px solid black;'>User</td><td style='border: 1px solid black;'>Client</td></tr></thead><tbody>";
+                        voteList += "<table><thead><tr><td style='border: 1px solid black;'>Tenant</td><td style='border: 1px solid black;'>User</td><td style='border: 1px solid black;'>Client</td><td style='border: 1px solid black;'>Device</td></tr></thead><tbody>";
                         kase.upvotes_v2.forEach(function (upvote) {
                             voteList += "<tr><td style='border: 1px solid black;'>" + upvote.tenantName + "</td><td style='border: 1px solid black;'>" + upvote.email + "</td>";
                             if (upvote.client) {
                                 voteList += "<td style='border: 1px solid black;'>" + upvote.client + "</td>";
+                            } else {
+                                "<td style='border: 1px solid black;'></td>";
+                            }
+
+                            if (upvote.device) {
+                                voteList += "<td style='border: 1px solid black;'>" + upvote.device + "</td>";
+                            } else {
+                                "<td style='border: 1px solid black;'></td>";
                             }
                             voteList += "</tr>";
                         });
@@ -286,11 +317,18 @@ function caseHandler(dbParent) {
 
                     voteList += "<br><br><b>Fails:</b><br>";
                     if (kase.downvotes_v2.length > 0) {
-                        voteList += "<table><thead><tr><td style='border: 1px solid black;'>Tenant</td><td style='border: 1px solid black;'>User</td><td style='border: 1px solid black;'>Client</td></tr></thead><tbody>";
+                        voteList += "<table><thead><tr><td style='border: 1px solid black;'>Tenant</td><td style='border: 1px solid black;'>User</td><td style='border: 1px solid black;'>Client</td><td style='border: 1px solid black;'>Device</td></tr></thead><tbody>";
                         kase.downvotes_v2.forEach(function (downvote) {
                             voteList += "<tr><td style='border: 1px solid black;'>" + downvote.tenantName + "</td><td style='border: 1px solid black;'>" + downvote.email + "</td>";
                             if (downvote.client) {
                                 voteList += "<td style='border: 1px solid black;'>" + downvote.client + "</td>";
+                            } else {
+                                "<td style='border: 1px solid black;'></td>";
+                            }
+                            if (downvote.device) {
+                                voteList += "<td style='border: 1px solid black;'>" + downvote.device + "</td>";
+                            } else {
+                                "<td style='border: 1px solid black;'></td>";
                             }
                             voteList += "</tr>";
                         });
@@ -328,6 +366,8 @@ function caseHandler(dbParent) {
                             validationId: req.body.validationId,
                             caseId: cId,
                             client: client,
+                            device: device,
+                            teamsMode: teamsMode,
                             timestamp: new Date(),
                         }
 

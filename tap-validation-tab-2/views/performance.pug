@@ -32,23 +32,33 @@ block content
                     p Program Requirements:
                     if tenant.status == "Only Ring 1.5"
                         ul(style="list-style-type: none")
-                            if tenant.stats[quarter].underperforming
-                                li
-                                    i.fa.fa-times(style="color: red")  
-                                    | Participate in at least #[strong 5] current-quarter validations
+                            if quarter in tenant.stats
+                                if tenant.stats[quarter].underperforming
+                                    li
+                                        i.fa.fa-times(style="color: red")  
+                                        | Participate in at least #[strong 5] current-quarter validations
+                                else
+                                    li
+                                        i.fa.fa-check(style="color: green")  
+                                        | Participate in at least #[strong 5] current-quarter validations
                             else
                                 li
-                                    i.fa.fa-check(style="color: green")  
+                                    i.fa.fa-times(style="color: red")  
                                     | Participate in at least #[strong 5] current-quarter validations
                     else
                         ul(style="list-style-type: none")
-                            if tenant.stats[quarter].underperforming
-                                li
-                                    i.fa.fa-times(style="color: red")  
-                                    | Participate in at least #[strong 2] current-quarter validations
+                            if quarter in tenant.stats
+                                if tenant.stats[quarter].underperforming
+                                    li
+                                        i.fa.fa-times(style="color: red")  
+                                        | Participate in at least #[strong 2] current-quarter validations
+                                else
+                                    li
+                                        i.fa.fa-check(style="color: green")  
+                                        | Participate in at least #[strong 2] current-quarter validations
                             else
                                 li
-                                    i.fa.fa-check(style="color: green")  
+                                    i.fa.fa-times(style="color: red")  
                                     | Participate in at least #[strong 2] current-quarter validations
                 else
                     h3 #{quarter.replace('-q', ' Q')}
@@ -65,12 +75,10 @@ block content
                                 - var valQuarter = getPlainQuarter(new Date(valObj.timestamp));
 
                                 if valQuarter != quarter
-                                    - var valClass = "greyed-out";
+                                    - var valClass = "old-validation";
                                 else
-                                    - var valClass = "";
+                                    - var valClass = "current-validation";
                                 tr(class=valClass)
-                                    
-
                                     - var prettyName = valObj.name;
                                     - var prettyQuarter = getQuarter(new Date(valObj.timestamp));
 

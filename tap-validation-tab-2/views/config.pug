@@ -19,10 +19,9 @@ block content
         table.table.table-striped.table-responsive#your-validations
             thead
                 tr
-                    th(scope="col")
-                    th(scope="col") Name
-                    th(scope="col") Sections
-                    //th(scope="col") Options
+                    th(scope="col" width="5%")
+                    th(scope="col" width="40%") Name
+                    th(scope="col" width="55%") Sections
             each validation in validations
                 tr(class="val owner-" + validation.owner.split("@")[0] style="display: none")
                     td
@@ -74,9 +73,9 @@ block content
         table.table.table-striped.table-responsive#other-validations
             thead
                 tr
-                    th(scope="col")
-                    th(scope="col") Name
-                    th(scope="col") Sections
+                    th(scope="col" width="5%")
+                    th(scope="col" width="40%") Name
+                    th(scope="col" width="55%") Sections
             each validation in validations
                 tr(class="val owner-" + validation.owner.split("@")[0])
                     td

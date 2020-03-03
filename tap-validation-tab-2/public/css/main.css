@@ -383,3 +383,11 @@ span.tenant, span.email {
 .greyed-out {
     color: #aaaaaa !important;
 }
+
+.old-validation * {
+    color: #aaaaaa !important;
+}
+
+.current-validation * {
+    color: darkblue !important;
+}
