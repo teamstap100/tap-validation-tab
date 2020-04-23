@@ -5,15 +5,30 @@ block content
     if !validation.active
         .alert.alert-warning This validation has ended. You will not be able to sign-off on any more scenarios.
     br
-    p.heading-text Validation for: #{validation.name}
+    .row
+        .col-xs-9
+            p.heading-text #{validation.name}
+
+        .col-xs-3
+            if validation.tap == "Teams"
+                span.label.label-primary.tap-label #{validation.tap} TAP
+            else
+                span.label.label-info.tap-label #{validation.tap} TAP
+
     p.validation-progress.centered
-    p(style="display: none") #{validation.tag}
+    p#validation-tag(style="display: none") #{validation.tag}
+    p.subtle#tap(style="display: none") #{validation.tap}
     p.subtle#validation-id(style="display: none") #{validation._id}
 
     br
     if validation.blurb
         .container
             .well.blurb !{validation.blurb}
+    - var clients = ['windows', 'mac', 'android', 'ios', 'chrome', 'linux'];
+    - var walkie_clients = [];
+    if validation._id == 767324
+        - console.log("It's the walkie talkie validation");
+        - walkie_clients = ['Samsung XCP', 'Android + Wired H', 'Android + Wireless H'];
 
     datalist#deviceList
         option(value="Jabra EVOLVE 20 MS", data-value="Jabra EVOLVE 20 MS")
@@ -54,9 +69,33 @@ block content
             .col-sm-3
         br
 
+    .container#windows-build(style="display: none")
+        .form-group.row
+            .col-sm-3
+            .col-sm-6
+                .row
+                    label.control-label.col-form-label.col-sm-6(for='windowsBuildType')
+                        span(style="color: red") (*) 
+                        | Windows build type:
+                    select#windowsBuildType.form-control.col-sm-6(placeholder="Please select which Windows build you are running.")
+                        option(value="", label="", selected) 
+                        option(value="Pre-Release", label="Pre-Release") Pre-Release
+                        option(value="Release", label="Release") Release
+            .col-sm-3
+        .form-group.row
+            .col-sm-3
+            .col-sm-6
+                .row
+                    label.control-label.col-form-label.col-sm-6(for='windowsBuildVersion')
+                        span(style="color: red") (*) 
+                        | Windows build version:
+                    input#windowsBuildVersion.form-control.col-sm-6(placeholder="Please enter the version number of your Windows build.", type="text")
+            .col-sm-3
+        br
+
     .container
       .container.caseList
-          if validation.groups.length > 0
+            h4 Scenarios
             - var groupCount = 0;
             .panel-group#accordion
                 each group in validation.groups
@@ -83,23 +122,13 @@ block content
                                         .panel-collapse.collapse.in(id="collapse-" + kase._id)
                                             .panel-body
                                                 .col-sm-3.hidden-xs.centered
-                                                    p.upvotes-header Works (#{kase.upvotes_v2.length})
+                                                    p.upvotes-header Works
                                                     .upvotes
-                                                        if kase.upvotes_v2
-                                                            each vote in kase.upvotes_v2
-                                                                p.vote
-                                                                    span.tenant(class=vote.tenantId + "-tenant", style="display: none") #{vote.tenantName}
-                                                                    span.email(class=vote.tenantId + "-email", style="display: none") #{vote.email} 
-                                                                        if vote.client
-                                                                            | (#{vote.client})
-                                                                        if vote.device
-                                                                            | (#{vote.device}
-                                                                            if vote.teamsMode
-                                                                                | - #{vote.teamsMode})
-                                                                            else
-                                                                                | )
-
-
+                                                        table.compact.upvotes-table.votes-table(id="upvotes-" + kase._id)
+                                                            thead(style="display: none")
+                                                                tr
+                                                                    td(scope="col") Vote
+                                                            tbody
 
                                                 .col-sm-6
                                                     if kase.description
@@ -109,79 +138,48 @@ block content
                                                         br
 
                                                     .hidden-sm.hidden-md.hidden-lg.hidden-xl.mobile-works-fails(style="text-align: center")
-                                                        p Works (#{kase.upvotes_v2.length}) | Fails (#{kase.downvotes_v2.length})
+                                                        span.upvotes-header Works (0)  
+                                                        | | 
+                                                        span.downvotes-header Fails (0) 
+                                                        br
                                                         br
                                                     .row.device-select-group(style="display: none")
                                                         input.form-control.device-select.col-md-9(id=kase._id + "-device", type="text", list="deviceList", placeholder="Select or type your device's name.")
                                                         br
                                                     .client-checkboxes(style="display: none")
                                                         .row
-                                                            .col-sm-6.windows-group
-                                                                .btn-group(data-toggle="buttons")
-                                                                    label(for=kase._id + '-windows-works') Windows:   
-                                                                    label.btn.radio-btn
-                                                                        input(type="radio", name="Windows", value='works', id=kase._id + '-windows-works')
-                                                                        span.align-middle
-                                                                            i.fa.fa-thumbs-up
-                                                                    label.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
-                                                                        input(type="radio", name="Windows", value='fails', id=kase._id + '-windows-fails')
-                                                                        span.align-middle
-                                                                            i.fa.fa-thumbs-down
-                                                            .col-sm-6.mac-group
-                                                                .btn-group(data-toggle="buttons")
-                                                                    label(for=kase._id + '-mac-works') Mac:  
-                                                                    label.btn.radio-btn
-                                                                        input(type="radio", name="Mac", value='works', id=kase._id + '-mac-works')
-                                                                        span.align-middle
-                                                                            i.fa.fa-thumbs-up
-                                                                    label.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
-                                                                        input(type="radio", name="Mac", value='fails', id=kase._id + '-mac-fails')
-                                                                        span.align-middle
-                                                                            i.fa.fa-thumbs-down
-                                                            .col-sm-6.android-group
-                                                                .btn-group(data-toggle="buttons")
-                                                                    label(for=kase._id + '-android-works') Android:   
-                                                                    label.btn.radio-btn
-                                                                        input(type="radio", name="Android", value='works', id=kase._id + '-android-works')
-                                                                        span.align-middle
-                                                                            i.fa.fa-thumbs-up
-                                                                    label.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
-                                                                        input(type="radio", name="Android", value='fails', id=kase._id + '-android-fails')
-                                                                        span.align-middle
-                                                                            i.fa.fa-thumbs-down
-                                                            .col-sm-6.ios-group
-                                                                .btn-group(data-toggle="buttons")
-                                                                    label(for=kase._id + '-ios-works') iOS:   
-                                                                    label.btn.radio-btn
-                                                                        input(type="radio", name="iOS", value='works', id=kase._id + '-ios-works')
-                                                                        span.align-middle
-                                                                            i.fa.fa-thumbs-up
-                                                                    label.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
-                                                                        input(type="radio", name="iOS", value='fails', id=kase._id + '-ios-fails')
-                                                                        span.align-middle
-                                                                            i.fa.fa-thumbs-down
-                                                            .col-sm-6.chrome-group
-                                                                .btn-group(data-toggle="buttons")
-                                                                    label(for=kase._id + '-chrome-works') Chrome:   
-                                                                    label.btn.radio-btn
-                                                                        input(type="radio", name="Chrome", value='works', id=kase._id + '-chrome-works')
-                                                                        span.align-middle
-                                                                            i.fa.fa-thumbs-up
-                                                                    label.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
-                                                                        input(type="radio", name="Chrome", value='fails', id=kase._id + '-chrome-fails')
-                                                                        span.align-middle
-                                                                            i.fa.fa-thumbs-down
-                                                            .col-sm-6.linux-group
-                                                                .btn-group(data-toggle="buttons")
-                                                                    label(for=kase._id + '-linux-works') Linux:   
-                                                                    label.btn.radio-btn
-                                                                        input(type="radio", name="Linux", value='works', id=kase._id + '-linux-works')
-                                                                        span.align-middle
-                                                                            i.fa.fa-thumbs-up
-                                                                    label.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
-                                                                        input(type="radio", name="Linux", value='fails', id=kase._id + '-linux-fails')
-                                                                        span.align-middle
-                                                                            i.fa.fa-thumbs-down
+                                                            each client in clients
+                                                                if client == 'ios'
+                                                                    - var clientCaps = "iOS";
+                                                                else
+                                                                    - var clientCaps = client.charAt(0).toUpperCase() + client.slice(1);
+                                                                .col-sm-6(class=client + "-group")
+                                                                    .btn-group(data-toggle="buttons")
+                                                                        label.col-xs-8(for=kase._id + '-' + client + '-works') #{clientCaps}: 
+                                                                        label.col-xs-2.btn.radio-btn
+                                                                            input(type="radio", name=clientCaps, value='works', id=kase._id + '-' + client + '-works')
+                                                                            span.align-middle.thumbContainer
+                                                                                i.fa.fa-thumbs-up
+                                                                        label.col-xs-2.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
+                                                                            input(type="radio", name=clientCaps, value='fails', id=kase._id + '-' + client + '-fails')
+                                                                            span.align-middle.thumbContainer
+                                                                                i.fa.fa-thumbs-down
+
+                                                    .walkie-checkboxes(style="display: none")
+                                                        .row
+                                                            each client in walkie_clients
+                                                                - var safeClient = client.replace(/[^\w]/gi, '_');
+                                                                .div(class=safeClient + "-group")
+                                                                    .btn-group(data-toggle="buttons")
+                                                                        label.col-xs-8.lighter-label(for=kase._id + '-" + safeClient + "-works') #{client}:  
+                                                                        label.col-xs-2.btn.radio-btn
+                                                                            input(type="radio", name=client, value='works', id=kase._id + '-' + safeClient + '-works')
+                                                                            span.align-middle.thumbContainer
+                                                                                i.fa.fa-thumbs-up
+                                                                        label.col-xs-2.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
+                                                                            input(type="radio", name=client, value='fails', id=kase._id + '-' + safeClient + '-fails')
+                                                                            span.align-middle.thumbContainer
+                                                                                i.fa.fa-thumbs-down
                                                         br
                                                         .row.btn-container
                                                             button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal") Comment...
@@ -208,44 +206,35 @@ block content
                                                 p.subtle(style="display: none") #{kase._id}
 
                                                 .col-sm-3.hidden-xs.centered
-                                                    p.downvotes-header Fails (#{kase.downvotes_v2.length})
+                                                    p.downvotes-header Fails
                                                     .downvotes
-                                                        if kase.downvotes_v2
-                                                            each vote in kase.downvotes_v2
-                                                                p.vote 
-                                                                    span.tenant(class=vote.tenantId + "-tenant", style="display: none") #{vote.tenantName}
-                                                                    span.email(class=vote.tenantId + "-email", style="display: none") #{vote.email} 
-                                                                        if vote.client
-                                                                            | (#{vote.client})
-                                                                        if vote.device
-                                                                            | (#{vote.device}
-                                                                            if vote.teamsMode
-                                                                                | - #{vote.teamsMode})
-                                                                            else
-                                                                                | )
+                                                        table.compact.downvotes-table.votes-table(id="downvotes-" + kase._id)
+                                                            thead(style="display: none")
+                                                                tr
+                                                                    td(scope="col") Vote
+                                                            tbody
 
                     
-          else
-              - var caseCount = 1;
-              if cases.length > 0
-                 each kase in cases
+            - var caseCount = 1;
+            if cases.length > 0
+                each kase in cases
                     if kase.group == null || kase.group == ""
                         // New style collapsible case
-                        .panel.panel-default.case-panel(id="panel-" + kase._id)
-                            .panel-heading
+                        .panel.panel-default.case-panel.ungrouped(id="panel-" + kase._id)
+                            .panel-heading.ungrouped
                                 a.toggle-collapse(data-toggle="collapse" data-target="#collapse-" + kase._id, style="color: black")
                                     p.case-text #{caseCount}. #{kase.name}
                                     - caseCount += 1;
                             .panel-collapse.collapse.in(id="collapse-" + kase._id)
                                 .panel-body
                                     .col-sm-3.hidden-xs.centered
-                                        p.upvotes-header Works (#{kase.upvotes_v2.length})
+                                        p.upvotes-header Works (0)
                                         .upvotes
-                                            if kase.upvotes_v2
-                                                each vote in kase.upvotes_v2
-                                                    p.vote
-                                                        span.tenant(class=vote.tenantId + "-tenant", style="display: none") #{vote.tenantName}
-                                                        span.email(class=vote.tenantId + "-email", style="display: none") #{vote.email} 
+                                            table.compact.upvotes-table.votes-table(id="upvotes-" + kase._id)
+                                                thead(style="display: none")
+                                                    tr
+                                                        td(scope="col") Vote
+                                                tbody
 
                                     .col-sm-6
                                         if kase.description
@@ -255,7 +244,10 @@ block content
                                             br
                                         .btn-container
                                             .hidden-sm.hidden-md.hidden-lg.hidden-xl.mobile-works-fails(style="text-align: center")
-                                                p Works (#{kase.upvotes_v2.length}) | Fails (#{kase.downvotes_v2.length})
+                                                span.upvotes-header Works (0)  
+                                                | | 
+                                                span.downvotes-header Fails (0) 
+                                                br
                                                 br
                                             if validation.active
                                                 button.btn.btn-upvote(type="submit")
@@ -279,15 +271,40 @@ block content
                                         p.subtle(style="display: none") #{kase._id}
 
                                     .col-sm-3.hidden-xs.centered
-                                        p.downvotes-header Fails (#{kase.downvotes_v2.length})
+                                        p.downvotes-header Fails (0)
                                         .downvotes
-                                            if kase.downvotes_v2
-                                                each vote in kase.downvotes_v2
-                                                    p.vote
-                                                        span.tenant(class=vote.tenantId + "-tenant", style="display: none") #{vote.tenantName}
-                                                        span.email(class=vote.tenantId + "-email", style="display: none") #{vote.email}
-              else
+                                            table.compact.downvotes-table.votes-table(id="downvotes-" + kase._id)
+                                                thead(style="display: none")
+                                                    tr
+                                                        td(scope="col") Vote
+                                                tbody
+            else
                 p No scenarios have been added yet. Check back later!
+
+      hr
+      .container.featureRequests(style="display: none")
+        h4 Feature Requests
+        .alert.alert-success#featureRequest-success(role="alert", style="display: none") Thanks for your feature request - it wlil be shared with the team.
+        .form-group
+            label.col-xl-2(for="featureRequestTitle") Title
+            textarea.form-control.col-xl-10#featureRequestTitle(rows=2, placeholder="Give a detailed description of your feature.")
+        .form-group
+            label.col-xl-2(for="featureRequestDescription") Description
+            textarea.form-control.col-xl-10#featureRequestDescription(rows=2, placeholder="Give a detailed description of your feature.")
+
+        button.btn.btn-primary#submitFeedback(type='button', style="float: right", disabled) Submit
+
+
+      hr
+      .container.feedback(style="display: none")
+        h4 General Feedback
+        .alert.alert-success#feedback-success(role="alert", style="display: none") Thanks for your feedback - it will be shared with the team.
+        .form-group
+            //label.col-xl-2(for="feedbackField") Feedback:
+            textarea.form-control#feedbackField(rows=2, placeholder="If you have any feedback on this validation, feature, or product area you wish to share with the team, you may do so here.")
+            button.btn.btn-primary#submitFeedback(type='button', style="float: right", disabled) Submit
+
+
 
     #report-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='modalLabel', aria-hidden='true')
       .modal-dialog(role='document')
@@ -318,4 +335,48 @@ block content
             button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
             button.btn.btn-primary#submitComment(type='button', data-dismiss="modal") Submit
 
+    // Windows modals
+    #windows-report-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='windowsReportLabel', aria-hidden='true')
+      #windows-report-id(style="display: none") Test
+      #windows-report-name(style="display: none") Name
+      .modal-dialog(role='document')
+        .modal-content
+          .modal-header
+            h5.modal-title#windowsReportLabel Report a failure for this scenario
+            button.close(type='button', data-dismiss='modal', aria-label='Close')
+              span(aria-hidden='true')
+                i.fa.fa-times
+          .modal-body
+            | Please share any additional feedback you have.
+            .form-group
+                label(for="windowsReportField") Comment:
+                textarea.form-control#windowsReportField(rows=5, placeholder="Comment")
+            .form-group
+                label(for="windws-report-file") File Upload (WIP: Text files only):
+                input#windows-report-file(type="file" name="windows-report-file")
+
+          .modal-footer
+            button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
+            button.btn.btn-primary#submitWindowsReport(type='button', data-dismiss="modal") Submit
+
+    #windows-comment-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='windowsCommentLabel', aria-hidden='true')
+      #windows-comment-id(style="display: none") Test
+      #windows-comment-name(style="display: none") Name
+      .modal-dialog(role='document')
+        .modal-content
+          .modal-header
+            h5.modal-title#windowsCommentLabel Submit a comment for this scenario
+            button.close(type='button', data-dismiss='modal', aria-label='Close')
+              span(aria-hidden='true')
+                i.fa.fa-times
+          .modal-body
+            | Your comment will be shared with the team.
+            input.text#windowsCommentField(placeholder="Comment")
+          .modal-footer
+            button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
+            button.btn.btn-primary#submitWindowsComment(type='button', data-dismiss="modal") Submit
+
+    script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js')
+    script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap.min.js')
+    link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap.min.css')
     script(type="text/javascript", src="/controllers/caseController.client.js")

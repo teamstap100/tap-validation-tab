@@ -278,11 +278,19 @@ function bugHandler (dbParent) {
 
         var alphaSort = { name: 1 };
 
+        var tenantProjection = {
+            name: 1,
+            tid: 1,
+            status: 1,
+            parent: 1,
+        }
+
         var activeTenants = {
-            status: {$in: ["TAP", "EDU+TAP", "Only Ring 1.5", "TAP(Test Tenant)"]}
+            status: { $in: ["TAP", "EDU+TAP", "Only Ring 1.5", "TAP(Test Tenant)"] },
+            parent: { $exists: false }
         };
 
-        tenants.find(activeTenants).sort(alphaSort).toArray(function (err, tenantDocs) {
+        tenants.find(activeTenants).project(tenantProjection).sort(alphaSort).toArray(function (err, tenantDocs) {
             console.log(tenantDocs);
             res.render('bugsConfig', {
                 tenants: tenantDocs
@@ -328,72 +336,81 @@ function bugHandler (dbParent) {
             tenantObj = tenantDoc;
             console.log(tenantDoc.name);
 
-            var body = {
-                "query": "Select [System.Id] from WorkItems Where [System.WorkItemType] = 'Bug' and ("
-            };
+            tenants.find({ parent: tid }).project({ name: 1, tid: 1, parent: 1 }).toArray(function (err, childDocs) {
 
-            tids.forEach(function (tids) {
-                body.query += ' or ';
-                body.query += "[MicrosoftTeamsCMMI.CustomerName] = '" + tid + "'";
-            })
+                console.log(childDocs);
 
-            body.query = body.query.replace("( or", '(');
-            body.query += ")"
+                var body = {
+                    "query": "Select [System.Id] from WorkItems Where [System.WorkItemType] = 'Bug' and ("
+                };
 
-            console.log(body);
-
-            var options = {
-                url: QUERY_BY_WIQL_ENDPOINT,
-                headers: {
-                    'Authorization': AUTH,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(body)
-            };
-
-            request.post(options, function (vstsErr, vstsStatus, vstsResponse) {
-                if (vstsErr) {
-                    console.log(vstsErr);
-                    throw vstsErr;
-                }
-                vstsResponse = JSON.parse(vstsResponse);
-                var workitems = vstsResponse.workItems;
-                witsCount = vstsResponse.workItems.length;
-
-                workitems.forEach(function (wit) {
-
-                    var witOptions = {
-                        url: wit.url,
-                        headers: {
-                            'Authorization': AUTH,
-                        }
-                    }
-
-                    request.get(witOptions, function (vstsErr, vstsStatus, vstsResponse) {
-                        // console.log(vstsResponse);
-
-                        let workitem = JSON.parse(vstsResponse);
-                        issueWits.push(workitem);
-                        //console.log(workitem.id == "691157");
-
-                        bugComments.find({ bugId: workitem.id }).toArray(function (err, docs) {
-                            //docs.forEach(function (doc) {
-                            //    console.log(doc.bugId, workitem.id, doc.bugId == workitem.id);
-                            //})
-                            bugCommentMap[workitem.id] = docs;
-                            witsDone += 1;
-                            checkIfDone();
-                        });
-                    })
+                tids.forEach(function (tids) {
+                    body.query += ' or ';
+                    body.query += "[MicrosoftTeamsCMMI.CustomerName] = '" + tid + "'";
                 })
 
-                // In case there are no workitems
-                checkIfDone();
-            });
+                body.query = body.query.replace("( or", '(');
+                body.query += ")"
+
+                console.log(body);
+
+                var options = {
+                    url: QUERY_BY_WIQL_ENDPOINT,
+                    headers: {
+                        'Authorization': AUTH,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                };
+
+                console.log(options);
+
+                request.post(options, function (vstsErr, vstsStatus, vstsResponse) {
+                    if (vstsErr) {
+                        console.log(vstsErr);
+                        throw vstsErr;
+                    }
+                    vstsResponse = JSON.parse(vstsResponse);
+                    var workitems = vstsResponse.workItems;
+                    witsCount = vstsResponse.workItems.length;
+
+                    workitems.forEach(function (wit) {
+
+                        var witOptions = {
+                            url: wit.url,
+                            headers: {
+                                'Authorization': AUTH,
+                            }
+                        }
+
+                        request.get(witOptions, function (vstsErr, vstsStatus, vstsResponse) {
+                            // console.log(vstsResponse);
+
+                            let workitem = JSON.parse(vstsResponse);
+                            issueWits.push(workitem);
+                            //console.log(workitem.id == "691157");
+
+                            bugComments.find({ bugId: workitem.id }).toArray(function (err, docs) {
+                                //docs.forEach(function (doc) {
+                                //    console.log(doc.bugId, workitem.id, doc.bugId == workitem.id);
+                                //})
+                                bugCommentMap[workitem.id] = docs;
+                                witsDone += 1;
+                                checkIfDone();
+                            });
+                        })
+                    })
+
+                    // In case there are no workitems
+                    checkIfDone();
+                });
+            })
+
+
         });
 
         function checkIfDone() {
-            console.log(witsDone + " / " + witsCount);
+            //console.log(witsDone + " / " + witsCount);
             if (witsDone == witsCount) {
                 finalRender();
             }
@@ -405,15 +422,34 @@ function bugHandler (dbParent) {
             let simpleBugs = [];
 
             issueWits.forEach(function (wit) {
-                console.log(wit);
+                //console.log(wit);
+
+                let shortSteps = wit.fields["Microsoft.VSTS.TCM.ReproSteps"] || "";
+                console.log(shortSteps);
+
+
+                if (shortSteps.includes("System info")) {
+                    shortSteps = shortSteps.split("System info:")[0];
+                }
+
+                if (shortSteps.includes("All the logs &amp; screenshots")) {
+                    shortSteps = shortSteps.split("All the logs &amp; screenshots")[0];
+                }
+
+                shortSteps = shortSteps.split("<hr><br>")[1];
+
+
                 simpleBugs.push({
+                    DT_RowId: wit.id,
                     id: wit.id,
                     date: new Date(wit.fields["System.CreatedDate"]).toLocaleDateString(),
                     title: wit.fields["System.Title"],
                     tags: wit.fields["System.Tags"],
                     state: wit.fields["System.State"],
-                    steps: wit.fields["System.ReproSteps"],
-                    triaged: wit.fields["System.Tags"].includes("TAPITAdminTriaged"),
+                    reproSteps: shortSteps || "",
+                    submitter: wit.fields["MicrosoftTeamsCMMI.CustomerEmail"] || "",
+                    statusTweet: wit.fields["MicrosoftTeamsCMMI.StatusTweet"] || "",
+                    //triaged: wit.fields["System.Tags"].includes("TAPITAdminTriaged"),
                     comments: bugCommentMap[wit.id],
                 })
             });

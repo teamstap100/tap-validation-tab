@@ -14,6 +14,12 @@ function tenantHandler(dbParent) {
     function cleanEmail(email) {
         console.log("Cleaning email");
         console.log(email);
+
+        // Deal with undefined email
+        if (!email) {
+            return email;
+        }
+
         email = email.toLowerCase();
         console.log(email);
         email = email.replace("#ext#@microsoft.onmicrosoft.com", "");
@@ -38,6 +44,10 @@ function tenantHandler(dbParent) {
 
     function getDomain(email) {
         var domain = "?";
+        if (!email) {
+            return domain;
+        }
+
         if (email.includes("@")) {
             var atParts = email.split("@");
             domain = atParts.pop();
@@ -55,6 +65,12 @@ function tenantHandler(dbParent) {
                 email = underscoreParts[0] + "@" + domain;
             }
         }
+        console.log(domain);
+
+        if (domain.includes(".microsoft.com")) {
+            domain = "microsoft.com";
+        }
+
         return domain.toLowerCase();
     }
 
@@ -62,6 +78,15 @@ function tenantHandler(dbParent) {
     // So, need to point it to the real db each time.
 
     this.getTenant = function (req, res) {
+        let tenantProjection = {
+            name: 1,
+            tid: 1,
+            parent: 1,
+            _id: 0,
+            itAdmins: 1,  // Not sure if used. Gets used in the Admin equivalent (by TIDToTenantName azure function) for sure
+            itAdminIds: 1, // Used in Admin equivalent
+        }
+
         console.log("Calling getTenant on " + req.body.email);
         console.log("Full req body is: " + JSON.stringify(req.body, null, 2));
         //if (req.body.email == null) {
@@ -77,9 +102,17 @@ function tenantHandler(dbParent) {
             clientVoteString = email;
             tenantString = clientVoteString.split("@")[1].split(".")[0];
         }
-        // TODO: Use a projection to return just name/TID
-        tenants.findOne({ domains: domain }, function (err, tenantDoc) {
-            res.json(tenantDoc);
+ 
+        tenants.findOne({ domains: domain }, { projection: tenantProjection }, function (err, tenantDoc) {
+            console.log(tenantDoc);
+            if (tenantDoc.parent) {
+                console.log("This tenant has a parent");
+                tenants.findOne({ tid: tenantDoc.parent }, { projection: tenantProjection }, function (err, parentTenantDoc) {
+                    res.json(parentTenantDoc);
+                });
+            } else {
+                res.json(tenantDoc);
+            }
         });
     };
 };

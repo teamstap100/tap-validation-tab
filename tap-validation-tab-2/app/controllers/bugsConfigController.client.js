@@ -6,16 +6,16 @@
     //var contentUrlBase = "https://tap-validation-tab.azurewebsites.net/bugs/";
 
     // TESTING
-    var contentUrlBase = "https://07527890.ngrok.io/bugs/";
+    //var contentUrlBase = "https://07527890.ngrok.io/bugs/";
 
-    // This doesn't work
-    //var contentUrlBase = "../validations/";
+    var contentUrlBase = window.location.href.replace("bugs-config", "bugs") + "/";
 
     $().ready(function () {
         var table = $('#tenants').DataTable({
             info: false,
             search: true,
             paging: false,
+            processing: true,
             //order: [[3, 'desc']],
         });
     });

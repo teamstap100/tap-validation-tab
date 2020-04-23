@@ -10,6 +10,13 @@ block morescripts
 block content
   .container
     br
+    p.centered
+        button.btn.tapSelect#teams 
+            img.product-icon(src='/public/img/teams-logo.png')
+            | Teams TAP
+        button.btn.tapSelect#windows
+            img.product-icon(src='/public/img/windows-logo.png')
+            | Windows TAP
     p.centered #[strong Choose a validation for this tab.]
     p.centered For validations with sections: Check the boxes next to the sections you'd like to show in the tab. The other sections not appear.
     p.centered If you want customers to sign-off by client, check the clients you want available in each section.
@@ -23,7 +30,7 @@ block content
                     th(scope="col" width="40%") Name
                     th(scope="col" width="55%") Sections
             each validation in validations
-                tr(class="val owner-" + validation.owner.split("@")[0] style="display: none")
+                tr(class="val tap-" + validation.tap + " owner-" + validation.owner.split("@")[0] style="display: none")
                     td
                         input(type='radio', name='validation', id=validation._id, value= validation.name, onclick='microsoftTeams.settings.setValidityState(true);')
                     td
@@ -77,7 +84,7 @@ block content
                     th(scope="col" width="40%") Name
                     th(scope="col" width="55%") Sections
             each validation in validations
-                tr(class="val owner-" + validation.owner.split("@")[0])
+                tr(class="val tap-" + validation.tap + " owner-" + validation.owner.split("@")[0])
                     td
                         input(type='radio', name='validation', id=validation._id, value= validation.name, onclick='microsoftTeams.settings.setValidityState(true);')
                     td

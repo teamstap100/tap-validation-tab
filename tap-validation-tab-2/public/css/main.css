@@ -88,11 +88,10 @@ img {
 
 .heading-text { /* Styling for the Clementine.js text */
     padding: 0;
-    margin: -25px 0 0 0;
+    margin: 0px 0 0 40px;
     font-weight: 500;
     font-size: 24px;
     color: #5356aa;
-    text-align: center;
 }
 
 /****** Click Styling ******/
@@ -246,11 +245,13 @@ img {
 
 .upvotes {
     overflow-y: auto;
+    overflow-x: hidden;
     max-height: 175px;
 }
 
 .downvotes {
     overflow-y: auto;
+    overflow-x: hidden;
     max-height: 175px;
 }
 
@@ -353,6 +354,10 @@ span.tenant, span.email {
     display: inline !important;
 }
 
+.client-spin {
+    line-height: 32px;
+}
+
 .fa-thumbs-down {
     color: red;
     font-size: 12px;
@@ -390,4 +395,43 @@ span.tenant, span.email {
 
 .current-validation * {
     color: darkblue !important;
+}
+
+.votes-table {
+    font-size: 10px;
+}
+
+.dataTables_empty {
+    display: none;
+}
+
+.label {
+    margin-bottom: 5px;
+    margin-top: 5px;
+}
+
+.product-icon {
+    width: 20px;
+    margin: -2px 2px 0px 0px;
+    display: inline-block;
+}
+
+.label-primary {
+    background-color: #6264a7;
+}
+
+.tap-label {
+    float: right;
+}
+
+.lighter-label {
+    font-weight: 600;
+}
+
+.bug-modal-launch {
+    font-size: 12px;
+}
+
+.hugeTable {
+    font-size: 11px;
 }

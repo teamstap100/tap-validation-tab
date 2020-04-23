@@ -31,9 +31,35 @@
 
         microsoftTeams.getContext(function (context) {
             var alias = context["userPrincipalName"].split("@")[0];
-            console.log($('#your-validations').find(".owner-" + alias));
-            $('#your-validations').find('.owner-' + alias).css('display', '');
-            $('#other-validations').find('.owner-' + alias).css('display', 'none');
+            $('#your-validations').find('.owner-' + alias).show();
+            $('#other-validations').find('.owner-' + alias).hide();
+            
+            $('.tapSelect').click(function (e) {
+                let id = $(this).attr('id')
+                console.log(id);
+
+                // Hide other validations in your-validations
+                $('#your-validations').find('.val').hide();
+
+                // Show validations in your-validations where owner=alias and tap=id
+                $('#your-validations').find('.owner-' + alias + '.tap-' + id).show();
+
+                // Hide other validations in other-validations
+                $('#other-validations').find('.val').hide();
+
+                // Show validations in other-validations where tap=id
+                $('#other-validations').find('.tap-' + id).show();
+
+                // Hide validations in other-validations where owner=alias
+                $('#other-validations').find('.owner-' + alias + '.tap-' + id).hide();
+
+                $('.tapSelect').removeClass('active');
+                $(this).addClass("active");
+            });
+
+            // TODO: Auto-click the correct one based on the alias. (Need to get PM objects from the server and check their TAP)
+            // Oops. I am getting the PM objects but not sure how to get them from the server to this 
+            $('#teams').click();
         });
 
 

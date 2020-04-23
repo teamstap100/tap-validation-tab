@@ -42,11 +42,17 @@ module.exports = function (app, db) {
         .get(caseHandler.getOneCase)
         .post(caseHandler.addVote);
 
+    app.route('/api/caseVotes')
+        .post(caseHandler.getCaseVotesByCustomer);
+
     app.route('/api/comments')
         .post(caseHandler.addComment);
 
     app.route('/api/validations')
         .post(validationHandler.updateValidation);
+
+    app.route('/api/validations/feedback')
+        .post(validationHandler.addFeedback);
 
     app.route('/api/tenants')
         .post(tenantHandler.getTenant);
@@ -77,11 +83,6 @@ module.exports = function (app, db) {
 
     app.route('/api/tenantBugs/:tid')
         .get(bugHandler.getTenantBugs);
-
-    app.route('/unsubscribe')
-        .get(function (req, res) {
-            res.render('unsubscribe');
-        });
 
 
 };

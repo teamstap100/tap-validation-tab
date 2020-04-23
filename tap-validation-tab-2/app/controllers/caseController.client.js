@@ -3,9 +3,11 @@
 (function () {
     var apiUrl = "../api/cases"
     var commentApiUrl = "../api/cases/comments";
-    var deepLinkUrl = "../api/deeplink";
+    var feedbackApiUrl = "../api/validations/feedback";
+    //var deepLinkUrl = "../api/deeplink";
     var updateValidationTabUrlUrl = "../api/validations";
-    var spinner = '<i class="fa fa-spinner fa-spin"></i>  ';
+    const spinner = '<i class="fa fa-spinner fa-spin"></i>  ';
+    const clientSpinner = '<i class="fa fa-spinner fa-spin client-spin"></i>  ';
     var thumbsUp = '<i class="fa fa-thumbs-up"> </i>';
     var thumbsDown = '<i class="fa fa-thumbs-down"> </i>';
 
@@ -19,15 +21,17 @@
     var APP_ID = "28769a3c-0a17-4c2a-a118-680af5e7a8be";
     var TAB_URL_BASE = "https%3A%2F%2Ftap-validation-tab.azurewebsites.net%2Fvalidations%2F";
 
-    var emailToTidUrl = "../api/tenants";
-
-    var userTenantId = "";
+    //var userTenantId = "";
     var userCleanEmail = "";
 
     const old_clients = ["windows", "mac", "android", "ios",];
     const clients = ["windows", "mac", "android", "ios", "chrome", "linux"];
+    const walkie_clients = ['Samsung XCP', 'Android + Wired H', 'Android + Wireless H'];
 
     var caseClients = {};
+
+    const HID_ISLANDS_MODE_VALIDATION = "711068";
+    const WALKIE_TALKIE_VALIDATION = "767324";
 
     function getUrlVars() {
         var vars = {};
@@ -61,6 +65,43 @@
         return email;
     }
 
+    function refreshGroupVoteCounts() {
+        let totalCaseCount = 0;
+        let totalVotedCount = 0;
+        $('.group-panel').each(function () {
+            var caseCount = $(this).find('.case-panel').length;
+            var worksCount = $(this).find('.case-works').length;
+            var failsCount = $(this).find('.case-fails').length;
+            var votedCount = worksCount + failsCount;
+            $(this).find('.group-progress').text("Progress: (" + votedCount + " / " + caseCount + ")");
+
+
+            // TDOO: Not really sure what to do about mixed "all scenarios either work or fail" setions
+            if (caseCount <= worksCount) {
+                $(this).addClass("section-works");
+            }
+
+            if (caseCount <= failsCount) {
+                $(this).addClass("section-fails");
+            }
+
+            totalVotedCount += worksCount + failsCount;
+            totalCaseCount += caseCount;
+
+        });
+
+        // Now count non-grouped scenarios too
+        let caseCount = $('.case-panel.ungrouped').length;
+        let worksCount = $('.case-works.ungrouped').length;
+        let failsCount = $('.case-fails.ungrouped').length;
+        let votedCount = worksCount + failsCount;
+
+        totalVotedCount += votedCount;
+        totalCaseCount += caseCount;
+
+        $('.validation-progress').text("Scenarios Evaluated: (" + totalVotedCount + " / " + totalCaseCount + ")");
+    }
+
     // Link to a tab needs a djb2 hash of the app ID and the entity ID.
     // This isn't documented anywhere... I got it from an open-source library, source here:
     // https://github.com/ydogandjiev/microsoft-teams-deep-link/blob/master/lib/index.ts
@@ -81,6 +122,9 @@
         microsoftTeams.initialize();
 
         scrollToSubEntity();
+
+        // TODO: It'd be great to just have a "config" object that stores all the different features we can have active.
+        // sections, collectDeviceFeedback, windows
 
         var showVector = getUrlVars()["show"];
         if ((showVector != null) && (showVector != "")) {
@@ -106,6 +150,12 @@
         // In case this tab was configured a long time ago when there were only a few clients, need to use the vector differently
         let configured_clients = clients;
 
+        var validationId = $('#validation-id').text();
+        console.log(validationId);
+
+        var tap = $('#tap').text();
+        console.log(tap);
+
         if (clientsVector) {
             if (clientsVector.length == groupCount * clients.length) {
                 configured_clients = clients;
@@ -126,7 +176,7 @@
                     $(this).find('.no-client-checkboxes').hide();
                     $(this).find('.client-checkboxes').show();
                 } else {
-                    console.log("Hiding all client stuff");
+                    //console.log("Hiding all client stuff");
                     console.log($(this).find('.client-checkboxes'));
                     $(this).find('.no-client-checkboxes').show();
                     $(this).find('.client-checkboxes').hide();
@@ -144,20 +194,26 @@
                 let this_group = this;
 
                 skipped_clients.forEach(function (client) {
-                    console.log("Hiding this client: " + client);
+                    //console.log("Hiding this client: " + client);
                     $(this_group).find('.' + client + '-group').hide();
                 })
             })
         } else {
-            console.log("No clients");
+            //console.log("No clients");
             $('.no-client-checkboxes').show();
             $('.client-checkboxes').hide();
+        }
+
+        // Walkie talkie options
+        if (validationId == WALKIE_TALKIE_VALIDATION) {
+            $('.no-client-checkboxes').hide();
+            $('.walkie-checkboxes').show();
         }
 
         var commentModalButton = document.querySelector('#submitComment');
         commentModalButton.addEventListener('click', function () {
             // TODO: Get the context, to get the Team and Channel ID. Launch a modal. Clicking submit on the modal creates or contributes to a thread of that item
-            console.log("Clicked the comment submit button");
+            //console.log("Clicked the comment submit button");
             var cId = $('#comment-id').text();
             var addCommentUrl = "../api/comments";
             console.log(addCommentUrl);
@@ -178,12 +234,10 @@
 
         });
 
-        var validationId = document.querySelector('#validation-id').innerHTML;
-        console.log(validationId);
-
         var collectDeviceFeedback = false;
 
-        if ((validationId == "711068") || (validationId == "713637")) {
+        //if ((validationId == HID_ISLANDS_MODE_VALIDATION) || (validationId == "713637")) {
+        if (validationId == HID_ISLANDS_MODE_VALIDATION) { // HID Islands Mode only
             collectDeviceFeedback = true;
             console.log("Collecting device feedback");
 
@@ -245,6 +299,59 @@
             $('.teams-mode').hide();
         }
 
+        if (tap == "Windows") {
+            $('#windows-build').show();
+
+            $('.panel-collapse').removeClass("in");
+
+            $('.btn-upvote').attr('disabled', true);
+            $('.btn-downvote').attr('disabled', true);
+            $('.btn-comment').attr('disabled', true);
+
+            let windowsBuildType;
+            let windowsBuildVersion;
+
+            let versionField = $('#windowsBuildVersion');
+            versionField.change(function (event) {
+                windowsBuildVersion = this.value;
+                if (windowsBuildVersion && windowsBuildType) {
+                    console.log("Value, so enabling buttons");
+                    $('.btn-upvote').attr('disabled', false);
+                    $('.btn-downvote').attr('disabled', false);
+                    $('.btn-comment').attr('disabled', false);
+
+                    $('.panel-collapse').addClass("in");
+                } else {
+                    console.log("No value, so disabling buttons");
+                    $('.btn-upvote').attr('disabled', true);
+                    $('.btn-downvote').attr('disabled', true);
+                    $('.btn-comment').attr('disabled', true);
+                }
+            });
+
+            let buildTypeField = $('#windowsBuildType');
+            buildTypeField.change(function (event) {
+                console.log(this);
+                console.log(this.value);
+                windowsBuildType = this.value;
+
+                if (windowsBuildVersion && windowsBuildType) {
+                    console.log("Value, so enabling buttons");
+                    $('.btn-upvote').attr('disabled', false);
+                    $('.btn-downvote').attr('disabled', false);
+                    $('.btn-comment').attr('disabled', false);
+
+                    $('.panel-collapse').addClass("in");
+
+                } else {
+                    console.log("No value, so disabling buttons");
+                    $('.btn-upvote').attr('disabled', true);
+                    $('.btn-downvote').attr('disabled', true);
+                    $('.btn-comment').attr('disabled', true);
+                }
+            })
+        }
+
         microsoftTeams.getContext(function (context) {
             // Template for a link to this tab
             var tabUrl = "https://teams.microsoft.com/l/entity/{APP_ID}/{ENTITY_HASH}?context=%7B%22subEntityId%22%3Anull%2C%22canvasUrl%22%3A%22{TAB_URL_BASE}{VALIDATION_ID}%26show%3D{SHOW_VECTOR}%26clients%3D{CLIENTS_VECTOR}%22%2C%22channelId%22%3A%22{CHANNEL_ID}%22%7D&groupId={GROUP_ID}&tenantId={TENANT_ID}";
@@ -300,25 +407,6 @@
                 console.log("Updated tab url");
             });
 
-            // Get the user's tenant from their email address
-            ajaxRequest('POST', emailToTidUrl, { email: context['userPrincipalName'] }, function (data) {
-                let result = JSON.parse(data);
-                //console.log(result.tid);
-                userTenantId = result.tid;
-
-                $('.' + userTenantId + "-tenant").hide();
-                $('.' + userTenantId + "-email").show();
-
-                // Show all results to Microsoft viewers
-                console.log("Email is: " + context['userPrincipalName']);
-                console.log("Email includes microsoft.com: " + context['userPrincipalName'].includes("@microsoft.com"));
-                if (context['userPrincipalName'].includes("@microsoft.com")) {
-                    $('.tenant').hide();
-                    $('.email').show();
-                }
-
-
-            });
         })
         var validationId = document.querySelector('#validation-id').innerHTML;
         console.log("validationId object is:", validationId);
@@ -328,61 +416,79 @@
         var totalCaseCount = cases.length;
         var totalVotedCount = 0;
 
+        var windowsBuildTypeField = $('#windowsBuildType');
+        var windowsBuildVersionField = $('#windowsBuildVersion');
 
         cases.forEach(function (kase) {
             //var cId = kase.querySelector('p.subtle').innerHTML;
             var cId = kase.id.replace("panel-", "");
+            var tag = $('#validation-tag').text();
             var caseText = kase.querySelector('.case-text');
+            let caseTitle = caseText.textContent;
             var upvoteButton = kase.querySelector('button.btn-upvote');
             var downvoteButton = kase.querySelector('button.btn-downvote');
 
-            var commentButton = kase.querySelector('button.btn-comment');
+            
             var upvoteList = kase.querySelector('.upvotes');
             var downvoteList = kase.querySelector('.downvotes');
 
             var deepLinkButton = kase.querySelector('p.deep-link');
 
             var deviceSelect = kase.querySelector('input.device-select');
-
             var teamsModeSelect = document.querySelector('#teamsMode');
 
             var radios = $(kase).find('button:radio');
 
             var upParams = {
                 validationId: validationId,
+                tap: tap,
+                tag: tag,
                 userId: "me",
                 userEmail: "someone@gmail.com",
                 userTenantId: "???",
-                clientType: "dunno",
+                //clientType: "dunno",
                 upDown: "up",
                 cId: cId,
-                device: "",
-                teamsMode: "",
+                caseTitle: caseTitle,
+                //device: "",
+                //teamsMode: "",
+                //windowsBuildType: "",
+                //windowsBuildVersion: "",
             };
 
             var downParams = {
                 validationId: validationId,
+                tap: tap,
+                tag: tag,
                 userId: "me",
                 userEmail: "someone@gmail.com",
                 userTenantId: "???",
-                clientType: "dunno",
+                //clientType: "dunno",
                 upDown: "down",
                 cId: cId,
-                device: "",
-                teamsMode: "",
+                caseTitle: caseTitle,
+                //device: "",
+                //teamsMode: "",
+                //windowsBuildType: "",
+                //windowsBuildVersion: "",
 
             };
 
             var clientParams = {
                 validationId: validationId,
+                tap: tap,
+                tag: tag,
                 userId: "me",
                 userEmail: "someone@gmail.com",
                 userTenantId: "???",
-                clientType: "dunno",
+                //clientType: "dunno",
                 upDown: "up",
                 cId: cId,
-                device: "",
-                teamsMode: "",
+                caseTitle: caseTitle,
+                //device: "",
+                //teamsMode: "",
+                //windowsBuildType: "", // Probably unnecessary
+                //windowsBuildVersion: "",
 
             };
 
@@ -393,7 +499,8 @@
 
             microsoftTeams.getContext(function (context) {
                 var emailForVoteLists = cleanEmail(context["userPrincipalName"]);
-                //console.log(emailForVoteLists);
+
+                //emailForVoteLists = "example@example.com";
 
                 upParams.userId = context["userObjectId"];
                 downParams.userId = context["userObjectId"];
@@ -402,52 +509,6 @@
                 upParams.userEmail = context["userPrincipalName"];
                 downParams.userEmail = context["userPrincipalName"];
                 clientParams.userEmail = context["userPrincipalName"];
-
-                upParams.userTenantId = context["tid"];
-                downParams.userTenantId = context["tid"];
-                clientParams.userTenantId = context["tid"];
-
-                upParams.clientType = context["hostClientType"];
-                downParams.clientType = context["hostClientType"];
-                clientParams.clientType = context["hostClientType"];
-
-                upParams.context = context;
-                downParams.context = context;
-                clientParams.context = context;
-
-                var deepLinkParams = {
-                    subEntityId: cId,
-                    subEntityLabel: "'" + caseText.textContent + "'"
-                };
-
-                upvoteButton.addEventListener('click', function () {
-                    console.log(upvoteButton.innerHTML);
-                    upvoteButton.innerHTML = upvoteButton.innerHTML.replace(thumbsUp, spinner);
-                    if (collectDeviceFeedback) {
-                        upParams.device = deviceSelect.value;
-                        upParams.teamsMode = teamsModeSelect.value;
-                    }
-
-
-                    ajaxRequest('POST', voteUrl, upParams, function () {
-                        ajaxRequest('GET', voteUrl, {}, updateVotes);
-                    });
-                });
-
-                downvoteButton.addEventListener('click', function () {
-                    console.log("downvote button got clicked");
-                    downvoteButton.innerHTML = downvoteButton.innerHTML.replace(thumbsDown, spinner);
-
-                    if (collectDeviceFeedback) {
-                        downParams.device = deviceSelect.value;
-                        downParams.teamsMode = teamsModeSelect.value;
-                    }
-
-
-                    ajaxRequest('POST', voteUrl, downParams, function () {
-                        ajaxRequest('GET', voteUrl, {}, updateVotes);
-                    });
-                });
 
                 $(kase).find('input:radio').change(function () {
                     console.log("Clicked a radio");
@@ -465,137 +526,306 @@
 
                     clientParams.upDown = upDown;
                     clientParams.client = name;
-                    console.log(clientParams);
 
-                    this.innerHTML = spinner + this.innerHTML;
+                    let that = this;
+                    $(this).parent().find('.thumbContainer').html(clientSpinner);
 
                     ajaxRequest('POST', voteUrl, clientParams, function () {
-                        ajaxRequest('GET', voteUrl, {}, updateVotes);
+                        //ajaxRequest('GET', voteUrl, {}, updateVotes);
+                        tables.each(function () {
+                            if (upDown == "up") {
+                                $(that).parent().find('.thumbContainer').html(thumbsUp);
+                            } else {
+                                $(that).parent().find('.thumbContainer').html(thumbsDown);
+                            }
+
+                            $(this).dataTable().api().ajax.reload();
+                        });
                     });
 
                 })
 
-                deepLinkButton.addEventListener('click', function () {
-                    microsoftTeams.shareDeepLink(deepLinkParams);
-                });
-
-                commentButton.addEventListener('click', function () {
+                $(kase).find('button.btn-comment').click(function () {
+                    console.log("Clicked it");
+                    console.log("cId is: " + cId);
                     $('#comment-id').text(cId);
-                })
-
+                });
+                
                 var clientsVector = getUrlVars()["clients"];
 
-                // Figure out which cases the user has voted on
+                var tables = $(kase).find('.votes-table');
 
-                if (upvoteList.innerHTML.includes(emailForVoteLists)) {
-                    if (!collectDeviceFeedback) {
-                        upvoteButton.disabled = true;
+                tables.each(function () {
+                    let table = $(this);
+
+                    var dtable = table.DataTable({
+                        paging: false,
+                        info: false,
+                        searching: false,
+                        ajax: {
+                            url: "/api/caseVotes",
+                            type: "POST",
+                            contentType: "application/json",
+                            data: function (d) {
+                                let tableId = table.attr("id");
+                                let upDown = "up";
+                                if (tableId.includes("up")) {
+                                    upDown = "up";
+                                } else {
+                                    upDown = "down";
+                                }
+
+                                return JSON.stringify({
+                                    cId: cId,
+                                    email: emailForVoteLists,
+                                    backupEmail: context["userPrincipalName"],
+                                    upDown: upDown,
+                                });
+                            },
+                            //dataSrc: "tenants"
+                            dataSrc: function (json) {
+                                let tableId = table.attr("id");
+                                let upDown = "up";
+                                if (tableId.includes("up")) {
+                                    upDown = "up";
+                                } else {
+                                    upDown = "down";
+                                }
+
+                                // TODO: Maybe bold this votr's email in the list?
+
+                                if (upDown == "up") {
+                                    $(kase).find(".upvotes-header").html("Works (" + json.votes.length + ") ");
+                                } else {
+                                    $(kase).find(".downvotes-header").html("Fails (" + json.votes.length + ") ");
+                                }
+
+                                let caseHeader = $(kase).find('.case-text');
+                                //caseHeader.html(caseHeader.html().replace("(Works)", ""));
+                                caseHeader.html(caseHeader.html().replace("(Fails)", ""));
+
+                                json.votes.forEach(function (voteList) {
+                                    let vote = voteList[0];
+                                    if (vote.includes(emailForVoteLists)) {
+                                        //console.log(vote, "is the current user");
+                                        if (!collectDeviceFeedback) {
+                                            if (upDown == "up") {
+                                                upvoteButton.disabled = true;
+                                                downvoteButton.disabled = false;
+                                            } else {
+                                                downvoteButton.disabled = true;
+                                                upvoteButton.disabled = false;
+                                            }
+                                        }
+
+                                        caseHeader = $(kase).find('.case-text');
+                                        if (upDown == "up") {
+                                            if (!caseHeader.html().includes("(Works)")) {
+                                                caseHeader.html(caseHeader.html() + " <span style='color: green'>(Works)</span>");
+                                                $(kase).find('.panel-heading').addClass('case-works');
+                                            }
+
+                                            // Works overrides fails (for stuff with multiple votes)
+                                            $(kase).find('.panel-heading').removeClass("case-fails");
+                                            caseHeader.html(caseHeader.html().replace("(Fails)", ""));
+
+                                        } else {
+                                            if (!caseHeader.html().includes("(Fails)")) {
+                                                caseHeader.html(caseHeader.html() + " <span style='color: red'>(Fails)</span>");
+                                                $(kase).find('.panel-heading').addClass('case-fails');
+                                            }
+
+                                            // Works overrides fails (for stuff with multiple votes)
+                                            $(kase).find('.panel-heading').removeClass("case-works");
+                                            caseHeader.html(caseHeader.html().replace("(Works)", ""));
+                                        }
+
+                                        if (((clientsVector == null) || (clientsVector == 0)) && (!collectDeviceFeedback) && (validationId != WALKIE_TALKIE_VALIDATION)) {
+                                            if (upDown == "up") {
+                                                //$(kase).find('.panel-collapse').removeClass("in");
+                                                $(kase).find('.panel-collapse').collapse('hide');
+                                            }
+                                        } else {
+                                            if (validationId == WALKIE_TALKIE_VALIDATION) {
+                                                configured_clients = walkie_clients;
+                                            } else {
+                                                let groupCount = $('.group-panel').length;
+                                                let configured_clients = clients;
+
+                                                if (clientsVector.length == groupCount * clients.length) {
+                                                    configured_clients = clients;
+                                                } else if (clientsVector.length == groupCount * old_clients.length) {
+                                                    configured_clients = old_clients;
+                                                }
+                                            }
+
+                                            // Mark all previous client votes as selected
+                                            configured_clients.forEach(function (client) {
+                                                let safeClient = client.replace(/[^\w]/gi, '_');
+                                                if (vote.toLowerCase().includes(emailForVoteLists.toLowerCase() + " (" + client.toLowerCase() + ")")) {
+                                                    if (upDown == "up") {
+                                                        $(kase).find('#' + cId + '-' + safeClient + '-works').parent().addClass('active');
+                                                    } else {
+                                                        $(kase).find('#' + cId + '-' + safeClient + '-fails').parent().addClass('active');
+                                                    }
+                                                }
+                                            })
+                                        }
+                                    }
+                                });
+
+                                refreshGroupVoteCounts();
+
+                                return json.votes;
+                            },
+                        },
+                    });
+
+                });
+
+                upvoteButton.addEventListener('click', function () {
+                    upvoteButton.innerHTML = upvoteButton.innerHTML.replace(thumbsUp, spinner);
+                    if (collectDeviceFeedback) {
+                        upParams.device = deviceSelect.value;
+                        upParams.teamsMode = teamsModeSelect.value;
                     }
-                    
-                    //$(kase).find('.panel-collapse').collapse('hide');
-                    $(kase).find('.case-text').html($(kase).find('.case-text').html() + " <span style='color: green'>(Works)</span>");
-                    $(kase).find('.panel-heading').addClass('case-works');
 
-                    if (clientsVector == null) {
-                        $(kase).find('.panel-collapse').removeClass("in");
-                    } else {
-                        let groupCount = $('.group-panel').length;
-                        let configured_clients = clients;
-
-                        if (clientsVector.length == groupCount * clients.length) {
-                            configured_clients = clients;
-                        } else if (clientsVector.length == groupCount * old_clients.length) {
-                            configured_clients = old_clients;
-                        }
-
-                        if (upvoteList.innerHTML.includes(emailForVoteLists + " (Windows)")) {
-                            $(kase).find('#' + cId + '-windows-works').parent().addClass('active');
-                        }
-
-                        if (upvoteList.innerHTML.includes(emailForVoteLists + " (Mac)")) {
-                            $(kase).find('#' + cId + '-mac-works').parent().addClass('active');
-                        }
-
-                        if (upvoteList.innerHTML.includes(emailForVoteLists + " (Android)")) {
-                            $(kase).find('#' + cId + '-android-works').parent().addClass('active');
-                        }
-
-                        if (upvoteList.innerHTML.includes(emailForVoteLists + " (iOS)")) {
-                            $(kase).find('#' + cId + '-ios-works').parent().addClass('active');
-                        }
-
-                        // TODO: Too lazy to deal with caps stuff right now, so copy pasting these
-                        if ((upvoteList.innerHTML.includes(emailForVoteLists + " (Chrome)")) || (upvoteList.innerHTML.includes(emailForVoteLists + " (chrome)"))) {
-                            $(kase).find('#' + cId + '-chrome-works').parent().addClass('active');
-                        }
-
-                        if ((upvoteList.innerHTML.includes(emailForVoteLists + " (Linux)")) || (upvoteList.innerHTML.includes(emailForVoteLists + " (linux)"))) {
-                            $(kase).find('#' + cId + '-linux-works').parent().addClass('active');
-                        }
+                    if (tap == "Windows") {
+                        upParams.windowsBuildType = windowsBuildTypeField.val();
+                        upParams.windowsBuildVersion = windowsBuildVersionField.val();
                     }
 
 
-                    totalVotedCount++;
-                } else if (downvoteList.innerHTML.includes(emailForVoteLists)) {
-                    if (!collectDeviceFeedback) {
-                        downvoteButton.disabled = true;
-                    }
+                    ajaxRequest('POST', voteUrl, upParams, function () {
+                        //ajaxRequest('GET', voteUrl, {}, updateVotes);
+                        tables.each(function () {
+                            console.log(this);
+                            $(this).dataTable().api().ajax.reload();
+                        });
+                        upvoteButton.innerHTML = upvoteButton.innerHTML.replace(spinner, thumbsUp);
+                    });
+                });
 
-                    $(kase).find('.case-text').html($(kase).find('.case-text').html() + " <span style='color: red'>(Fails)</span>");
-                    $(kase).find('.panel-heading').addClass('case-fails');
-
-                    if (clientsVector == null) {
-
-                    } else {
-                        let groupCount = $('.group-panel').length;
-                        let configured_clients = clients;
-
-                        if (clientsVector.length == groupCount * clients.length) {
-                            configured_clients = clients;
-                        } else if (clientsVector.length == groupCount * old_clients.length) {
-                            configured_clients = old_clients;
+                if (tap == "Windows") {
+                    downvoteButton.setAttribute("data-target", "#windows-report-modal");
+                    downvoteButton.addEventListener('click', function () {
+                        if (collectDeviceFeedback) {
+                            downParams.device = deviceSelect.value;
+                            downParams.teamsMode = teamsModeSelect.value;
                         }
 
-                        if (downvoteList.innerHTML.includes(emailForVoteLists + " (Windows)")) {
-                            $(kase).find('#' + cId + '-windows-fails').parent().addClass('active');
+                        downParams.windowsBuildType = windowsBuildTypeField.val();
+                        downParams.windowsBuildVersion = windowsBuildVersionField.val();
+
+                        $('#windows-report-id').text(cId);
+                        $('#windows-report-name').text(caseTitle);
+                        //$('#windows-report-modal').modal.launch();
+
+                        $('#submitWindowsReport').click(function () {
+                            console.log("Clicked submitWindowsReport");
+                            downParams.comment = $('#windowsReportField').val();
+
+                            if ($('#windows-report-file').prop('files').length > 0) {
+                                let fileToUpload = $('#windows-report-file').prop('files')[0];
+                                console.log(fileToUpload);
+
+                                let reader = new FileReader();
+                                //reader.readAsDataURL(fileToUpload);
+                                reader.readAsBinaryString(fileToUpload);
+
+                                reader.addEventListener("load", function () {
+                                    console.log(reader.result);
+                                    downParams.attachmentName = fileToUpload.name;
+                                    downParams.attachmentContents = reader.result;
+
+                                    downParams.attachment = fileToUpload;
+
+                                    ajaxRequest('POST', voteUrl, downParams, function () {
+                                        //ajaxRequest('GET', voteUrl, {}, updateVotes);
+                                        tables.each(function () {
+                                            console.log(this);
+                                            $(this).dataTable().api().ajax.reload();
+                                        });
+                                    });
+                                });
+                            } else {
+                                ajaxRequest('POST', voteUrl, downParams, function () {
+                                    tables.each(function () {
+                                        console.log(this);
+                                        $(this).dataTable().api().ajax.reload();
+                                    });
+                                });
+                            }
+
+
+
+                            // TODO: Also handle the case where there's no file to upload, obviously
+
+
+                        });
+                    });
+                } else {
+                    downvoteButton.addEventListener('click', function () {
+                        downvoteButton.innerHTML = downvoteButton.innerHTML.replace(thumbsDown, spinner);
+                        if (collectDeviceFeedback) {
+                            downParams.device = deviceSelect.value;
+                            downParams.teamsMode = teamsModeSelect.value;
                         }
 
-                        if (downvoteList.innerHTML.includes(emailForVoteLists + " (Mac)")) {
-                            $(kase).find('#' + cId + '-mac-fails').parent().addClass('active');
-                        }
-
-                        if (downvoteList.innerHTML.includes(emailForVoteLists + " (Android)")) {
-                            $(kase).find('#' + cId + '-android-fails').parent().addClass('active');
-                        }
-
-                        if (downvoteList.innerHTML.includes(emailForVoteLists + " (iOS)")) {
-                            $(kase).find('#' + cId + '-ios-fails').parent().addClass('active');
-                        }
-
-                        if ((downvoteList.innerHTML.includes(emailForVoteLists + " (Chrome)")) || (downvoteList.innerHTML.includes(emailForVoteLists + " (chrome)"))) {
-                            $(kase).find('#' + cId + '-chrome-fails').parent().addClass('active');
-                        }
-
-                        if ((downvoteList.innerHTML.includes(emailForVoteLists + " (Linux)")) || (downvoteList.innerHTML.includes(emailForVoteLists + " (linux)"))) {
-                            $(kase).find('#' + cId + '-linux-fails').parent().addClass('active');
-                        }
-                    }
-
-                    totalVotedCount++;
+                        ajaxRequest('POST', voteUrl, downParams, function () {
+                            //ajaxRequest('GET', voteUrl, {}, updateVotes);
+                            tables.each(function () {
+                                console.log(this);
+                                $(this).dataTable().api().ajax.reload();
+                            });
+                            downvoteButton.innerHTML = downvoteButton.innerHTML.replace(spinner, thumbsDown);
+                        });
+                    });
                 }
 
-                $('.group-panel').each(function () {
-                    var caseCount = $(this).find('.case-panel').length;
-                    var worksCount = $(this).find('.case-works').length;
-                    var failsCount = $(this).find('.case-fails').length;
-                    var votedCount = worksCount + failsCount;
-                    //console.log(caseCount, worksCount, failsCount);
-                    $(this).find('.group-progress').text("Progress: (" + votedCount + " / " + caseCount + ")");
-                })
 
-                $('.validation-progress').text("Scenarios Evaluated: (" + totalVotedCount + " / " + totalCaseCount + ")");
+
             });
         });
+
+        // General Feedback
+        if (tap == "Windows") {
+            $('.feedback').show();
+
+            var feedbackField = $('#feedbackField');
+            var submitFeedback = $('#submitFeedback');
+
+            feedbackField.on('input', function (e) {
+                if (e.target.value === '') {
+                    // Textarea has no value
+                    submitFeedback.attr('disabled', true);
+                } else {
+                    // Textarea has a value
+                    submitFeedback.attr('disabled', false);
+                }
+            });
+
+            submitFeedback.click(function () {
+                submitFeedback.html(spinner + submitFeedback.html());
+                microsoftTeams.getContext(function (context) {
+                    let feedbackParams = {
+                        validationId: validationId,
+                        text: feedbackField.val(),
+                        submitterEmail: context['userPrincipalName'],
+                    };
+
+
+                    ajaxRequest('POST', feedbackApiUrl, feedbackParams, function () {
+                        feedbackField.val("");
+                        submitFeedback.html(submitFeedback.html().replace(spinner, ""));
+                        $('#feedback-alert').show();
+                        console.log("Done");
+                    });
+                });
+
+            });
+        }
+
     });
 
     function ready(fn) {
@@ -624,113 +854,6 @@
         xmlhttp.setRequestHeader('Content-Type', 'application/json');
         xmlhttp.send(JSON.stringify(params));
     }
-
-    function updateVotes(data) {
-        console.log("Called updateVotes");
-        var data = JSON.parse(data);
-        console.log("Got this data: " + JSON.stringify(data, null, 4));
-        console.log("It had an id of " + data._id);
-        var kase = document.getElementById("panel-" + data._id);
-
-        console.log(kase, data._id);
-
-        var upvoteButton = kase.querySelector('button.btn-upvote');
-        var downvoteButton = kase.querySelector('button.btn-downvote');
-
-        let mobileVoteCounts = kase.querySelector('div.mobile-works-fails');
-
-        // Reset the vote columns
-        kase.querySelector("div.upvotes").innerHTML = "";
-        kase.querySelector("div.downvotes").innerHTML = "";
-
-        var clientsVector = getUrlVars()["clients"];
-        kase.querySelector(".upvotes-header").innerHTML = "<p>Works (" + data.upvotes_v2.length + ")</p>";
-        data.upvotes_v2.forEach(function (vote) {
-            if (vote.client) {
-                kase.querySelector("div.upvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + " (" + vote.client + ")" + "</span></p>";
-            } else if (vote.device) {
-                kase.querySelector("div.upvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + " (" + vote.device + " - " + vote.teamsMode + ")" + "</span></p>";
-            } else {
-                kase.querySelector("div.upvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + "</span></p>";
-            }
-        });
-
-        kase.querySelector(".downvotes-header").innerHTML = "<p>Fails (" + data.downvotes_v2.length + ")</p>";
-        data.downvotes_v2.forEach(function (vote) {
-            if (vote.client) {
-                kase.querySelector("div.downvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + " (" + vote.client + ")" + "</span></p>";
-            } else if (vote.device) {
-                kase.querySelector("div.downvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + " (" + vote.device + " - " + vote.teamsMode + ")" + "</span></p>";
-            } else {
-                kase.querySelector("div.downvotes").innerHTML += "<p class='vote'><span class='tenant " + vote.tenantId + "- tenant' style='display: none'>" + vote.tenantName + "</span><span class='email " + vote.tenantId + "-email' style='display: none'>" + vote.email + "</span></p>";
-            }
-        });
-
-        mobileVoteCounts.innerHTML = "<p>Works (" + data.upvotes_v2.length + ") | Fails (" + data.downvotes_v2.length + ")</p><br />";
-
-
-        $('.' + userTenantId + "-tenant").hide();
-        $('.' + userTenantId + "-email").show();
-
-        upvoteButton.innerHTML = upvoteButton.innerHTML.replace(spinner, thumbsUp);
-        downvoteButton.innerHTML = downvoteButton.innerHTML.replace(spinner, thumbsDown);
-
-        microsoftTeams.getContext(function (context) {
-            // Figure out which cases the user has voted on
-            var emailForVoteLists = cleanEmail(context["userPrincipalName"]);
-            console.log(emailForVoteLists);
-
-            var upvoteList = kase.querySelector('div.upvotes');
-            var downvoteList = kase.querySelector('div.downvotes');
-
-            var originalCaseText = $(kase).find('.case-text').html();
-            originalCaseText = originalCaseText.replace('<span style="color: red">(Fails)</span>', "");
-            originalCaseText = originalCaseText.replace('<span style="color: green">(Works)</span>', "");
-
-            if (upvoteList.innerHTML.includes(emailForVoteLists)) {
-                upvoteButton.disabled = true;
-                downvoteButton.disabled = false;
-
-                $(kase).find('.case-text').html(originalCaseText + " <span style='color: green'>(Works)</span>");
-                $(kase).find('.panel-heading').addClass('case-works');
-                $(kase).find('.panel-heading').removeClass('case-fails');
-
-                if (clientsVector == null) {
-                    $(kase).find('.panel-collapse').collapse('hide');
-                } 
-            } else if (downvoteList.innerHTML.includes(emailForVoteLists)) {
-                downvoteButton.disabled = true;
-                upvoteButton.disabled = false;
-
-                $(kase).find('.case-text').html(originalCaseText + " <span style='color: red'>(Fails)</span>");
-                $(kase).find('.panel-heading').addClass('case-fails');
-                $(kase).find('.panel-heading').removeClass('case-works');
-
-            }
-
-            var thisGroupPanel = $($(kase).parents()[2]);
-            console.log(thisGroupPanel);
-            var caseCount = thisGroupPanel.find('.case-panel').length;
-            var worksCount = thisGroupPanel.find('.case-works').length;
-            var failsCount = thisGroupPanel.find('.case-fails').length;
-            var votedCount = worksCount + failsCount;
-            console.log(caseCount, worksCount, failsCount);
-            thisGroupPanel.find('.group-progress').text("Progress: (" + votedCount + " / " + caseCount + ")");
-
-            var cases = document.querySelectorAll('.case-panel');
-            var totalCaseCount = cases.length;
-            var totalVotedCount = $('.case-works').length + $('.case-fails').length;
-            $('.validation-progress').text("Scenarios Evaluated: (" + totalVotedCount + " / " + totalCaseCount + ")");
-
-            // Show all results to Microsoft viewers
-            if (context['userPrincipalName'].includes("@microsoft.com")) {
-                $('.tenant').hide();
-                $('.email').show();
-            }
-        })
-    }
-
-    //ready(ajaxRequest('GET', apiUrl, addCaseDiv));
 
     function scrollToSubEntity() {
         microsoftTeams.getContext(function (context) {
