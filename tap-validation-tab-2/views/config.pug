@@ -48,25 +48,25 @@ block content
                                                     .col-xs-12
                                                         input(type="checkbox", name="group", value=safeGroup, id=safeGroup, checked)
                                                         label.safe-label(for=safeGroup, style="font-size: 10px;") #[strong #{group}]
-                                                .row
+                                                .row.client-config
                                                     .col-xs-12
                                                         input.toggle-all(type="checkbox", name="toggleAll", value=validation._id + "-" + groupCount + "-all", id=validation._id + "-" + groupCount + "-all")
                                                         label.safe-label(for=validation._id + "-" + groupCount + "-all", style="font-size: 10px;") (Toggle All Clients) 
-                                                .row
+                                                .row.client-config
                                                     .col-xs-6
                                                         input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-windows", id=validation._id + "-" + groupCount + "-windows")
                                                         label.safe-label(for=validation._id + "-" + groupCount + "-windows", style="font-size: 10px;") Win  
                                                     .col-xs-6
                                                         input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-mac", id=validation._id + "-" + groupCount + "-mac")
                                                         label.safe-label(for=validation._id + "-" + groupCount + "-mac", style="font-size: 10px;") Mac  
-                                                .row
+                                                .row.client-config
                                                     .col-xs-6
                                                         input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-android", id=validation._id + "-" + groupCount + "-android")
                                                         label.safe-label(for=validation._id + "-" + groupCount + "-android", style="font-size: 10px;") Android  
                                                     .col-xs-6
                                                         input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-ios", id=validation._id + "-" + groupCount + "-ios")
                                                         label.safe-label(for=validation._id + "-" + groupCount + "-", style="font-size: 10px;") iOS  
-                                                .row
+                                                .row.client-config
                                                     .col-xs-6
                                                         input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-chrome", id=validation._id + "-" + groupCount + "-chrome")
                                                         label.safe-label(for=validation._id + "-" + groupCount + "-", style="font-size: 10px;") Chrome  

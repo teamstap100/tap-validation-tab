@@ -7,6 +7,21 @@ var CaseHandler = require(process.cwd() + '/app/controllers/caseHandler.server.j
 var IssueHandler = require(process.cwd() + '/app/controllers/issueHandler.server.js');
 var TenantHandler = require(process.cwd() + '/app/controllers/tenantHandler.server.js');
 var PerformanceHandler = require(process.cwd() + '/app/controllers/performanceHandler.server.js');
+var UserHandler = require(process.cwd() + '/app/controllers/userHandler.server.js');
+
+var multer = require('multer');
+var path = require('path');
+
+var storage = multer.diskStorage({
+    destination: function (req, file, callback) {
+        callback(null, './uploads');
+    },
+    filename: function (req, file, callback) {
+        //callback(null, file.fieldname + '-' + Date.now());
+        callback(null, Date.now() + path.extname(file.originalname));
+    }
+});
+var upload = multer({ storage: storage }).single('userPhoto');
 
 module.exports = function (app, db) {
 
@@ -16,6 +31,7 @@ module.exports = function (app, db) {
     var caseHandler = new CaseHandler(db);
     var tenantHandler = new TenantHandler(db);
     var performanceHandler = new PerformanceHandler(db);
+    var userHandler = new UserHandler(db);
 
     app.use(function (req, res, next) {
         res.header("Access-Control-Allow-Origin", "*");
@@ -34,6 +50,21 @@ module.exports = function (app, db) {
         .get(bugHandler.getBug)
         .post(bugHandler.addBug);
 
+    app.route("/api/bugs/triage")
+        .post(bugHandler.triageBug);
+
+    app.route('/api/bugs/close')
+        .post(bugHandler.closeBug)
+
+    app.route('/api/bugs/bulkClose')
+        .post(bugHandler.bulkCloseBugs);
+
+    app.route('/api/bugs/comment')
+        .post(bugHandler.addComment);
+
+    app.route('/api/bugs/comments/:id')
+        .get(bugHandler.getBugComments);
+
     app.route('/api/bugs/:bId')
         .get(bugHandler.getOneBug)
         .post(bugHandler.addVote);
@@ -45,8 +76,29 @@ module.exports = function (app, db) {
     app.route('/api/caseVotes')
         .post(caseHandler.getCaseVotesByCustomer);
 
+    app.route('/api/feedback')
+        .post(validationHandler.getFeedbackByUser);
+
+    app.route('/api/feedback/:id')
+        .put(validationHandler.modifyFeedback);
+
     app.route('/api/comments')
         .post(caseHandler.addComment);
+
+    app.route('/api/upload')
+        .post(function (req, res) {
+            upload(req, res, function (err) {
+                if (err) {
+                    console.log(err);
+                    return res.end("Error uploading file.");
+                }
+                if (req.file) {
+                    return res.send({ filename: req.file.filename })
+                } else {
+                    return res.status(200).send();
+                }
+            });
+        });
 
     app.route('/api/validations')
         .post(validationHandler.updateValidation);
@@ -54,8 +106,14 @@ module.exports = function (app, db) {
     app.route('/api/validations/feedback')
         .post(validationHandler.addFeedback);
 
+
+
     app.route('/api/tenants')
         .post(tenantHandler.getTenant);
+
+    app.route('/api/users/:oid')
+        .get(userHandler.getUserPrefs)
+        .post(userHandler.setUserPrefs);
 
     app.route('/config')
         .get(validationHandler.getValidations);
@@ -78,11 +136,7 @@ module.exports = function (app, db) {
     app.route('/performance/:tid')
         .get(performanceHandler.renderPerformanceTemplate);
 
-    app.route('/api/bugComments')
-        .post(bugHandler.addComment);
-
     app.route('/api/tenantBugs/:tid')
         .get(bugHandler.getTenantBugs);
-
 
 };

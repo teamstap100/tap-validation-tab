@@ -70,27 +70,29 @@ block content
         br
 
     .container#windows-build(style="display: none")
-        .form-group.row
-            .col-sm-3
-            .col-sm-6
-                .row
-                    label.control-label.col-form-label.col-sm-6(for='windowsBuildType')
-                        span(style="color: red") (*) 
-                        | Windows build type:
-                    select#windowsBuildType.form-control.col-sm-6(placeholder="Please select which Windows build you are running.")
-                        option(value="", label="", selected) 
-                        option(value="Pre-Release", label="Pre-Release") Pre-Release
-                        option(value="Release", label="Release") Release
-            .col-sm-3
-        .form-group.row
-            .col-sm-3
-            .col-sm-6
-                .row
-                    label.control-label.col-form-label.col-sm-6(for='windowsBuildVersion')
-                        span(style="color: red") (*) 
-                        | Windows build version:
-                    input#windowsBuildVersion.form-control.col-sm-6(placeholder="Please enter the version number of your Windows build.", type="text")
-            .col-sm-3
+        h4 Your Info
+        .well
+            .form-group.row
+                .col-sm-3
+                .col-sm-6
+                    .row
+                        label.control-label.col-form-label.col-sm-6(for='windowsBuildType')
+                            span(style="color: red") (*) 
+                            | Windows build type:
+                        select#windowsBuildType.form-control.col-sm-6(placeholder="Please select which Windows build you are running.")
+                            option(value="", label="", selected) 
+                            option(value="Pre-Release", label="Pre-Release") Pre-Release
+                            option(value="Release", label="Release") Release
+                .col-sm-3
+            .form-group.row
+                .col-sm-3
+                .col-sm-6
+                    .row
+                        label.control-label.col-form-label.col-sm-6(for='windowsBuildVersion')
+                            span(style="color: red") (*) 
+                            | Windows build version:
+                        input#windowsBuildVersion.form-control.col-sm-6(placeholder="Please enter the version number of your Windows build.", type="text")
+                .col-sm-3
         br
 
     .container
@@ -106,7 +108,7 @@ block content
                             a.panel-title.toggle-collapse(data-toggle="collapse" data-target="#collapse-" + safeGroupName) #[strong #{groupCount}. #{group}] 
                             span.group-progress
                         
-                        .panel-collapse.collapse.in(id="collapse-" + safeGroupName)
+                        .panel-collapse.group-collapse.collapse.in(id="collapse-" + safeGroupName)
                             .panel-body.group-panel-body
                                 .panel-group(id="accordion-" + safeGroupname)
                                 - var caseCount = 1;
@@ -119,7 +121,7 @@ block content
                                             a.toggle-collapse(data-toggle="collapse" data-target="#collapse-" + kase._id, style="color: black")
                                                 p.case-text #{groupCount}-#{caseCount}. #{kase.name}
                                                 - caseCount += 1;
-                                        .panel-collapse.collapse.in(id="collapse-" + kase._id)
+                                        .panel-collapse.case-collapse.collapse.in(id="collapse-" + kase._id)
                                             .panel-body
                                                 .col-sm-3.hidden-xs.centered
                                                     p.upvotes-header Works
@@ -182,13 +184,13 @@ block content
                                                                                 i.fa.fa-thumbs-down
                                                         br
                                                         .row.btn-container
-                                                            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal") Comment...
+                                                            button.btn.btn-comment Feedback...
                                                     .no-client-checkboxes.btn-container
                                                         if validation.active
                                                             button.btn.btn-upvote(type="submit")
                                                                 i.fa.fa-thumbs-up 
                                                                 |   Works
-                                                            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal") Comment...
+                                                            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal") Feedback...
                                                             button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal")
                                                                 i.fa.fa-thumbs-down 
                                                                 |   Fails
@@ -196,7 +198,7 @@ block content
                                                             button.btn.btn-upvote(type="submit" disabled)
                                                                 i.fa.fa-thumbs-up 
                                                                 |   Works
-                                                            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal" disabled) Comment...
+                                                            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal") Feedback...
                                                             button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal" disabled)
                                                                 i.fa.fa-thumbs-down 
                                                                 |   Fails
@@ -225,7 +227,7 @@ block content
                                 a.toggle-collapse(data-toggle="collapse" data-target="#collapse-" + kase._id, style="color: black")
                                     p.case-text #{caseCount}. #{kase.name}
                                     - caseCount += 1;
-                            .panel-collapse.collapse.in(id="collapse-" + kase._id)
+                            .panel-collapse.case-collapse.collapse.in(id="collapse-" + kase._id)
                                 .panel-body
                                     .col-sm-3.hidden-xs.centered
                                         p.upvotes-header Works (0)
@@ -253,7 +255,7 @@ block content
                                                 button.btn.btn-upvote(type="submit")
                                                     i.fa.fa-thumbs-up 
                                                     |   Works
-                                                button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal") Comment...
+                                                button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal") Feedback...
                                                 button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal")
                                                     i.fa.fa-thumbs-down 
                                                     |   Fails
@@ -261,7 +263,7 @@ block content
                                                 button.btn.btn-upvote(type="submit" disabled)
                                                     i.fa.fa-thumbs-up 
                                                     |   Works
-                                                button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal" disabled) Comment...
+                                                button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal" disabled) Feedback...
                                                 button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal" disabled)
                                                     i.fa.fa-thumbs-down 
                                                     |   Fails
@@ -282,29 +284,23 @@ block content
                 p No scenarios have been added yet. Check back later!
 
       hr
+      .container.otherActions(style="display: none")
+        h4 Other Actions
+        button.btn(type='submit', data-toggle="modal", data-target="#feedback-modal") Share general feedback...
+        button.btn(type='submit', data-toggle="modal", data-target="#feature-request-modal" disabled) Suggest a feature...
+
+      hr
       .container.featureRequests(style="display: none")
-        h4 Feature Requests
-        .alert.alert-success#featureRequest-success(role="alert", style="display: none") Thanks for your feature request - it wlil be shared with the team.
+        h4 Suggest a feature (TBD)
+        .alert.alert-success#featureRequest-success(role="alert", style="display: none") Thanks for suggesting a feature - it wlil be shared with the team.
         .form-group
             label.col-xl-2(for="featureRequestTitle") Title
-            textarea.form-control.col-xl-10#featureRequestTitle(rows=2, placeholder="Give a detailed description of your feature.")
+            textarea.form-control.col-xl-10#featureRequestTitle(rows=2, placeholder="Feature title")
         .form-group
             label.col-xl-2(for="featureRequestDescription") Description
             textarea.form-control.col-xl-10#featureRequestDescription(rows=2, placeholder="Give a detailed description of your feature.")
 
-        button.btn.btn-primary#submitFeedback(type='button', style="float: right", disabled) Submit
-
-
-      hr
-      .container.feedback(style="display: none")
-        h4 General Feedback
-        .alert.alert-success#feedback-success(role="alert", style="display: none") Thanks for your feedback - it will be shared with the team.
-        .form-group
-            //label.col-xl-2(for="feedbackField") Feedback:
-            textarea.form-control#feedbackField(rows=2, placeholder="If you have any feedback on this validation, feature, or product area you wish to share with the team, you may do so here.")
-            button.btn.btn-primary#submitFeedback(type='button', style="float: right", disabled) Submit
-
-
+        button.btn.btn-primary#submitFeatureRequest(type='button', style="float: right", disabled) Submit
 
     #report-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='modalLabel', aria-hidden='true')
       .modal-dialog(role='document')
@@ -324,12 +320,12 @@ block content
       .modal-dialog(role='document')
         .modal-content
           .modal-header
-            h5.modal-title#commentLabel Submit a comment for this scenario
+            h5.modal-title#commentLabel Submit feedback for this scenario
             button.close(type='button', data-dismiss='modal', aria-label='Close')
               span(aria-hidden='true')
                 i.fa.fa-times
           .modal-body
-            | Your comment will be shared with the team.
+            | Your feedback will be shared with the team.
             input.text#commentField(placeholder="Comment")
           .modal-footer
             button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
@@ -342,39 +338,56 @@ block content
       .modal-dialog(role='document')
         .modal-content
           .modal-header
-            h5.modal-title#windowsReportLabel Report a failure for this scenario
             button.close(type='button', data-dismiss='modal', aria-label='Close')
-              span(aria-hidden='true')
-                i.fa.fa-times
+              span(aria-hidden='true') &times;
+            h4#windows-report-header.modal-title Report a problem with this scenario
           .modal-body
-            | Please share any additional feedback you have.
-            .form-group
-                label(for="windowsReportField") Comment:
-                textarea.form-control#windowsReportField(rows=5, placeholder="Comment")
-            .form-group
-                label(for="windws-report-file") File Upload (WIP: Text files only):
-                input#windows-report-file(type="file" name="windows-report-file")
+            form#windows-report-form(enctype="multipart/form-data" method="post")
+                .form-group
+                    label(for="windows-report-field") Details:
+                    textarea.form-control#windows-report-field(rows=5, placeholder="Please describe the problem.")
+                .form-group
+                    label(for="windws-report-file") File Upload:
+                    input#windows-report-file(type="file" name="userPhoto")
 
           .modal-footer
             button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
-            button.btn.btn-primary#submitWindowsReport(type='button', data-dismiss="modal") Submit
+            button.btn.btn-primary#windows-report-submit(type='submit', value="Upload Image", name="submit") Submit
 
-    #windows-comment-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='windowsCommentLabel', aria-hidden='true')
-      #windows-comment-id(style="display: none") Test
-      #windows-comment-name(style="display: none") Name
+    #feedback-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='feedbackLabel', aria-hidden='true')
       .modal-dialog(role='document')
         .modal-content
           .modal-header
-            h5.modal-title#windowsCommentLabel Submit a comment for this scenario
             button.close(type='button', data-dismiss='modal', aria-label='Close')
-              span(aria-hidden='true')
-                i.fa.fa-times
+              span(aria-hidden='true') &times;
+            h4#feeback-header.modal-title Share general feedback
           .modal-body
-            | Your comment will be shared with the team.
-            input.text#windowsCommentField(placeholder="Comment")
+            //.alert.alert-success#feedback-success(role="alert", style="display: none") Thanks for your feedback - it will be shared with the team.
+            table.table.table-striped.compact#feedback-table
+                thead
+                    tr
+                        td #[strong Existing feedback]
+                        //td #[strong Edit]
+                        //td Public?
+                tbody
+                    each fb in feedback
+                        tr
+                            td "#{fb.text}"
+                            //td 
+                            //td #{fb.public}
+                            //td #{new Date(fb.timestamp).toLocaleDateString()}
+            hr
+
+            .form-group
+                label(for="windows-report-field") Feedback:
+                textarea.form-control#feedbackField(rows=2, placeholder="If you have any feedback on this validation, feature, or product area you wish to share with the team, you may do so here.")
+            .form-group
+                input(type="checkbox", name="feedbackPublic", value=true)#feedbackPublicField
+                label(for=feedbackPublic) Make my feedback public.
+            p.less-subtle Don't share any confidential or personally identifiable information through this form, especially if making your feedback public.
+                
           .modal-footer
-            button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
-            button.btn.btn-primary#submitWindowsComment(type='button', data-dismiss="modal") Submit
+              button.btn.btn-primary#submitFeedback(type='button', style="float: right", disabled) Submit
 
     script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js')
     script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap.min.js')

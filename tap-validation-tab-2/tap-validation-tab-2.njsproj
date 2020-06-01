@@ -47,6 +47,7 @@ AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZ
     <Compile Include="app\controllers\bugHandler.server.js" />
     <Compile Include="app\controllers\configController.client.js" />
     <Compile Include="app\controllers\tenantHandler.server.js" />
+    <Compile Include="app\controllers\userHandler.server.js" />
     <Compile Include="app\controllers\validationHandler.server.js" />
     <Compile Include="app\controllers\jquery.hotkeys.js" />
     <Compile Include="app\routes\index.js" />
@@ -79,6 +80,7 @@ AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZ
     <Folder Include="public\" />
     <Folder Include="public\css\" />
     <Folder Include="public\img\" />
+    <Folder Include="uploads\" />
     <Folder Include="views\" />
   </ItemGroup>
   <ItemGroup>

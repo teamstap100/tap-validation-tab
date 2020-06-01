@@ -2,7 +2,8 @@
 
 var express = require('express'),
     routes = require('./app/routes/index.js'),
-    mongo = require('mongodb').MongoClient;
+    mongo = require('mongodb').MongoClient,
+    multer = require('multer');
 
 var bodyParser = require('body-parser');
 

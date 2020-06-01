@@ -4,14 +4,17 @@
     var apiUrl = "../api/cases"
     var commentApiUrl = "../api/cases/comments";
     var feedbackApiUrl = "../api/validations/feedback";
+    var userPrefsUrlBase = "../api/users/";
     //var deepLinkUrl = "../api/deeplink";
     var updateValidationTabUrlUrl = "../api/validations";
     const spinner = '<i class="fa fa-spinner fa-spin"></i>  ';
     const clientSpinner = '<i class="fa fa-spinner fa-spin client-spin"></i>  ';
-    var thumbsUp = '<i class="fa fa-thumbs-up"> </i>';
-    var thumbsDown = '<i class="fa fa-thumbs-down"> </i>';
+    const thumbsUp = '<i class="fa fa-thumbs-up"> </i>';
+    const thumbsDown = '<i class="fa fa-thumbs-down"> </i>';
 
-    var MSFT_TENANT_ID = "72f988bf-86f1-41af-91ab-2d7cd011db47";
+    const MSFT_TENANT_ID = "72f988bf-86f1-41af-91ab-2d7cd011db47";
+
+    var userPrefs = {};
 
     // TESTING
     //var APP_ID = "b846239c-20f9-452b-b121-8ab17c91b24e";
@@ -21,7 +24,6 @@
     var APP_ID = "28769a3c-0a17-4c2a-a118-680af5e7a8be";
     var TAB_URL_BASE = "https%3A%2F%2Ftap-validation-tab.azurewebsites.net%2Fvalidations%2F";
 
-    //var userTenantId = "";
     var userCleanEmail = "";
 
     const old_clients = ["windows", "mac", "android", "ios",];
@@ -63,6 +65,81 @@
         }
 
         return email;
+    }
+
+    function getUserPrefs(oid) {
+        let userPrefsUrl = userPrefsUrlBase + oid;
+        ajaxRequest('GET', userPrefsUrl, {}, function (data) {
+            console.log("Done");
+            console.log(data);
+            data = JSON.parse(data);
+
+            if (data.windowsBuildVersion) {
+                $('#windowsBuildVersion').val(data.windowsBuildVersion).trigger('change');
+            }
+
+            if (data.windowsBuildType) {
+                $('#windowsBuildType').val(data.windowsBuildType).trigger('change');
+            }
+
+            userPrefs = data;
+
+            return data;
+        });
+    }
+
+    function setUserPrefs(oid, email) {
+        let prefs = {};
+
+        if ($('#windowsBuildType').val()) {
+            console.log("Setting windowsBuildType");
+            prefs['windowsBuildType'] = $('#windowsBuildType').val();
+        }
+
+        if ($('#windowsBuildVersion').val()) {
+            console.log("Setting windowsBuildVersion");
+            prefs['windowsBuildVersion'] = $('#windowsBuildVersion').val();
+        }
+
+        // TODO: Placeholder. Get real inputs for this
+        prefs['feedbackPublic'] = true;
+        
+        let params = {
+            oid: oid,
+            email: email,
+            prefs: prefs,
+        }
+
+        let userPrefsUrl = userPrefsUrlBase + oid;
+        ajaxRequest('POST', userPrefsUrl, params, function (data) {
+            userPrefs = prefs;
+            console.log("Set preferences");
+        });
+    }
+
+    function showScenariosIfWindowsInfoFilled() {
+        console.log("Showing scenarios if windows info filled");
+        let windowsBuildVersion = $('#windowsBuildVersion').val();
+        let windowsBuildType = $('#windowsBuildType').val();
+        if (windowsBuildVersion && windowsBuildType) {
+            console.log("Value, so enabling buttons");
+            $('.btn-upvote').attr('disabled', false);
+            $('.btn-downvote').attr('disabled', false);
+            $('.btn-comment').attr('disabled', false);
+
+            $('.group-collapse').collapse("show");
+            $('.case-collapse').collapse("show");
+
+            microsoftTeams.getContext(function (context) {
+                setUserPrefs(context['userObjectId'], cleanEmail(context['userPrincipalName']))
+            })
+
+        } else {
+            console.log("No value, so disabling buttons");
+            $('.btn-upvote').attr('disabled', true);
+            $('.btn-downvote').attr('disabled', true);
+            $('.btn-comment').attr('disabled', true);
+        }
     }
 
     function refreshGroupVoteCounts() {
@@ -118,18 +195,25 @@
         return hash >>> 0; // Ensure positive number
     }
 
+
+    function resetWindowsReport() {
+        // Basic cleanup after submitting or closing Windows 'fails' report
+        $('#windows-report-field').val("");
+        $('#windows-report-file').val("");
+
+    }
+
     $(document).ready(function () {
         microsoftTeams.initialize();
 
         scrollToSubEntity();
 
-        // TODO: It'd be great to just have a "config" object that stores all the different features we can have active.
-        // sections, collectDeviceFeedback, windows
+        var config = {};
 
-        var showVector = getUrlVars()["show"];
-        if ((showVector != null) && (showVector != "")) {
+        config.showVector = getUrlVars()["show"];
+        if ((config.showVector != null) && (config.showVector != "")) {
             $('.group-panel').each(function (index) {
-                if (showVector.substring(0, 1) == 0) {
+                if (config.showVector.substring(0, 1) == 0) {
                     // Option 1: Collapse the section
                     //$(this).find('.panel-collapse').removeClass("in");
 
@@ -137,37 +221,35 @@
                     $(this).hide();
                 }
 
-                showVector = showVector.substring(1, showVector.length);
+                config.showVector = config.showVector.substring(1, config.showVector.length);
             });
         }
 
-        var clientsVector = getUrlVars()["clients"];
-        console.log("ClientsVector is: " + clientsVector);
-        
+        config.clientsVector = getUrlVars()["clients"];
+        console.log("config.clientsVector is: " + config.clientsVector);
 
         let groupCount = $('.group-panel').length;
 
         // In case this tab was configured a long time ago when there were only a few clients, need to use the vector differently
         let configured_clients = clients;
 
-        var validationId = $('#validation-id').text();
-        console.log(validationId);
+        config.validationId = $('#validation-id').text();
+        console.log(config.validationId);
 
-        var tap = $('#tap').text();
-        console.log(tap);
+        config.tap = $('#tap').text();
 
-        if (clientsVector) {
-            if (clientsVector.length == groupCount * clients.length) {
+        if (config.clientsVector) {
+            if (config.clientsVector.length == groupCount * clients.length) {
                 configured_clients = clients;
-            } else if (clientsVector.length == groupCount * old_clients.length) {
+            } else if (config.clientsVector.length == groupCount * old_clients.length) {
                 configured_clients = old_clients;
             }
             let skipped_clients = clients.filter(e => !configured_clients.includes(e));
             console.log(skipped_clients);
 
-            // If clientsVector is all zeroes for a section, need to reveal the clients
+            // If config.clientsVector is all zeroes for a section, need to reveal the clients
             $('.group-panel').each(function (index) {
-                let thisGroupVector = clientsVector.substring(index * configured_clients.length, (index * configured_clients.length) + configured_clients.length);
+                let thisGroupVector = config.clientsVector.substring(index * configured_clients.length, (index * configured_clients.length) + configured_clients.length);
                 console.log(thisGroupVector);
 
 
@@ -205,7 +287,7 @@
         }
 
         // Walkie talkie options
-        if (validationId == WALKIE_TALKIE_VALIDATION) {
+        if (config.validationId == WALKIE_TALKIE_VALIDATION) {
             $('.no-client-checkboxes').hide();
             $('.walkie-checkboxes').show();
         }
@@ -234,11 +316,11 @@
 
         });
 
-        var collectDeviceFeedback = false;
+        config.collectDeviceFeedback = false;
 
-        //if ((validationId == HID_ISLANDS_MODE_VALIDATION) || (validationId == "713637")) {
-        if (validationId == HID_ISLANDS_MODE_VALIDATION) { // HID Islands Mode only
-            collectDeviceFeedback = true;
+        //if ((config.validationId == HID_ISLANDS_MODE_VALIDATION) || (config.validationId == "713637")) {
+        if (config.validationId == HID_ISLANDS_MODE_VALIDATION) { // HID Islands Mode only
+            config.collectDeviceFeedback = true;
             console.log("Collecting device feedback");
 
             $('.panel-collapse').removeClass("in");
@@ -277,7 +359,7 @@
                 teamsMode = this.value;
 
                 if (teamsMode) {
-                    $('.panel-collapse').addClass("in");
+                    $('.panel-collapse').collapse("hide");
                 }
 
                 if (device && teamsMode) {
@@ -294,16 +376,17 @@
             })
 
         } else {
-            collectDeviceFeedback = false;
+            config.collectDeviceFeedback = false;
             $('.device-select-group').hide();
             $('.teams-mode').hide();
         }
 
-        if (tap == "Windows") {
+        if (config.tap == "Windows") {
             $('#windows-build').show();
 
-            $('.panel-collapse').removeClass("in");
+            $('.panel-collapse').collapse("show");
 
+            // TODO: The button-enabling/disabling logic overrides each other. Need to 
             $('.btn-upvote').attr('disabled', true);
             $('.btn-downvote').attr('disabled', true);
             $('.btn-comment').attr('disabled', true);
@@ -313,42 +396,12 @@
 
             let versionField = $('#windowsBuildVersion');
             versionField.change(function (event) {
-                windowsBuildVersion = this.value;
-                if (windowsBuildVersion && windowsBuildType) {
-                    console.log("Value, so enabling buttons");
-                    $('.btn-upvote').attr('disabled', false);
-                    $('.btn-downvote').attr('disabled', false);
-                    $('.btn-comment').attr('disabled', false);
-
-                    $('.panel-collapse').addClass("in");
-                } else {
-                    console.log("No value, so disabling buttons");
-                    $('.btn-upvote').attr('disabled', true);
-                    $('.btn-downvote').attr('disabled', true);
-                    $('.btn-comment').attr('disabled', true);
-                }
+                showScenariosIfWindowsInfoFilled();
             });
 
             let buildTypeField = $('#windowsBuildType');
             buildTypeField.change(function (event) {
-                console.log(this);
-                console.log(this.value);
-                windowsBuildType = this.value;
-
-                if (windowsBuildVersion && windowsBuildType) {
-                    console.log("Value, so enabling buttons");
-                    $('.btn-upvote').attr('disabled', false);
-                    $('.btn-downvote').attr('disabled', false);
-                    $('.btn-comment').attr('disabled', false);
-
-                    $('.panel-collapse').addClass("in");
-
-                } else {
-                    console.log("No value, so disabling buttons");
-                    $('.btn-upvote').attr('disabled', true);
-                    $('.btn-downvote').attr('disabled', true);
-                    $('.btn-comment').attr('disabled', true);
-                }
+                showScenariosIfWindowsInfoFilled();
             })
         }
 
@@ -369,8 +422,15 @@
 
             var tid = context.tid;
 
+            // Oh, I guess this only runs in the MSFT tenant
             if (tid != MSFT_TENANT_ID) {
                 return;
+            }
+
+            // Currently only doing user preferences with Windows TAP
+            if (config.tap == "Windows") {
+                userPrefs = getUserPrefs(context['userObjectId']);
+                showScenariosIfWindowsInfoFilled();
             }
 
             //console.log(context);
@@ -382,34 +442,34 @@
             tabUrl = tabUrl.replace('{ENTITY_HASH}', deeplinkDjb2Prefix + entityHash);
             tabUrl = tabUrl.replace('{CHANNEL_ID}', channelId);
             tabUrl = tabUrl.replace('{TAB_URL_BASE}', TAB_URL_BASE);
-            if (showVector != null) {
-                tabUrl = tabUrl.replace("{SHOW_VECTOR}", showVector);
+            if (config.showVector != null) {
+                tabUrl = tabUrl.replace("{SHOW_VECTOR}", config.showVector);
             } else {
                 tabUrl = tabUrl.replace("{SHOW_VECTOR}", "");
             }
-            if (clientsVector != null) {
-                tabUrl = tabUrl.replace("{CLIENTS_VECTOR}", clientsVector);
+            if (config.clientsVector != null) {
+                tabUrl = tabUrl.replace("{CLIENTS_VECTOR}", config.clientsVector);
             } else {
                 tabUrl = tabUrl.replace("{CLIENTS_VECTOR}", "");
             }
 
-            tabUrl = tabUrl.replace("{VALIDATION_ID}", validationId);
+            tabUrl = tabUrl.replace("{VALIDATION_ID}", config.validationId);
             tabUrl = tabUrl.replace('{GROUP_ID}', groupId);
             tabUrl = tabUrl.replace('{TENANT_ID}', tid);
             //tabUrl = encodeURI(tabUrl);
             console.log(tabUrl);
 
+            config.tabUrl = tabUrl;
+
             var params = {
                 tabUrl: tabUrl,
-                validationId: validationId
+                validationId: config.validationId
             }
             ajaxRequest('POST', updateValidationTabUrlUrl, params, function () {
                 console.log("Updated tab url");
             });
 
         })
-        var validationId = document.querySelector('#validation-id').innerHTML;
-        console.log("validationId object is:", validationId);
 
         var cases = document.querySelectorAll('.case-panel');
 
@@ -426,97 +486,56 @@
             var caseText = kase.querySelector('.case-text');
             let caseTitle = caseText.textContent;
             var upvoteButton = kase.querySelector('button.btn-upvote');
+            var commentButton = $(kase).find('button.btn-comment');
             var downvoteButton = kase.querySelector('button.btn-downvote');
-
             
             var upvoteList = kase.querySelector('.upvotes');
             var downvoteList = kase.querySelector('.downvotes');
 
-            var deepLinkButton = kase.querySelector('p.deep-link');
+            //var deepLinkButton = kase.querySelector('p.deep-link');
 
             var deviceSelect = kase.querySelector('input.device-select');
             var teamsModeSelect = document.querySelector('#teamsMode');
 
             var radios = $(kase).find('button:radio');
 
-            var upParams = {
-                validationId: validationId,
-                tap: tap,
+            let voteParams = {
+                validationId: config.validationId,
+                tap: config.tap,
                 tag: tag,
                 userId: "me",
                 userEmail: "someone@gmail.com",
-                userTenantId: "???",
-                //clientType: "dunno",
-                upDown: "up",
                 cId: cId,
                 caseTitle: caseTitle,
-                //device: "",
-                //teamsMode: "",
-                //windowsBuildType: "",
-                //windowsBuildVersion: "",
-            };
-
-            var downParams = {
-                validationId: validationId,
-                tap: tap,
-                tag: tag,
-                userId: "me",
-                userEmail: "someone@gmail.com",
-                userTenantId: "???",
-                //clientType: "dunno",
-                upDown: "down",
-                cId: cId,
-                caseTitle: caseTitle,
-                //device: "",
-                //teamsMode: "",
-                //windowsBuildType: "",
-                //windowsBuildVersion: "",
-
-            };
-
-            var clientParams = {
-                validationId: validationId,
-                tap: tap,
-                tag: tag,
-                userId: "me",
-                userEmail: "someone@gmail.com",
-                userTenantId: "???",
-                //clientType: "dunno",
-                upDown: "up",
-                cId: cId,
-                caseTitle: caseTitle,
-                //device: "",
-                //teamsMode: "",
-                //windowsBuildType: "", // Probably unnecessary
-                //windowsBuildVersion: "",
-
             };
 
             var voteUrl = apiUrl + '/' + cId;
             var commentUrl = commentApiUrl + '/' + cId;
 
-            //console.log(voteUrl);
-
+            // TODO: This is already in a getContext call, so probably redundant
             microsoftTeams.getContext(function (context) {
-                var emailForVoteLists = cleanEmail(context["userPrincipalName"]);
+                let email = context['userPrincipalName']
 
-                //emailForVoteLists = "example@example.com";
+                var emailForVoteLists = cleanEmail(email);
 
-                upParams.userId = context["userObjectId"];
-                downParams.userId = context["userObjectId"];
-                clientParams.userId = context["userObjectId"];
-                
-                upParams.userEmail = context["userPrincipalName"];
-                downParams.userEmail = context["userPrincipalName"];
-                clientParams.userEmail = context["userPrincipalName"];
+                //emailForVoteLists = "test@something.onmicrosoft.com"
+                //email = emailForVoteLists;
 
+                var userOid = context['userObjectId'];
+
+                voteParams.userId = context['userObjectId'];
+                voteParams.userEmail = email;
+                voteParams.url = config.tabUrl;
+                voteParams.tap = config.tap;
+
+                // For client radio buttons
                 $(kase).find('input:radio').change(function () {
                     console.log("Clicked a radio");
                     let cId = $(this)[0].id.split("-")[0];
                     let name = $(this).attr('name');
 
                     console.log(cId);
-
+                    
                     let upDown = $(this)[0].id.split("-")[2];
                     if (upDown == "works") {
                         upDown = "up";
@@ -524,14 +543,13 @@
                         upDown = "down";
                     }
 
-                    clientParams.upDown = upDown;
-                    clientParams.client = name;
+                    voteParams.upDown = upDown;
+                    voteParams.client = name;
 
                     let that = this;
                     $(this).parent().find('.thumbContainer').html(clientSpinner);
 
-                    ajaxRequest('POST', voteUrl, clientParams, function () {
-                        //ajaxRequest('GET', voteUrl, {}, updateVotes);
+                    ajaxRequest('POST', voteUrl, voteParams, function () {
                         tables.each(function () {
                             if (upDown == "up") {
                                 $(that).parent().find('.thumbContainer').html(thumbsUp);
@@ -545,13 +563,12 @@
 
                 })
 
+                // TODO: Put this somewhere else
                 $(kase).find('button.btn-comment').click(function () {
                     console.log("Clicked it");
                     console.log("cId is: " + cId);
                     $('#comment-id').text(cId);
                 });
-                
-                var clientsVector = getUrlVars()["clients"];
 
                 var tables = $(kase).find('.votes-table');
 
@@ -562,6 +579,7 @@
                         paging: false,
                         info: false,
                         searching: false,
+                        sort: false,
                         ajax: {
                             url: "/api/caseVotes",
                             type: "POST",
@@ -584,6 +602,12 @@
                             },
                             //dataSrc: "tenants"
                             dataSrc: function (json) {
+                                let votesToRender = [];
+                                let myVotes = [];
+                                let otherVotes = [];
+
+                                //console.log(json.votes);
+
                                 let tableId = table.attr("id");
                                 let upDown = "up";
                                 if (tableId.includes("up")) {
@@ -591,8 +615,6 @@
                                 } else {
                                     upDown = "down";
                                 }
-
-                                // TODO: Maybe bold this votr's email in the list?
 
                                 if (upDown == "up") {
                                     $(kase).find(".upvotes-header").html("Works (" + json.votes.length + ") ");
@@ -606,13 +628,18 @@
 
                                 json.votes.forEach(function (voteList) {
                                     let vote = voteList[0];
+
                                     if (vote.includes(emailForVoteLists)) {
+                                        myVotes.push(["<strong>" + vote + "</strong>"],);
                                         //console.log(vote, "is the current user");
-                                        if (!collectDeviceFeedback) {
+                                        if (!config.collectDeviceFeedback) {
                                             if (upDown == "up") {
+                                                console.log("Vote was up, so setting buttons");
                                                 upvoteButton.disabled = true;
                                                 downvoteButton.disabled = false;
                                             } else {
+                                                console.log("Vote was down, so setting buttons");
+
                                                 downvoteButton.disabled = true;
                                                 upvoteButton.disabled = false;
                                             }
@@ -640,21 +667,20 @@
                                             caseHeader.html(caseHeader.html().replace("(Works)", ""));
                                         }
 
-                                        if (((clientsVector == null) || (clientsVector == 0)) && (!collectDeviceFeedback) && (validationId != WALKIE_TALKIE_VALIDATION)) {
+                                        if (((config.clientsVector == null) || (config.clientsVector == 0)) && (!config.collectDeviceFeedback) && (config.validationId != WALKIE_TALKIE_VALIDATION) && (config.tap != 'Windows')) {
                                             if (upDown == "up") {
-                                                //$(kase).find('.panel-collapse').removeClass("in");
                                                 $(kase).find('.panel-collapse').collapse('hide');
                                             }
                                         } else {
-                                            if (validationId == WALKIE_TALKIE_VALIDATION) {
+                                            if (config.validationId == WALKIE_TALKIE_VALIDATION) {
                                                 configured_clients = walkie_clients;
                                             } else {
                                                 let groupCount = $('.group-panel').length;
                                                 let configured_clients = clients;
 
-                                                if (clientsVector.length == groupCount * clients.length) {
+                                                if (config.clientsVector.length == groupCount * clients.length) {
                                                     configured_clients = clients;
-                                                } else if (clientsVector.length == groupCount * old_clients.length) {
+                                                } else if (config.clientsVector.length == groupCount * old_clients.length) {
                                                     configured_clients = old_clients;
                                                 }
                                             }
@@ -671,109 +697,207 @@
                                                 }
                                             })
                                         }
+                                    } else {
+                                        otherVotes.push([vote]);
                                     }
                                 });
 
                                 refreshGroupVoteCounts();
 
-                                return json.votes;
+                                votesToRender = myVotes.concat(otherVotes);
+
+                                //console.log(votesToRender);
+
+                                return votesToRender;
                             },
+                            error: function (xhr, status, err) {
+                                console.log("An error occurred: " + status + " " + err);
+                            }
                         },
                     });
 
                 });
 
-                upvoteButton.addEventListener('click', function () {
-                    upvoteButton.innerHTML = upvoteButton.innerHTML.replace(thumbsUp, spinner);
-                    if (collectDeviceFeedback) {
-                        upParams.device = deviceSelect.value;
-                        upParams.teamsMode = teamsModeSelect.value;
+                function submitWindowsReport(event, voteParams) {
+                    //stop submit the form, we will post it manually.
+                    event.preventDefault();
+
+                    // Get form
+                    var form = $('#windows-report-form')[0];
+
+                    // Create an FormData object
+                    var data = new FormData(form);
+
+                    // If you want to add an extra field for the FormData
+                    data.append("comment", $('#windows-report-field').text());
+
+                    console.log(data);
+
+                    // disabled the submit button
+                    $("#windows-report-submit").prop("disabled", true);
+                    $("#windows-report-submit").html(spinner + $('#windows-report-submit').text());
+
+                    if (config.collectDeviceFeedback) {
+                        voteParams.device = deviceSelect.value;
+                        voteParams.teamsMode = teamsModeSelect.value;
                     }
 
-                    if (tap == "Windows") {
-                        upParams.windowsBuildType = windowsBuildTypeField.val();
-                        upParams.windowsBuildVersion = windowsBuildVersionField.val();
-                    }
+                    voteParams.windowsBuildType = windowsBuildTypeField.val();
+                    voteParams.windowsBuildVersion = windowsBuildVersionField.val();
 
+                    $.ajax({
+                        type: "POST",
+                        enctype: 'multipart/form-data',
+                        url: "/api/upload",
+                        data: data,
+                        processData: false,
+                        contentType: false,
+                        cache: false,
+                        timeout: 600000,
+                        success: function (data) {
+                            $("#result").text(data);
+                            console.log("SUCCESS : ", data);
 
-                    ajaxRequest('POST', voteUrl, upParams, function () {
-                        //ajaxRequest('GET', voteUrl, {}, updateVotes);
-                        tables.each(function () {
-                            console.log(this);
-                            $(this).dataTable().api().ajax.reload();
-                        });
-                        upvoteButton.innerHTML = upvoteButton.innerHTML.replace(spinner, thumbsUp);
-                    });
-                });
+                            voteParams.attachmentFilename = data.filename;
+                            voteParams.comment = $('#windows-report-field').val();
 
-                if (tap == "Windows") {
-                    downvoteButton.setAttribute("data-target", "#windows-report-modal");
-                    downvoteButton.addEventListener('click', function () {
-                        if (collectDeviceFeedback) {
-                            downParams.device = deviceSelect.value;
-                            downParams.teamsMode = teamsModeSelect.value;
-                        }
+                            let submitUrl = apiUrl + '/' + voteParams.cId;
 
-                        downParams.windowsBuildType = windowsBuildTypeField.val();
-                        downParams.windowsBuildVersion = windowsBuildVersionField.val();
+                            if (voteParams.upDown == "comment") {
+                                submitUrl = "../api/comments";
+                            }                            
 
-                        $('#windows-report-id').text(cId);
-                        $('#windows-report-name').text(caseTitle);
-                        //$('#windows-report-modal').modal.launch();
+                            ajaxRequest('POST', submitUrl, voteParams, function () {
+                                $("#windows-report-submit").text($('#windows-report-submit').html().replace(spinner, ""));
+                                $('#windows-report-modal').modal('hide');
+                                resetWindowsReport();
 
-                        $('#submitWindowsReport').click(function () {
-                            console.log("Clicked submitWindowsReport");
-                            downParams.comment = $('#windowsReportField').val();
-
-                            if ($('#windows-report-file').prop('files').length > 0) {
-                                let fileToUpload = $('#windows-report-file').prop('files')[0];
-                                console.log(fileToUpload);
-
-                                let reader = new FileReader();
-                                //reader.readAsDataURL(fileToUpload);
-                                reader.readAsBinaryString(fileToUpload);
-
-                                reader.addEventListener("load", function () {
-                                    console.log(reader.result);
-                                    downParams.attachmentName = fileToUpload.name;
-                                    downParams.attachmentContents = reader.result;
-
-                                    downParams.attachment = fileToUpload;
-
-                                    ajaxRequest('POST', voteUrl, downParams, function () {
-                                        //ajaxRequest('GET', voteUrl, {}, updateVotes);
-                                        tables.each(function () {
-                                            console.log(this);
-                                            $(this).dataTable().api().ajax.reload();
-                                        });
-                                    });
-                                });
-                            } else {
-                                ajaxRequest('POST', voteUrl, downParams, function () {
+                                if (voteParams.upDown != "comment") {
                                     tables.each(function () {
                                         console.log(this);
                                         $(this).dataTable().api().ajax.reload();
                                     });
-                                });
-                            }
+                                }
+                            });
 
-
-
-                            // TODO: Also handle the case where there's no file to upload, obviously
-
-
-                        });
+                            $("#windows-report-submit").prop("disabled", false);
+                        },
+                        error: function (e) {
+                            // TODO: Do more helpful stuff, probably still submit the text feedback
+                            $("#result").text(e.responseText);
+                            console.log("ERROR : ", e);
+                            $("#windows-report-submit").prop("disabled", false);
+                        }
                     });
-                } else {
+                }
+
+                if (config.tap == "Windows") {
+                    upvoteButton.setAttribute("data-target", "#windows-report-modal");
+                    upvoteButton.setAttribute("type", "submit");
+                    upvoteButton.setAttribute("data-toggle", "modal");
+
+                    downvoteButton.setAttribute("data-target", "#windows-report-modal");
+
+                    console.log(commentButton);
+
+                    commentButton.attr("data-target", "#windows-report-modal");
+                    commentButton.attr("type", "submit");
+                    commentButton.attr("data-toggle", "modal");
+
+                    console.log(commentButton);
+
+
+                    upvoteButton.addEventListener('click', function () {
+                        $('#windows-report-header').text("Report success for this scenario");
+                        $('#windows-report-field').attr("placeholder", "You can provide optional feedback. Is there anything about this scenario you would like to work differently?");
+
+                        $('#windows-report-id').text(cId);
+                        $('#windows-report-name').text(caseTitle);
+
+                        voteParams.upDown = "up";
+
+                        $('#windows-report-submit').off();
+
+                        $('#windows-report-submit').click(function () {
+                            submitWindowsReport(event, voteParams);
+                        });
+
+                    });
+
+
                     downvoteButton.addEventListener('click', function () {
-                        downvoteButton.innerHTML = downvoteButton.innerHTML.replace(thumbsDown, spinner);
-                        if (collectDeviceFeedback) {
-                            downParams.device = deviceSelect.value;
-                            downParams.teamsMode = teamsModeSelect.value;
+                        $('#windows-report-header').text("Report a problem for this scenario");
+                        $('#windows-report-field').attr("placeholder", "Please describe the problem.");
+
+                        $('#windows-report-id').text(cId);
+                        $('#windows-report-name').text(caseTitle);
+
+                        voteParams.upDown = "down";
+
+                        $('#windows-report-submit').off();
+
+                        $('#windows-report-submit').click(function () {
+                            submitWindowsReport(event, voteParams);
+                        });
+                    
+                    });
+
+                    commentButton.click(function () {
+                        console.log(commentButton);
+                        console.log("Clicked comment button");
+                        $('#windows-report-header').text("Submit feedback for this scenario");
+                        $('#windows-report-field').attr("placeholder", "Please provide your feedback.");
+
+                        $('#windows-report-id').text(cId);
+                        $('#windows-report-name').text(caseTitle);
+
+                        voteParams.upDown = "comment";
+
+                        $('#windows-report-submit').off();
+
+                        $('#windows-report-submit').click(function () {
+                            submitWindowsReport(event, voteParams);
+                        });
+
+                    });
+
+                } else {
+                    upvoteButton.addEventListener('click', function () {
+                        voteParams.upDown = "up";
+                        upvoteButton.innerHTML = upvoteButton.innerHTML.replace(thumbsUp, spinner);
+                        if (config.collectDeviceFeedback) {
+                            voteParams.device = deviceSelect.value;
+                            voteParams.teamsMode = teamsModeSelect.value;
                         }
 
-                        ajaxRequest('POST', voteUrl, downParams, function () {
+                        if (config.tap == "Windows") {
+                            voteParams.windowsBuildType = windowsBuildTypeField.val();
+                            voteParams.windowsBuildVersion = windowsBuildVersionField.val();
+                        }
+
+
+                        ajaxRequest('POST', voteUrl, voteParams, function () {
                             //ajaxRequest('GET', voteUrl, {}, updateVotes);
+                            console.log("Done");
+                            tables.each(function () {
+                                console.log(this);
+                                $(this).dataTable().api().ajax.reload();
+                            });
+                            upvoteButton.innerHTML = upvoteButton.innerHTML.replace(spinner, thumbsUp);
+                        });
+                    });
+
+                    downvoteButton.addEventListener('click', function () {
+                        voteParams.upDown = "down";
+                        downvoteButton.innerHTML = downvoteButton.innerHTML.replace(thumbsDown, spinner);
+                        if (config.collectDeviceFeedback) {
+                            voteParams.device = deviceSelect.value;
+                            voteParams.teamsMode = teamsModeSelect.value;
+                        }
+
+                        ajaxRequest('POST', voteUrl, voteParams, function () {
+                            //ajaxRequest('GET', voteUrl, {}, updateVotes);
+                            console.log("Done");
                             tables.each(function () {
                                 console.log(this);
                                 $(this).dataTable().api().ajax.reload();
@@ -781,49 +905,148 @@
                             downvoteButton.innerHTML = downvoteButton.innerHTML.replace(spinner, thumbsDown);
                         });
                     });
+
+                    commentButton.attr("data-target", "#comment-modal");
+                    commentButton.attr("type", "submit");
+                    commentButton.attr("data-toggle", "modal");
+
                 }
-
-
-
             });
         });
 
-        // General Feedback
-        if (tap == "Windows") {
-            $('.feedback').show();
+        if (config.tap == "Windows") {
+            // General Feedback and Feature Requests
+            $('.otherActions').show();
 
             var feedbackField = $('#feedbackField');
             var submitFeedback = $('#submitFeedback');
+            var feedbackPublicField = $('#feedbackPublicField');
 
-            feedbackField.on('input', function (e) {
+            // Initialize table
+            microsoftTeams.getContext(function (context) {
+                function bindEditButtons() {
+                    $('.edit-feedback').click(function () {
+                        let feedbackId = parseInt(this.id.replace("edit-feedback-", ""));
+                        console.log(feedbackId);
+                        // TODO: Make it editable, or just use an editable DataTable for this
+                    });
+                }
+
+                var feedbackTable = $('#feedback-table').DataTable({
+                    info: false,
+                    paging: false,
+                    searching: false,
+                    ordering: false,
+                    ajax: {
+                        url: "/api/feedback",
+                        type: "POST",
+                        contentType: "application/json",
+                        data: function (d) {
+                            return JSON.stringify({
+                                validationId: config.validationId,
+                                userEmail: context["userPrincipalName"],
+                            });
+                        },
+                        dataSrc: "feedback",
+                    },
+                    columns: [
+                        { "data": "text" },
+                        //{ "data": "showEditButton" },
+                    ],
+                    columnDefs: [
+                        {
+                            "render": function (data, type, row) {
+                                let cell = '<i>"' + data + '"</i>';
+                                // TODO: Taking this out for now
+                                //if (row.showEditButton) {
+                                //    cell = "<i class='fa fa-pencil-alt edit-feedback' id='edit-feedback-" + row._id + "'></i>  " + cell;
+                                // }
+                                return cell;
+                            },
+                            "targets": 0
+                        },
+                    ],
+                    initComplete: bindEditButtons,
+                });
+
+                // Refresh table when modal is launched
+                $('#feedback-modal').on('shown.bs.modal', function (e) {
+                    feedbackTable.ajax.reload(bindEditButtons);
+                });
+
+                feedbackField.on('input', function (e) {
+                    if (e.target.value === '') {
+                        // Textarea has no value
+                        submitFeedback.attr('disabled', true);
+                        submitFeedback.attr('title', "Please enter feedback before submitting.");
+                    } else {
+                        // Textarea has a value
+                        submitFeedback.attr('disabled', false);
+                        submitFeedback.attr('title', "Submit feedback");
+                    }
+                });
+
+                submitFeedback.click(function () {
+                    submitFeedback.html(spinner + submitFeedback.html());
+                    submitFeedback.disable
+                    microsoftTeams.getContext(function (context) {
+                        let feedbackParams = {
+                            validationId: config.validationId,
+                            text: feedbackField.val(),
+                            submitterEmail: context['userPrincipalName'],
+                            //public: userPrefs.feedbackPublic,
+                            // Just using a dedicated field for this rather than a user setting
+                            public: feedbackPublicField.is(':checked'),
+                        };
+
+
+                        ajaxRequest('POST', feedbackApiUrl, feedbackParams, function () {
+                            feedbackField.val("");
+                            submitFeedback.html(submitFeedback.html().replace(spinner, ""));
+                            $('#feedback-alert').show();
+
+                            feedbackTable.ajax.reload(bindEditButtons);
+                            console.log("Done");
+                        });
+                    });
+
+                });
+            });
+
+            // Feature Requests
+            //$('.featureRequests').show();
+
+            let titleField = $('#featureRequestTitle');
+            let descriptionField = $('#featureRequestDescription');
+            let publicToggle = $('#featureRequestPublic');
+            let submitFeatureRequest = $('#submitFeatureRequest');
+
+            titleField.on('input', function (e) {
                 if (e.target.value === '') {
                     // Textarea has no value
-                    submitFeedback.attr('disabled', true);
+                    submitFeatureRequest.attr('disabled', true);
                 } else {
                     // Textarea has a value
-                    submitFeedback.attr('disabled', false);
+                    submitFeatureRequest.attr('disabled', false);
                 }
             });
 
-            submitFeedback.click(function () {
-                submitFeedback.html(spinner + submitFeedback.html());
+            submitFeatureRequest.click(function () {
+                submitFeatureRequest.html(spinner + submitFeatureRequest.html());
                 microsoftTeams.getContext(function (context) {
-                    let feedbackParams = {
-                        validationId: validationId,
-                        text: feedbackField.val(),
-                        submitterEmail: context['userPrincipalName'],
+                    let featureRequestParams = {
+                        validationId: config.validationId,
+                        title: titleField.val(),
+                        description: descriptionField.val(),
+                        public: publicToggle.val(),
+                        submitterEmail: context['userPrincipalName']
                     };
 
+                    console.log(featureRequestParams);
 
-                    ajaxRequest('POST', feedbackApiUrl, feedbackParams, function () {
-                        feedbackField.val("");
-                        submitFeedback.html(submitFeedback.html().replace(spinner, ""));
-                        $('#feedback-alert').show();
-                        console.log("Done");
-                    });
-                });
-
-            });
+                    console.log("Not yet implemented");
+                })
+            })
         }
 
     });

@@ -26,9 +26,17 @@ block content
                         label(for=tenant.tid)       #{tenant.name}
                     td
                         p.subtle #{tenant.tid}
+            // Special row for testing
             tr
                 td
                     input(type='radio', name='tenant', id="aaaa-aaaa-aaaa-aaaa-aaaa", value="Max Test", onclick='microsoftTeams.settings.setValidityState(true);')
                     label(for="aaaa-aaaa-aaaa-aaaa-aaaa")       Max Test
                     td
                         p.subtle aaaa-aaaa-aaaa-aaaa-aaaa
+            // Special row for elites
+            tr
+                td
+                    input(type='radio', name='tenant', id="elite", value="Elites", onclick='microsoftTeams.settings.setValidityState(true);')
+                    label(for="elite")       All Elite Tenants
+                    td
+                        p.subtle elite

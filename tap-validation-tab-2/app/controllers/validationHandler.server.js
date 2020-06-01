@@ -12,6 +12,8 @@ function validationHandler(dbParent) {
 
     //var bugs = db.collection('bugs');
     var cases = db.collection('cases');
+    var feedback = db.collection('feedback');
+    var featureRequests = db.collection('featureRequests');
 
     var pms = db.collection('pms');
 
@@ -27,13 +29,7 @@ function validationHandler(dbParent) {
     //const WINDOWS_ADO_WORKITEM_UPDATE_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/{id}?api-version=4.1";
 
     this.getIndex = function (req, res) {
-        var params = {}
-        //console.log(req.query);
-        if (req.query.success == 'true') {
-            params.success = 'true'
-        }
-
-        res.render('index', params);
+        res.render('index', {});
     };
 
     this.getValidations = function (req, res) {
@@ -88,7 +84,7 @@ function validationHandler(dbParent) {
             blurb: 1,
             tag: 1,
             active: 1,
-            caseOrder: 1,
+            caseOrder: 1
         }
 
         //console.log(query);
@@ -96,16 +92,14 @@ function validationHandler(dbParent) {
             if (err) {
                 throw err;
             }
-            //console.log(validationDoc);
 
-            var bugQuery, caseQuery;
+            // One query for cases, feedback, and featureRequests
+            var linkedItemsQuery;
 
             try {
-                bugQuery = { "validationId": ObjectID(safevId) };
-                caseQuery = { "validationId": ObjectID(safevId) };
+                linkedItemsQuery = { validationId: ObjectID(safevId) };
             } catch (error) {
-                bugQuery = { validationId: parseInt(safevId) };
-                caseQuery = { validationId: parseInt(safevId) };
+                linkedItemsQuery = { validationId: parseInt(safevId) };
             }
 
             //console.log(bugs.find(bugQuery).toArray());
@@ -131,7 +125,7 @@ function validationHandler(dbParent) {
             };
 
             //console.log("caseOrder is " + validationDoc.caseOrder);
-            cases.find(caseQuery).project(caseProjection).sort(caseSort).toArray(function (err, caseDocs) {
+            cases.find(linkedItemsQuery).project(caseProjection).sort(caseSort).toArray(function (err, caseDocs) {
                 if (err) { throw err; }
 
                 let safeCases = [];
@@ -140,9 +134,20 @@ function validationHandler(dbParent) {
                     safeCases.push(kase);
                 });
 
-                res.render('validation', {
-                    "validation": validationDoc,
-                    "cases": safeCases,
+                let feedbackQuery = linkedItemsQuery;
+                feedbackQuery.public = true;
+
+                feedback.find(feedbackQuery).toArray(function (err, feedbackDocs) {
+                    console.log(feedbackDocs);
+
+                    featureRequests.find(linkedItemsQuery).toArray(function (err, featureRequestDocs) {
+                        res.render('validation', {
+                            validation: validationDoc,
+                            cases: safeCases,
+                            feedback: feedbackDocs,
+                            featureRequests: featureRequestDocs,
+                        });
+                    });
                 });
             });
         });
@@ -159,19 +164,57 @@ function validationHandler(dbParent) {
         });
     }
 
+    this.getFeedbackByUser = function (req, res) {
+        console.log(req.body);
+        let validationId = parseInt(req.body.validationId);
+        let userEmail = req.body.userEmail;
+
+        // Get all feedback submitted by this user, or others' public feedback
+        let feedbackQuery = {
+            validationId: validationId,
+            $or: [
+                { submitterEmail: userEmail },
+                { public: true }
+            ],
+        };
+
+        feedback.find(feedbackQuery).toArray(function (err, feedbackDocs) {
+            feedbackDocs.forEach(function (doc) {
+                if (!(doc.submitterEmail == userEmail)) {
+                    doc.submitterEmail = "someone else";
+                    doc.showEditButton = false;
+                } else {
+                    doc.showEditButton = true;
+                }
+            });
+            return res.json({ feedback: feedbackDocs });
+        });
+    }
+
     this.addFeedback = function (req, res) {
         console.log(req.body);
 
-        let feedback = {
+        // Temp
+        //req.body.submitterEmail = "someone@gmail.com";
+
+        let validationId = parseInt(req.body.validationId);
+
+        let feedbackObj = {
             text: req.body.text,
             submitterEmail: req.body.submitterEmail,
-            timestamp: new Date()
+            validationId: validationId,
+            timestamp: new Date(),
+            public: req.body.public,
         };
 
-        validations.updateOne({ _id: parseInt(req.body.validationId) }, { $push: { feedback: feedback } }, function (err, doc) {
-            if (err) { throw err; }
-            let bugTitle = "Feedback - " + req.body.text;
-            let tags = "TAP; TAP-Feedback";
+        //validations.updateOne({ _id: parseInt(req.body.validationId) }, { $push: { feedback: feedback } }, function (err, doc) {
+        let bugTitle = "Feedback - " + req.body.text;
+        // TODO: Add the validation's tag
+
+        validations.findOne({ _id: validationId }, {
+            projection: { tag: 1 }
+        }, function (err, valDoc) {
+            let tags = "WCTAP; WCTAP-Feedback; " + valDoc.tag;
 
             //let systemInfo = "<strong>Build Type</strong>: " + body.windowsBuildType + "<br />";
             //systemInfo += "<strong>Build Version</strong>: " + body.windowsBuildVersion + "<br />";
@@ -192,7 +235,7 @@ function validationHandler(dbParent) {
                 {
                     "op": "add",
                     "path": "/fields/System.Description",
-                    "value": req.body.text
+                    "value": description,
                 }
             ];
             const options = {
@@ -208,11 +251,29 @@ function validationHandler(dbParent) {
 
             request.post(options, function (vstsErr, vstsStatus, vstsResponse) {
                 if (vstsErr) { console.log(vstsErr); }
+                vstsResponse = JSON.parse(vstsResponse);
+                feedbackObj._id = vstsResponse.id;
 
-                console.log(vstsResponse);
-
-                res.status(200).send();
+                feedback.insertOne(feedbackObj, function (err, feedbackDoc) {
+                    res.status(200).send();
+                });
             });
+        });
+    }
+
+    this.modifyFeedback = function (req, res) {
+
+        console.log(req.params);
+        console.log(req.body);
+
+        feedback.updateOne({ _id: req.params.id }, {
+            $set: { text: req.body.text }
+        }, function (err, feedbackDoc) {
+            console.log(feedbackDoc);
+
+            // TODO: Write changes to ADO
+
+            return res.status(200).send();
         });
     }
 };

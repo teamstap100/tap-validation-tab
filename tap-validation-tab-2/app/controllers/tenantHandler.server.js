@@ -105,14 +105,20 @@ function tenantHandler(dbParent) {
  
         tenants.findOne({ domains: domain }, { projection: tenantProjection }, function (err, tenantDoc) {
             console.log(tenantDoc);
-            if (tenantDoc.parent) {
-                console.log("This tenant has a parent");
-                tenants.findOne({ tid: tenantDoc.parent }, { projection: tenantProjection }, function (err, parentTenantDoc) {
-                    res.json(parentTenantDoc);
-                });
+
+            if (tenantDoc) {
+                if (tenantDoc.parent) {
+                    console.log("This tenant has a parent");
+                    tenants.findOne({ tid: tenantDoc.parent }, { projection: tenantProjection }, function (err, parentTenantDoc) {
+                        res.json(parentTenantDoc);
+                    });
+                } else {
+                    res.json(tenantDoc);
+                }
             } else {
-                res.json(tenantDoc);
+                res.json({ name: '?', tid: '?', itAdmins: "", itAdminIds: [] });
             }
+
         });
     };
 };

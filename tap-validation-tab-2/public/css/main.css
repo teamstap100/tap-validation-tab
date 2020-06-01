@@ -283,10 +283,15 @@ p.editor-default {
     color: #FFFFFF;
 }
 
-.btn-primary:hover {
-    background-color: #22267c;
-    color: #FFFFFF;
-}
+    .btn-primary:hover {
+        background-color: #22267c;
+        color: #FFFFFF;
+    }
+
+    .btn-primary:focus {
+        background-color: #6264A7;
+        color: #FFFFFF;
+    }
 
 .tooltip-inner {
     max-width: 350px; /* set this to your maximum fitting width */
@@ -434,4 +439,33 @@ span.tenant, span.email {
 
 .hugeTable {
     font-size: 11px;
+}
+
+.fenix-dev {
+    background-color: #cadce2;
+    margin-right: 60px;
+}
+
+.fenix-customer {
+    background-color: #e2f3e2;
+    margin-left: 50px;
+    margin-right: 10px;
+}
+
+.fenix-dev-nametag {
+    text-align: left;
+    margin-right: 10px;
+}
+
+.fenix-customer-nametag {
+    text-align: right;
+    margin-right: 10px;
+}
+
+.radio-inline {
+    margin-right: 20px;
+}
+
+.checkbox-inline {
+    margin-right: 20px;
 }

@@ -2,6 +2,10 @@
 
 var ObjectID = require('mongodb').ObjectID;
 var request = require('request');
+const fs = require('fs');
+const path = require('path');
+//const jsdom = require('jsdom');
+const cheerio = require('cheerio');
 
 function bugHandler (dbParent) {
 
@@ -15,18 +19,48 @@ function bugHandler (dbParent) {
   // db used to return the db, now it returns the parent in mongo 3.0.0.
   // So, need to point it to the real db each time.
 
-    const VSTS_API_BASE = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/";
-    const VSTS_BUGS_ENDPOINT = VSTS_API_BASE + "workitems/$bug?api-version=4.1";
-    const VSTS_WORKITEM_UPDATE_ENDPOINT = VSTS_API_BASE + "workitems/{id}?api-version=4.1";
+    const TEAMS_ADO_API_BASE = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/";
+    const TEAMS_ADO_BUGS_ENDPOINT = TEAMS_ADO_API_BASE + "workitems/$bug?api-version=4.1";
+    const TEAMS_ADO_WORKITEM_UPDATE_ENDPOINT = TEAMS_ADO_API_BASE + "workitems/{id}?api-version=4.1";
+    const TEAMS_ADO_WORKITEM_COMMENTS_ENDPOINT = TEAMS_ADO_API_BASE + "workitems/{id}/comments?order=asc";
+
+    // New way of naming things
+    const TEAMS_ADO_ATTACHMENT_CREATE_ENDPOINT = TEAMS_ADO_API_BASE + "attachments";
 
     const QUERY_BY_WIQL_ENDPOINT = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/wiql?api-version=5.0";
 
     // This one's for production
     var AUTH = process.env.AUTH;
 
-    var FENIX_AUTH = process.env.FENIX_AUTH;
-      // Get all the bugs with a given vId
-      // (This doesn't appear to be used?)
+    function fixHtml(html) {
+        const domObj = cheerio.load(html, { xmlMode: true });
+        return domObj.html();
+    }
+
+
+    function cleanComment(comment) {
+        comment = comment.replace("@TAP-Fenix", "");
+        comment = comment.split("Attachment 1")[0];
+
+        //comment = comment.replace(/<br>/g, "");
+        comment = comment.replace(/&nbsp;/g, "");
+
+        //comment = comment.replace(/<style[^>]*>.*<\/style>/gm, '')
+        //    // Remove script tags and content
+        //    .replace(/<script[^>]*>.*<\/script>/gm, '')
+        //    // Remove all opening, closing and orphan HTML tags
+        //    .replace(/<[^>]+>/gm, '')
+        //    // Remove leading spaces and repeated CR/LF
+        //    .replace(/([\r\n]+ +)+/gm, '');
+
+
+        comment = fixHtml(comment);
+        comment = comment.replace(/^\s*(?:<br\s*\/?\s*>)+|(?:<br\s*\/?\s*>)+\s*$/g, "");
+        comment = comment.replace(/<\/br>/g, "");
+        //console.log(comment);
+
+        return comment;
+    }
       this.getBug = function(req, res) {
         console.log("Calling getBug");
         console.log(req.params.vId);
@@ -164,7 +198,7 @@ function bugHandler (dbParent) {
                     // TODO: Add other ops here
                 ];
                 const options = {
-                    url: VSTS_BUGS_ENDPOINT,
+                    url: TEAMS_ADO_BUGS_ENDPOINT,
                     headers: {
                         'Authorization': AUTH,
                         'Content-Type': 'application/json-patch+json'
@@ -243,7 +277,7 @@ function bugHandler (dbParent) {
                       }
                   ];
 
-                  var update_endpoint = VSTS_WORKITEM_UPDATE_ENDPOINT.replace("{id}", bId);
+                  var update_endpoint = TEAMS_ADO_WORKITEM_UPDATE_ENDPOINT.replace("{id}", bId);
                   //console.log(update_endpoint);
                   //console.log(result.value._id);
                   const options = {
@@ -302,17 +336,32 @@ function bugHandler (dbParent) {
         var tid = req.params.tid;
         var tenantObj;
 
-        tenants.findOne({ tid: tid }, {}, function (err, tenantDoc) {
-            if (err) {
-                throw err;
-            }
+        console.log(tid);
 
-            tenantObj = tenantDoc;
+        if (tid == "elite") {
+            validations.find({ active: true, caseOrder: "normal", tagIsPlaceholder: false, tap: "Teams", test: { $ne: true } }).project({ name: 1, tag: 1 }).sort({ name: 1 }).toArray(function (err, valDocs) {
+                res.render('bugs', {
+                    elite: true,
+                    validations: valDocs,
+                });
+            })
+        } else {
+            tenants.findOne({ tid: tid }, {}, function (err, tenantDoc) {
+                if (err) {
+                    throw err;
+                }
 
-            res.render('bugs', {
-                tenant: tenantObj,
+                var tenantObj = tenantDoc;
+
+                // Note: This excludes tag-is-placeholder validations, since tagging them wouldn't be useful. Might need to encourage PMs to fix these
+                validations.find({ active: true, caseOrder: "normal", tagIsPlaceholder: false, tap: "Teams", test: { $ne: true } }).project({ name: 1, tag: 1 }).sort({ name: 1 }).toArray(function (err, valDocs) {
+                    return res.render('bugs', {
+                        tenant: tenantObj,
+                        validations: valDocs,
+                    });
+                })
             });
-        });
+        }
     }
 
     this.getTenantBugs = function (req, res) {
@@ -321,93 +370,144 @@ function bugHandler (dbParent) {
         var tenantObj;
 
         let issueWits = [];
-        let bugCommentMap = {};
         let witsCount = 0;
         let witsDone = false;
-        // TODO: Get child tenants too, and put them in tids
-        let tids = [tid,];
 
+        // tids will contain this tenant and child tenants' TIDs
+        let tids = [];
 
-        tenants.findOne({ tid: tid }, {}, function (err, tenantDoc) {
-            if (err) {
-                throw err;
-            }
+        if (tid == "elite") {
+            tenants.find({ status: "Elite" }).project({ name: 1, tid: 1 }).toArray(function (err, eliteTenantDocs) {
+                console.log(eliteTenantDocs);
+                eliteTenantDocs.forEach(function (doc) {
+                    tids.push(doc.tid);
+                });
+                return getBugsForTids(tids);
+            });
+        } else {
+            tids.push(tid);
 
-            tenantObj = tenantDoc;
-            console.log(tenantDoc.name);
+            tenants.findOne({ tid: tid }, {}, function (err, tenantDoc) {
+                if (err) {
+                    throw err;
+                }
 
-            tenants.find({ parent: tid }).project({ name: 1, tid: 1, parent: 1 }).toArray(function (err, childDocs) {
+                tenantObj = tenantDoc;
+                //console.log(tenantDoc.name);
 
-                console.log(childDocs);
+                tenants.find({ parent: tid }).project({ name: 1, tid: 1, parent: 1 }).toArray(function (err, childDocs) {
+                    childDocs.forEach(function (doc) {
+                        tids.push(doc.tid);
+                    })
+                    return getBugsForTids(tids);
+                });
+            });
+        }
+        
+        function getBugsForTids(tids) {
+            console.log("getBugsForTids on:");
+            console.log(tids);
 
-                var body = {
-                    "query": "Select [System.Id] from WorkItems Where [System.WorkItemType] = 'Bug' and ("
-                };
+            var body = {
+                "query": "Select [System.Id] from WorkItems Where [System.WorkItemType] = 'Bug' and [System.CreatedDate] > @today-90 and [System.Tags] Not Contains 'TAPSurvey' and ("
+            };
 
-                tids.forEach(function (tids) {
-                    body.query += ' or ';
-                    body.query += "[MicrosoftTeamsCMMI.CustomerName] = '" + tid + "'";
-                })
+            tids.forEach(function (tid) {
+                body.query += ' or ';
+                body.query += "[MicrosoftTeamsCMMI.CustomerName] = '" + tid + "'";
+            })
 
-                body.query = body.query.replace("( or", '(');
-                body.query += ")"
+            body.query = body.query.replace("( or", '(');
+            body.query += ")"
 
-                console.log(body);
+            console.log(body);
 
-                var options = {
-                    url: QUERY_BY_WIQL_ENDPOINT,
-                    headers: {
-                        'Authorization': AUTH,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(body)
-                };
+            var options = {
+                url: QUERY_BY_WIQL_ENDPOINT,
+                headers: {
+                    'Authorization': AUTH,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            };
 
-                console.log(options);
+            //console.log(options);
 
-                request.post(options, function (vstsErr, vstsStatus, vstsResponse) {
-                    if (vstsErr) {
-                        console.log(vstsErr);
-                        throw vstsErr;
-                    }
-                    vstsResponse = JSON.parse(vstsResponse);
-                    var workitems = vstsResponse.workItems;
-                    witsCount = vstsResponse.workItems.length;
+            request.post(options, function (vstsErr, vstsStatus, vstsResponse) {
+                if (vstsErr) {
+                    console.log(vstsErr);
+                    throw vstsErr;
+                }
+                vstsResponse = JSON.parse(vstsResponse);
+                //console.log(vstsResponse);
+                var workitems = vstsResponse.workItems;
+                witsCount = vstsResponse.workItems.length;
 
-                    workitems.forEach(function (wit) {
+                workitems.forEach(function (wit) {
 
-                        var witOptions = {
-                            url: wit.url,
-                            headers: {
-                                'Authorization': AUTH,
-                            }
+                    var witOptions = {
+                        url: wit.url,
+                        headers: {
+                            'Authorization': AUTH,
                         }
+                    }
 
-                        request.get(witOptions, function (vstsErr, vstsStatus, vstsResponse) {
-                            // console.log(vstsResponse);
+                    request.get(witOptions, function (vstsErr, vstsStatus, vstsResponse) {
+                        // console.log(vstsResponse);
 
-                            let workitem = JSON.parse(vstsResponse);
+                        let workitem = JSON.parse(vstsResponse);
+
+                        //console.log(workitem);  
+
+                        var commentOptions = {
+                            url: wit.url + "/comments?order=asc",
+                            headers: {
+                                'Authorization': AUTH
+                            }
+                        };
+
+                        //console.log(commentOptions);
+
+                        request.get(commentOptions, function (commentErr, commentStatus, commentResponse) {
+
+                            let resp = JSON.parse(commentResponse);
+                            let comments = resp.comments;
+
+                            // We only want to display comments that are either:
+                            // 1) Containing a TAP-Fenix invocation (and are sent to the customer)
+                            // 2) Written by TAP-Fenix (Either a Fenix reply, or one of the triage actions from the tenant tab)
+
+                            // (We really just want the number of comments here, the actual comments are fetched from this.getBugComments with ajax)
+
+                            let fenixComments = [];
+
+                            comments.forEach(function (comment) {
+                                // Comments coming from dev
+                                if (comment.text.includes("TAP-Fenix")) {
+                                    fenixComments.push(comment);
+
+                                    // Comments coming from customer, or dev thru tap-fenix
+                                } else if (comment.createdBy.uniqueName == "tapfenix@microsoft.com") {
+                                    fenixComments.push(comment);
+                                }
+                            })
+                            //workitem.comments = fenixComments;
+                            workitem.commentCount = fenixComments.length;
+
+
                             issueWits.push(workitem);
                             //console.log(workitem.id == "691157");
 
-                            bugComments.find({ bugId: workitem.id }).toArray(function (err, docs) {
-                                //docs.forEach(function (doc) {
-                                //    console.log(doc.bugId, workitem.id, doc.bugId == workitem.id);
-                                //})
-                                bugCommentMap[workitem.id] = docs;
-                                witsDone += 1;
-                                checkIfDone();
-                            });
-                        })
+                            witsDone += 1;
+                            checkIfDone();
+                        });
                     })
+                })
 
-                    // In case there are no workitems
-                    checkIfDone();
-                });
-            })
-
-
-        });
+                // In case there are no workitems
+                checkIfDone();
+            });
+        }
 
         function checkIfDone() {
             //console.log(witsDone + " / " + witsCount);
@@ -425,19 +525,45 @@ function bugHandler (dbParent) {
                 //console.log(wit);
 
                 let shortSteps = wit.fields["Microsoft.VSTS.TCM.ReproSteps"] || "";
-                console.log(shortSteps);
-
+                //console.log(shortSteps);
 
                 if (shortSteps.includes("System info")) {
                     shortSteps = shortSteps.split("System info:")[0];
                 }
 
+
                 if (shortSteps.includes("All the logs &amp; screenshots")) {
                     shortSteps = shortSteps.split("All the logs &amp; screenshots")[0];
                 }
 
+                // For some mobile bugs
+                if (shortSteps.includes("=============================")) {
+                    shortSteps = shortSteps.split("=============================")[0];
+                }
+
+                if (shortSteps.includes(' style="box-sizing:border-box;"')) {
+                    shortSteps = shortSteps.replace(/ style="box-sizing:border-box;"/g, '');
+                }
+
+
                 shortSteps = shortSteps.split("<hr><br>")[1];
 
+                console.log(shortSteps);
+
+                let state = wit.fields["System.State"];
+                //console.log(wit.fields["System.Tags"]);
+                if (wit.fields["System.Tags"]) {
+                    if ((wit.fields["System.Tags"].includes("TAPITAdminRequestingClose")) && (state != "Closed")) {
+                        state = "Close Requested";
+                    }
+                }
+
+                let triaged = false;
+                if (wit.fields["System.Tags"]) {
+                    if (wit.fields["System.Tags"].includes("TAPITAdminTriaged")) {
+                        triaged = true;
+                    }
+                }
 
                 simpleBugs.push({
                     DT_RowId: wit.id,
@@ -445,41 +571,427 @@ function bugHandler (dbParent) {
                     date: new Date(wit.fields["System.CreatedDate"]).toLocaleDateString(),
                     title: wit.fields["System.Title"],
                     tags: wit.fields["System.Tags"],
-                    state: wit.fields["System.State"],
+                    state: state,
+                    reason: wit.fields["System.Reason"],
                     reproSteps: shortSteps || "",
                     submitter: wit.fields["MicrosoftTeamsCMMI.CustomerEmail"] || "",
-                    statusTweet: wit.fields["MicrosoftTeamsCMMI.StatusTweet"] || "",
-                    //triaged: wit.fields["System.Tags"].includes("TAPITAdminTriaged"),
-                    comments: bugCommentMap[wit.id],
+                    //statusTweet: wit.fields["MicrosoftTeamsCMMI.StatusTweet"] || "",
+                    triaged: triaged,
+                    //history: wit.fields["System.History"] || "",
+                    //comments: wit.comments,
+                    commentCount: wit.commentCount,
                 })
             });
 
-            console.log(simpleBugs);
+            //console.log(simpleBugs);
 
             res.json({
                 tenant: tenantObj,
                 bugs: simpleBugs,
                 wits: issueWits,
-                bugComments: bugCommentMap,
             });
         }
+    }
+
+    this.getBugComments = function (req, res) {
+        var refUrlParts = req.url.split('/');
+        const bId = parseInt(refUrlParts.pop());
+
+        if (bId == null) {
+            return res.status(400).send();
+        }
+
+        let comments_url = TEAMS_ADO_WORKITEM_COMMENTS_ENDPOINT.replace("{id}", bId);
+
+        var commentOptions = {
+            url: comments_url,
+            headers: {
+                'Authorization': AUTH
+            }
+        };
+
+        console.log(commentOptions);
+
+        request.get(commentOptions, function (commentErr, commentStatus, commentResponse) {
+            let resp = JSON.parse(commentResponse);
+            let comments = resp.comments;
+
+            // We only want to display comments that are either:
+            // 1) Containing a TAP-Fenix invocation (and are sent to the customer)
+            // 2) Written by TAP-Fenix (Either a Fenix reply, or one of the triage actions from the tenant tab)
+
+            let fenixComments = [];
+
+            comments.forEach(function (comment) {
+                // Comments coming from dev
+                if (comment.text.includes("TAP-Fenix")) {
+                    let cleanedComment = cleanComment(comment.text);
+                    comment.text = cleanedComment;
+                    fenixComments.push(comment);
+
+                    // Comments coming from customer, or dev thru tap-fenix
+                } else if (comment.createdBy.uniqueName == "tapfenix@microsoft.com") {
+                    let cleanedComment = cleanComment(comment.text);
+                    comment.text = cleanedComment;
+                    fenixComments.push(comment);
+                }
+            })
+            fenixComments.forEach(function (comment) {
+                console.log(comment.text);
+            })
+            return res.json({ comments: fenixComments });
+        });
+    }
+
+    this.triageBug = function (req, res) {
+        console.log(req.body);
+
+        let rings = req.body.rings;
+        let extent = req.body.extent;
+        let everWorked = req.body.everWorked;
+        let submitter = req.body.submitter;
+        let validationName = req.body.validationName;
+
+        let comment_url = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/workItems/" + req.body.id + "/comments?api-version=5.1-preview.3";
+        let modify_wit_url = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/workitems/" + req.body.id + "?api-version=5.1";
+
+        let getWitOptions = {
+            url: modify_wit_url,
+            headers: {
+                'Authorization': AUTH,
+            },
+        };
+
+        request.get(getWitOptions, function (vstsErr, vstsStatus, vstsResponse) {
+            let resp = JSON.parse(vstsResponse);
+            console.log(resp);
+
+            let existingTags = resp.fields["System.Tags"];
+            console.log(existingTags);
+
+            let comment = submitter + " provided this triage info through the Tenant Bugs tab:<br />Users affected: " + extent + "<br />Rings this repros in: " + rings + "<br />Has this ever worked? " + everWorked;
+
+            if (validationName) {
+                comment += "<br />Validation: " + validationName;
+            }
+
+            comment = comment.replace(/\n/g, "<br />");
+
+            var reqBody = {
+                text: comment
+            }
+
+            var options = {
+                url: comment_url,
+                headers: {
+                    'Authorization': AUTH,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(reqBody)
+            };
+
+            request.post(options, function (vstsErr, vstsStatus, vstsResponse) {
+                if (vstsErr) { throw vstsErr; }
+                console.log(vstsResponse);
+
+                let patch = [];
+
+                let severity = "3 - Medium";
+                let priority = 2;
+                if (req.body.extent == "Several") {
+                    severity = "2 - High";
+                } else if (req.body.extent == "All") {
+                    severity = "1 - Critical";
+                    priority = 1;
+                }
+
+                patch.push({
+                    op: "add",
+                    path: "/fields/Microsoft.VSTS.Common.Severity",
+                    value: severity
+                });
+
+                // Only need to set priority if extent is All
+                if (req.body.extent == "All") {
+                    patch.push({
+                        op: "add",
+                        path: "/fields/Microsoft.VSTS.Common.Priority",
+                        value: priority
+                    });
+                }
+
+                function sendPatch(patch) {
+                    console.log(patch);
+                    let patchOptions = {
+                        url: modify_wit_url,
+                        headers: {
+                            'Authorization': AUTH,
+                            'Content-Type': 'application/json-patch+json'
+                        },
+                        body: JSON.stringify(patch)
+                    }
+
+                    request.patch(patchOptions, function (vstsErr, vstsStatus, vstsResponse) {
+                        console.log(vstsErr);
+                        console.log(vstsResponse);
+                        return res.status(200).send();
+                    })
+                }
+
+                if (validationName) {
+                    validations.findOne({ name: validationName }, { projection: { name: 1, tag: 1 } }, function (err, valDoc) {
+                        if (valDoc == null) {
+                            console.log("No validation found with name: " + validationName);
+                            return res.status(200).send();
+                        } else {
+                            patch.push({
+                                op: "add",
+                                path: "/fields/System.Tags",
+                                value: existingTags + "; TAPITAdminTriaged; " + valDoc.tag
+                            });
+
+                            return sendPatch(patch);
+                        }
+                    });
+                } else {
+                    console.log("No validation name provided");
+                    patch.push({
+                        op: "add",
+                        path: "/fields/System.Tags",
+                        value: existingTags + "; TAPITAdminTriaged"
+                    });
+
+                    return sendPatch(patch);
+                }
+            });
+        });
+
+        
     }
 
     this.addComment = function (req, res) {
         console.log(req.body);
 
-        let comment = {
-            bugId: req.body.bugId,
-            comment: req.body.comment,
-            userEmail: req.body.userEmail,
-            timestamp: Date.now(),
+        let comment = 'IT Admin submitted a comment through the Tenant Bugs tab:<br />"' + req.body.comment + '" - ' + req.body.submitter;
+        if (req.body.attachmentFilename) {
+            comment += "<br />[Attachment]";
         }
 
-        bugComments.insertOne(comment, function (err, doc) {
-            if (err) { throw err; }
-            // TODO: Submit this to the actual bug
-            res.status(200);
-            res.send();
+        let modify_wit_url = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/workitems/" + req.body.id + "?api-version=5.1";
+
+        let getWitOptions = {
+            url: modify_wit_url,
+            headers: {
+                'Authorization': AUTH,
+            },
+        };
+
+        request.get(getWitOptions, function (vstsErr, vstsStatus, vstsResponse) {
+            let resp = JSON.parse(vstsResponse);
+            console.log(resp);
+
+            let existingTags = resp.fields["System.Tags"];
+            console.log(existingTags);
+
+
+            let patch = [
+                {
+                    op: "add",
+                    path: "/fields/System.History",
+                    value: comment
+                }
+            ];
+
+            // New tag shows when IT admins have commented
+            patch.push({
+                op: "add",
+                path: "/fields/System.Tags",
+                value: existingTags + "; TAPITAdminCommented"
+            });
+
+            let patchOptions = {
+                url: modify_wit_url,
+                headers: {
+                    'Authorization': AUTH,
+                    'Content-Type': 'application/json-patch+json'
+                },
+                body: JSON.stringify(patch)
+            }
+
+            request.patch(patchOptions, function (vstsErr, vstsStatus, vstsResponse) {
+                console.log(vstsResponse);
+
+                // Handle attachments if necessary
+                if (req.body.attachmentFilename) {
+                    // The attachment is given the filename in req.body.attachmentFilename. It is at uploads/req.body.attachmentFilename.
+
+                    let filePath = path.join(__dirname, '../../uploads', req.body.attachmentFilename);
+                    console.log(filePath);
+
+                    fs.readFile(filePath, (err, data) => {
+                        if (err) throw err;
+                        console.log(data);
+
+                        let cleanContents = data;
+                        //console.log(cleanContents);
+
+                        let attachment_endpoint = TEAMS_ADO_ATTACHMENT_CREATE_ENDPOINT + "?fileName=" + req.body.attachmentFilename + "&api-version=4.1";
+
+                        let attachmentOptions = {
+                            url: attachment_endpoint,
+                            headers: {
+                                'Authorization': AUTH,
+                                'Content-Type': 'application/octet-stream'
+                            },
+                            body: cleanContents,
+                            encoding: null,
+                        }
+
+                        console.log(attachmentOptions);
+
+                        request.post(attachmentOptions, function (adoErr, adoStatus, adoResponse) {
+                            if (adoErr) { throw adoErr; }
+
+                            console.log(adoResponse);
+
+                            adoResponse = JSON.parse(adoResponse);
+                            let attachmentUrl = adoResponse.url;
+
+                            let linkPatch = [
+                                {
+                                    "op": "add",
+                                    "path": "/relations/-",
+                                    "value": {
+                                        "rel": "AttachedFile",
+                                        "url": attachmentUrl,
+                                        "attributes": {
+                                            "comment": ""
+                                        }
+                                    },
+                                }
+                            ];
+
+                            let linkOptions = {
+                                url: TEAMS_ADO_WORKITEM_UPDATE_ENDPOINT.replace('{id}', req.body.id),
+                                headers: {
+                                    'Authorization': AUTH,
+                                    'Content-TYpe': 'application/json-patch+json',
+                                },
+                                body: JSON.stringify(linkPatch),
+                            }
+
+                            request.patch(linkOptions, function (adoErr, adoStatus, adoResponse) {
+                                if (adoErr) { throw err; }
+
+                                return res.status(200).send();
+                            });
+
+                        });
+                    });
+                } else {
+                    return res.status(200).send();
+                }
+            });
+        })
+    }
+
+    function closeBug(req, callback) {
+        console.log("Calling closeBug");
+        console.log(req.body);
+
+        let comment = 'IT Admin submitted a request to close this bug through the Tenant Bugs tab. The comment was: <br />"' + req.body.comment + '" - ' + req.body.submitter;
+
+        let modify_wit_url = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/workitems/" + req.body.id + "?api-version=5.1";
+
+        let getWitOptions = {
+            url: modify_wit_url,
+            headers: {
+                'Authorization': AUTH,
+            },
+        };
+
+        request.get(getWitOptions, function (vstsErr, vstsStatus, vstsResponse) {
+            let resp = JSON.parse(vstsResponse);
+            console.log(resp);
+
+            let existingTags = resp.fields["System.Tags"];
+            console.log(existingTags);
+
+            let patch = [];
+
+            if (req.body.duplicateId) {
+                let linkId = parseInt(req.body.duplicateId);
+                let duplicatedUrl = "https://domoreexp.visualstudio.com/MSTeams/_workitems/edit/" + linkId
+
+                patch.push({
+                    "op": "add",
+                    "path": "/relations/-",
+                    "value": {
+                        "rel": "System.LinkTypes.Duplicate-Reverse",
+                        "url": duplicatedUrl
+                    }
+                });
+                comment += "<br />Marked as duplicate of: <a href='" + duplicatedUrl + "'>" + req.body.duplicateId + "</a>";
+            }
+
+            patch.push({
+                op: "add",
+                path: "/fields/System.Tags",
+                value: existingTags + "; TAPITAdminRequestingClose"
+            });
+
+            patch.push({
+                op: "add",
+                path: "/fields/System.History",
+                value: comment
+            })
+
+            let patchOptions = {
+                url: modify_wit_url,
+                headers: {
+                    'Authorization': AUTH,
+                    'Content-Type': 'application/json-patch+json'
+                },
+                body: JSON.stringify(patch)
+            }
+
+            request.patch(patchOptions, function (vstsErr, vstsStatus, vstsResponse) {
+                console.log(vstsResponse);
+                //res.status(200).send();
+                return callback();
+            })
+        });
+    }
+
+    this.closeBug = function (req, res) {
+        closeBug(req, res.status(200).send());
+    }
+
+    this.bulkCloseBugs = function (req, res) {
+        function checkIfDone() {
+            console.log("Checking if done");
+            console.log(counter + " / " + bugCount);
+            if (counter == bugCount) {
+                return res.status(200).send();
+            }
+        }
+
+        console.log("Calling closeBug");
+        console.log(req.body);
+
+        var counter = 0;
+        var bugCount = req.body.ids.length;
+
+        req.body.ids.forEach(function (bugId) {
+            // Call closeBug with 
+            let params = req;
+            params.body.id = bugId;
+
+            closeBug(params, function () {
+                console.log("Returned from this function")
+                counter++;
+                checkIfDone();
+            });
         })
 
     }

@@ -35,8 +35,15 @@
             $('#other-validations').find('.owner-' + alias).hide();
             
             $('.tapSelect').click(function (e) {
+                console.log("Clicked tapSelect");
                 let id = $(this).attr('id')
-                console.log(id);
+
+                // Don't show client checkboxes in Windows validations
+                if (id == "windows") {
+                    $('.client-config').hide();
+                } else {
+                    $('.client-config').show();
+                }
 
                 // Hide other validations in your-validations
                 $('#your-validations').find('.val').hide();

@@ -3,6 +3,8 @@
 var ObjectID = require('mongodb').ObjectID;
 var request = require('request');
 var atob = require('atob');
+const fs = require('fs');
+const path = require('path');
 
 function caseHandler(dbParent) {
 
@@ -22,7 +24,7 @@ function caseHandler(dbParent) {
     // Testing with Luciano tenant
     const WINDOWS_AUTH = process.env.LUCIANO_AUTH;
     const WINDOWS_ADO_API_BASE = "https://dev.azure.com/lucianooo/TestProject/_apis/wit/";
-    const WINDOWS_ADO_WORKITEM_ADD_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/$Bug?api-version=4.11";
+    const WINDOWS_ADO_WORKITEM_ADD_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/${{WORKITEM_TYPE}}?api-version=4.11";
     const WINDOWS_ADO_ATTACHMENT_CREATE_ENDPOINT = WINDOWS_ADO_API_BASE + "attachments";
     const WINDOWS_ADO_WORKITEM_UPDATE_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/{id}?api-version=4.1";
 
@@ -105,6 +107,58 @@ function caseHandler(dbParent) {
         return tenantString;
     }
 
+    function base64ArrayBuffer(arrayBuffer) {
+        var base64 = ''
+        var encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+
+        var bytes = new Uint8Array(arrayBuffer)
+        var byteLength = bytes.byteLength
+        var byteRemainder = byteLength % 3
+        var mainLength = byteLength - byteRemainder
+
+        var a, b, c, d
+        var chunk
+
+        // Main loop deals with bytes in chunks of 3
+        for (var i = 0; i < mainLength; i = i + 3) {
+            // Combine the three bytes into a single integer
+            chunk = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2]
+
+            // Use bitmasks to extract 6-bit segments from the triplet
+            a = (chunk & 16515072) >> 18 // 16515072 = (2^6 - 1) << 18
+            b = (chunk & 258048) >> 12 // 258048   = (2^6 - 1) << 12
+            c = (chunk & 4032) >> 6 // 4032     = (2^6 - 1) << 6
+            d = chunk & 63               // 63       = 2^6 - 1
+
+            // Convert the raw binary segments to the appropriate ASCII encoding
+            base64 += encodings[a] + encodings[b] + encodings[c] + encodings[d]
+        }
+
+        // Deal with the remaining bytes and padding
+        if (byteRemainder == 1) {
+            chunk = bytes[mainLength]
+
+            a = (chunk & 252) >> 2 // 252 = (2^6 - 1) << 2
+
+            // Set the 4 least significant bits to zero
+            b = (chunk & 3) << 4 // 3   = 2^2 - 1
+
+            base64 += encodings[a] + encodings[b] + '=='
+        } else if (byteRemainder == 2) {
+            chunk = (bytes[mainLength] << 8) | bytes[mainLength + 1]
+
+            a = (chunk & 64512) >> 10 // 64512 = (2^6 - 1) << 10
+            b = (chunk & 1008) >> 4 // 1008  = (2^6 - 1) << 4
+
+            // Set the 2 least significant bits to zero
+            c = (chunk & 15) << 2 // 15    = 2^4 - 1
+
+            base64 += encodings[a] + encodings[b] + encodings[c] + '='
+        }
+
+        return base64
+    }
+
     this.getOneCase = function (req, res) {
         var refUrlParts = req.url.split('/');
         const cId = parseInt(refUrlParts.pop());
@@ -158,8 +212,10 @@ function caseHandler(dbParent) {
                     tids = [tenantObj.tid];
                     getVotes(tids, tenantObj.name);
                 }
-
-
+            } else {
+                console.log("No tenant found, let's just go by email");
+                //return res.status(400).send();
+                getVotes([], "?");
             }
         });
 
@@ -181,6 +237,8 @@ function caseHandler(dbParent) {
                     voteObjs = doc.downvotes_v2;
                 }
 
+                console.log(voteObjs);
+
                 voteObjs.forEach(function (vote) {
                     if ((tids.includes(vote.tenantId)) || (tenantName == "Microsoft") || (vote.email == email)) {
                         let voteString = vote.email;
@@ -189,14 +247,19 @@ function caseHandler(dbParent) {
                         }
 
                         if ((vote.device && vote.teamsMode)) {
-                            voteString += "(" + vote.device + " - " + vote.teamsMode + ")";
+                            voteString += " (" + vote.device + " - " + vote.teamsMode + ")";
+                        }
+
+                        if (vote.windowsBuildVersion) {
+                            voteString += " (" + vote.windowsBuildVersion + ")";
                         }
 
                         votes.push([voteString,]);
                     }
                 })
 
-                //console.log(votes);
+                // Sort alphabetically
+                votes.sort();
 
                 res.json({
                     votes: votes
@@ -278,8 +341,11 @@ function caseHandler(dbParent) {
                         res.json(vstsResponse);
                     });
                 } else if (tap == "Windows") {
-                    // TODO
+                    // TODO: Implement this
+                    createWindowsBug(req.body);
+
                     res.status(200).send();
+
                 } else {
                     res.status(200).send();
                 }
@@ -292,11 +358,32 @@ function caseHandler(dbParent) {
     function createWindowsBug(body) {
         // Add the new bug to VSTS
 
-        let bugTitle = "Fails - " + body.caseTitle;
-        let tags = body.tag + ";" + "TAP; TAP-Bug";
+        let bugTitle = body.caseTitle;
+        let tags = body.tag + ";" + "TAP; WCTAP";
+        let workitemType = "Bug";
+
+        if (body.upDown == "up") {
+            bugTitle = "Works - " + bugTitle;
+            tags += "; WCTAP-Works";
+
+            // TODO: Pick a better workitem type for this
+            workitemType = "Bug";
+
+        } else if (body.upDown == "down") {
+            bugTitle = "Fails - " + bugTitle;
+            tags += "; WCTAP-Fails";
+        } else if (body.upDown == "comment") {
+            bugTitle = "Feedback - " + bugTitle;
+            tags += "; WCTAP-Feedback";
+
+            // TODO: Pick a better workitem for this
+            workitemType = "Bug";
+        }
+
 
         let systemInfo = "<strong>Build Type</strong>: " + body.windowsBuildType + "<br />";
         systemInfo += "<strong>Build Version</strong>: " + body.windowsBuildVersion + "<br />";
+        systemInfo += "<strong>Submitter</strong>: " + body.userEmail + "<br />";
 
         var reqBody = [
             {
@@ -304,6 +391,12 @@ function caseHandler(dbParent) {
                 "path": "/fields/System.Title",
                 "value": bugTitle
             },
+            // TODO: Use this in production, can't use it in my project
+            //{
+            //    "op": "add",
+            //    "path": "/fields/System.AreaPath",
+            //    "value": "OS\\Core\\EMX\\CXE\\Customer Connection\\TAP"
+            //},
             {
                 "op": "add",
                 "path": "/fields/System.Tags",
@@ -320,8 +413,11 @@ function caseHandler(dbParent) {
                 "value": systemInfo
             },
         ];
+
+        let apiUrl = WINDOWS_ADO_WORKITEM_ADD_ENDPOINT.replace("{{WORKITEM_TYPE}}", workitemType);
+
         const options = {
-            url: WINDOWS_ADO_WORKITEM_ADD_ENDPOINT,
+            url: apiUrl,
             headers: {
                 'Authorization': WINDOWS_AUTH,
                 'Content-Type': 'application/json-patch+json'
@@ -329,77 +425,85 @@ function caseHandler(dbParent) {
             body: JSON.stringify(reqBody)
         };
 
+        console.log("Create workitem options:");
         console.log(options);
 
         request.post(options, function (vstsErr, vstsStatus, vstsResponse) {
             if (vstsErr) { throw vstsErr; }
+            console.log("Create workitem response:");
             console.log(vstsResponse);
             vstsResponse = JSON.parse(vstsResponse);
 
             let bugId = vstsResponse.id;
 
-            if (body.attachmentContents) {
-                console.log(body.attachmentContents);
-                //let cleanContents = body.attachmentContents.split("base64,")[1];
-                //cleanContents = atob(cleanContents);
-                let cleanContents = body.attachmentContents;
-                let attachment_endpoint = WINDOWS_ADO_ATTACHMENT_CREATE_ENDPOINT + "?fileName=" + body.attachmentName + "&api-version=5.1";
+            console.log(body.attachmentFilename);
 
-                let attachmentOptions = {
-                    url: attachment_endpoint,
-                    headers: {
-                        'Authorization': WINDOWS_AUTH,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(cleanContents)
-                }
+            if (body.attachmentFilename) {
+                // The attachment is given the filename in body.attachmentFilename. It is at uploads/body.attachmentFilename.
 
-                console.log(attachmentOptions);
+                let filePath = path.join(__dirname, '../../uploads', body.attachmentFilename);
+                console.log(filePath);
 
-                request.post(attachmentOptions, function (adoErr, adoStatus, adoResponse) {
-                    if (adoErr) { throw adoErr; }
+                fs.readFile(filePath, (err, data) => {
+                    if (err) throw err;
+                    console.log(data);
 
-                    console.log(adoStatus);
-                    console.log(adoResponse);
+                    let cleanContents = data;
+                    //console.log(cleanContents);
 
-                    adoResponse = JSON.parse(adoResponse);
-                    let attachmentUrl = adoResponse.url;
+                    let attachment_endpoint = WINDOWS_ADO_ATTACHMENT_CREATE_ENDPOINT + "?fileName=" + body.attachmentFilename + "&api-version=4.1";
 
-                    let linkPatch = [
-                        {
-                            "op": "add",
-                            "path": "/relations/-",
-                            "value": {
-                                "rel": "AttachedFile",
-                                "url": attachmentUrl,
-                                "attributes": {
-                                    "comment": ""
-                                }
-                            },
-                        }
-                    ];
-
-                    let linkOptions = {
-                        url: WINDOWS_ADO_WORKITEM_UPDATE_ENDPOINT.replace('{id}', bugId),
+                    let attachmentOptions = {
+                        url: attachment_endpoint,
                         headers: {
                             'Authorization': WINDOWS_AUTH,
-                            'Content-TYpe': 'application/json-patch+json',
+                            'Content-Type': 'application/octet-stream'
                         },
-                        body: JSON.stringify(linkPatch),
+                        body: cleanContents,
+                        encoding: null,
                     }
 
-                    console.log(linkOptions);
+                    console.log(attachmentOptions);
 
-                    request.patch(linkOptions, function (adoErr, adoStatus, adoResponse) {
-                        if (adoErr) { throw err; }
+                    request.post(attachmentOptions, function (adoErr, adoStatus, adoResponse) {
+                        if (adoErr) { throw adoErr; }
 
-                        //console.log(adoStatus);
-                        //console.log(adoResponse);
+                        console.log(adoResponse);
 
-                        return;
+                        adoResponse = JSON.parse(adoResponse);
+                        let attachmentUrl = adoResponse.url;
+
+                        let linkPatch = [
+                            {
+                                "op": "add",
+                                "path": "/relations/-",
+                                "value": {
+                                    "rel": "AttachedFile",
+                                    "url": attachmentUrl,
+                                    "attributes": {
+                                        "comment": ""
+                                    }
+                                },
+                            }
+                        ];
+
+                        let linkOptions = {
+                            url: WINDOWS_ADO_WORKITEM_UPDATE_ENDPOINT.replace('{id}', bugId),
+                            headers: {
+                                'Authorization': WINDOWS_AUTH,
+                                'Content-TYpe': 'application/json-patch+json',
+                            },
+                            body: JSON.stringify(linkPatch),
+                        }
+
+                        request.patch(linkOptions, function (adoErr, adoStatus, adoResponse) {
+                            if (adoErr) { throw err; }
+
+                            return;
+                        });
+
                     });
-                    
-                })
+                });
             } else {
                 return;
             }
@@ -413,7 +517,8 @@ function caseHandler(dbParent) {
 
         //var refUrlParts = req.url.split('/');
         console.log("cid was " + req.body.cId);
-        var cId = req.body.cId
+        var cId = req.body.cId;
+        const url = req.body.url;
         const userId = req.body.userId;
         const userEmail = req.body.userEmail;
         const clientType = req.body.clientType;
@@ -427,6 +532,13 @@ function caseHandler(dbParent) {
         const windowsBuildVersion = req.body.windowsBuildVersion;
 
         const tap = req.body.tap;
+
+        // TODO: Bug - when voting Works -> Fails in the same session, it creates two votes in Fails for some reason.
+
+        let lightTenantProjection = {
+            name: 1,
+            tid: 1,
+        };
 
         if (isNaN(cId)) {
             cId = ObjectID(cId);
@@ -454,9 +566,7 @@ function caseHandler(dbParent) {
 
         console.log("clientVoteString is: " + clientVoteString + " tenantString is: " + tenantString + " domain is: " + domain);
 
-        // TODO: Use projection here to get a more lightweight tenant
-        tenants.findOne({ domains: domain }, function (err, tenantDoc) {
-            //console.log("TenantDoc:", tenantDoc);
+        tenants.findOne({ domains: domain }, { projection: lightTenantProjection }, function (err, tenantDoc) {
             if (err) { throw err; }
 
             if (tenantDoc == null) {
@@ -470,8 +580,8 @@ function caseHandler(dbParent) {
             var query = { "_id": cId };
             var updateOp = {};
             var updateOp2 = {};
-            console.log("upDown is " + upDown);
-            console.log("cId is " + cId);
+            //console.log("upDown is " + upDown);
+            //console.log("cId is " + cId);
 
             var voteObj = {
                 email: clientVoteString,
@@ -480,6 +590,7 @@ function caseHandler(dbParent) {
                 client: client,
                 device: device,
                 teamsMode: teamsMode,
+                url: url,
                 timestamp: new Date()
             }
 
@@ -506,32 +617,6 @@ function caseHandler(dbParent) {
                     }
                 })
 
-                /*
-                if (client) {
-                    updateOp['$pull']['upvotes_v2'].client = client;
-                    updateOp2['$pull']["downvotes_v2"].client = client;
-                }
-                if (device) {
-                    updateOp['$pull']['upvotes_v2'].device = device;
-                    updateOp2['$pull']["downvotes_v2"].device = device;
-                }
-
-                if (teamsMode) {
-                    updateOp['$pull']['upvotes_v2'].teamsMode = teamsMode;
-                    updateOp2['$pull']["downvotes_v2"].teamsMode = teamsMode;
-                }
-
-                if (windowsBuildType) {
-                    updateOp['$pull']['upvotes_v2'].windowsBuildType = windowsBuildType;
-                    updateOp2['$pull']["downvotes_v2"].windowsBuildType = windowsBuildType;
-                }
-
-                if (windowsBuildVersion) {
-                    updateOp['$pull']['upvotes_v2'].windowsBuildVersion = windowsBuildVersion;
-                    updateOp2['$pull']["downvotes_v2"].windowsBuildVersion = windowsBuildVersion;
-                }
-                */
-
             } else if (upDown == "down") {
                 updateOp = { $pull: { "downvotes_v2": { "email": clientVoteString } } }
                 updateOp2 = {
@@ -545,38 +630,14 @@ function caseHandler(dbParent) {
                         updateOp2['$pull']['upvotes_v2'][field] = req.body[field];
                     }
                 })
-
-                /*
-                if (client) {
-                    updateOp['$pull']['downvotes_v2'].client = client;
-                    updateOp2['$pull']["upvotes_v2"].client = client;
-                }
-                if (device) {
-                    updateOp['$pull']['downvotes_v2'].device = device;
-                    updateOp2['$pull']["upvotes_v2"].device = device;
-                }
-
-                if (teamsMode) {
-                    updateOp['$pull']['downvotes_v2'].teamsMode = teamsMode;
-                    updateOp2['$pull']["upvotes_v2"].teamsMode = teamsMode;
-                }
-
-                if (windowsBuildType) {
-                    updateOp['$pull']['downvotes_v2'].windowsBuildType = windowsBuildType;
-                    updateOp2['$pull']['upvotes_v2'].windowsBuildType = windowsBuildType;
-                }
-
-                if (windowsBuildVersion) {
-                    updateOp['$pull']['downvotes_v2'].windowsBuildVersion = windowsBuildVersion;
-                    updateOp2['$pull']['upvotes_v2'].windowsBuildVersion = windowsBuildVersion;
-                }
-                */
             }
 
+            console.log("Update Op 1:");
             console.log(updateOp);
-            console.log(updateOp2);
             cases.findOneAndUpdate(query, updateOp, { returnOriginal: false }, function (err, result) {
                 if (err) { throw err; }
+                console.log("Update Op 2:");
+                console.log(updateOp2);
                 cases.findOneAndUpdate(query, updateOp2, { returnOriginal: false }, function (err2, result) {
                     if (err2) { throw err2; }
                     var kase = result.value;
@@ -590,8 +651,9 @@ function caseHandler(dbParent) {
                         client: client,
                         device: device,
                         teamsMode: teamsMode,
-                        timestamp: new Date(),
                         tap: tap,
+                        url: url,
+                        timestamp: new Date(),
                     }
 
                     if (tap == "Teams") {
@@ -683,9 +745,8 @@ function caseHandler(dbParent) {
                         newVoteDoc.windowsBuildType = windowsBuildType;
                         newVoteDoc.windowsBuildVersion = windowsBuildVersion;
 
-                        if (upDown == "down") {
-                            createWindowsBug(req.body);
-                        }
+                        // Bugs aren't just for downvotes anymore. Need signals for upvotes too
+                        createWindowsBug(req.body);
 
                         votes.insertOne(newVoteDoc, function (err, voteDoc) {
                             if (err) { throw err; }
