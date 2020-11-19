@@ -1,0 +1,12 @@
+/****** Main Styling ******/
+
+body {
+    font-family: "Segoe UI", Frutiger, "Frutiger Linotype", "Dejavu Sans", "Helvetica Neue", Arial, sans-serif;
+    font-size: 12px;
+    background-color: #FFFFFF;
+    color: #16233A;
+}
+
+table {
+    font-size: 10px;
+}

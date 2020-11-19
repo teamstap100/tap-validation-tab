@@ -1,0 +1,145 @@
+extends ../layout.pug
+
+block morescripts
+  script(src='https://unpkg.com/@microsoft/teams-js@1.3.7/dist/MicrosoftTeams.min.js', integrity='sha384-glExfvkpce98dO2oN+diZ/Luv/5qrZJiOvWCeR8ng/ZxlhpvBgHKeVFRURrh+NEC', crossorigin='anonymous')
+  link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/v/bs/dt-1.10.18/datatables.min.css')
+  script(type='text/javascript', src='https://cdn.datatables.net/v/bs/dt-1.10.18/datatables.min.js')
+  script(type="text/javascript", src="/controllers/validation/configController.client.js")
+  link(rel='stylesheet', type='text/css', href='/public/css/config.css')
+
+
+
+block content
+  .container
+    p(style="float: left") #[strong Choose a validation for this tab.]
+    #tapList(style="float: right")
+    br 
+    br
+    br
+    
+    //p.centered(style="font-size: 11px") For validations with sections: Check the boxes next to the sections you'd like to show in the tab. The other sections not appear.
+    //p.centered(style="font-size: 11px") If you want customers to sign-off by client, check the clients you want available in each section.
+    #loading
+        
+    form#validationContainer(style="display: none")
+      if validations
+        h4(style="float: left") Your Validations
+        table.table.table-striped.table-responsive#your-validations
+            thead
+                tr
+                    th(scope="col" width="5%")
+                    th(scope="col" width="40%") Name
+                    th(scope="col" width="55%") Sections
+            each validation in validations
+                tr(class="val tap-" + validation.tap + " owner-" + validation.owner.split("@")[0] style="display: none")
+                    td
+                        input(type='radio', name='validation', id=validation._id, value= validation.name)
+                    td
+                        label(for=validation._id) #{validation.name}
+                    td.sectionCell
+                        if validation.groups.length > 0
+                            p.sections-directions(style="font-size: 9px; display: none") Select the sections to collect sign-offs for.
+                            p.sections-directions(style="font-size: 9px; display: none") You may also collect client-specific sign-offs.
+                            table.table.table-responsive.sections-table(style="display: none")
+                                - var groupCount = 0;
+                                each group in validation.groups
+                                    tr
+                                        td
+                                            - var safeGroup = group.replace(/ /g, "_").replace(/,/g, "_").replace(/-/g, "_").replace(/\(|\)/g, "_");
+                                            
+                                                .row
+                                                    .col-xs-12
+                                                        input.group-toggle(type="checkbox", name="group", value=safeGroup, id=safeGroup, checked title="Collect feedback for this section")  
+                                                        label.safe-label(for=safeGroup)     #[strong #{group}]
+                                                .row.client-config
+                                                    .col-xs-1
+                                                    .col-xs-5
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-windows", id=validation._id + "-" + groupCount + "-windows" title="Collect Windows feedback")  
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-windows")   Windows  
+                                                    .col-xs-5
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-mac", id=validation._id + "-" + groupCount + "-mac" title="Collect Mac feedback")  
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-mac")   Mac  
+                                                .row.client-config
+                                                    .col-xs-1
+                                                    .col-xs-5
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-android", id=validation._id + "-" + groupCount + "-android" title="Collect Android feedback")  
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-android")   Android  
+                                                    .col-xs-5
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-ios", id=validation._id + "-" + groupCount + "-ios" title="Collect iOS feedback")  
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-")   iOS  
+                                                .row.client-config
+                                                    .col-xs-1
+                                                    .col-xs-5
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-web", id=validation._id + "-" + groupCount + "-web" title="Collect Web feedback")  
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-")   Web  
+                                                    .col-xs-5
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-linux", id=validation._id + "-" + groupCount + "-linux" title="Collect Linux feedback")  
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-")   Linux  
+                                                .row.client-config
+                                                    .col-xs-3
+                                                    .col-xs-9
+                                                        input.toggle-all(type="checkbox", name="toggleAll", value=validation._id + "-" + groupCount + "-all", id=validation._id + "-" + groupCount + "-all" title="Collect feedback for all clients")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-all")   (Toggle All Clients) 
+
+                                                - groupCount += 1;
+                            p.zero-section-warning(style="font-size: 12px; color: red; display: none") Please select at least one section.
+        h4(style="float: left") Other PMs' Validations
+        table.table.table-striped.table-responsive#other-validations
+            thead
+                tr
+                    th(scope="col" width="5%")
+                    th(scope="col" width="40%") Name
+                    th(scope="col" width="55%") Sections
+            each validation in validations
+                tr(class="val tap-" + validation.tap + " owner-" + validation.owner.split("@")[0])
+                    td
+                        input(type='radio', name='validation', id=validation._id, value= validation.name)
+                    td
+                        label(for=validation._id) #{validation.name}
+                    td.sectionCell
+                        if validation.groups.length > 0
+                            p.sections-directions(style="font-size: 11px; display: none") Select the sections to collect sign-offs for.
+                            p.sections-directions.client-specific-directions(style="font-size: 11px; display: none") You may also collect client-specific sign-offs.
+                            table.table.table-responsive.sections-table(style="display: none")
+                                - var groupCount = 0;
+                                each group in validation.groups
+                                    tr
+                                        td
+                                            - var safeGroup = group.replace(/ /g, "_").replace(/,/g, "_").replace(/-/g, "_").replace(/\(|\)/g, "_");
+                                            
+                                                .row
+                                                    .col-xs-12
+                                                        input.group-toggle(type="checkbox", name="group", value=safeGroup, id=safeGroup, checked title="Collect feedback for this section")  
+                                                        label.safe-label(for=safeGroup)     #[strong #{group}]
+                                                .row.client-config
+                                                    .col-xs-1
+                                                    .col-xs-5
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-windows", id=validation._id + "-" + groupCount + "-windows" title="Collect Windows feedback")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-windows")   Win  
+                                                    .col-xs-5
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-mac", id=validation._id + "-" + groupCount + "-mac" title="Collect Mac feedback")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-mac")   Mac  
+                                                .row.client-config
+                                                    .col-xs-1
+                                                    .col-xs-5
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-android", id=validation._id + "-" + groupCount + "-android" title="Collect Android feedback")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-android")   Android  
+                                                    .col-xs-5
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-ios", id=validation._id + "-" + groupCount + "-ios" title="Collect iOS feedback")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-")   iOS  
+                                                .row.client-config
+                                                    .col-xs-1
+                                                    .col-xs-5
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-web", id=validation._id + "-" + groupCount + "-web" title="Collect Web feedback")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-")   Web  
+                                                    .col-xs-5
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-linux", id=validation._id + "-" + groupCount + "-linux" title="Collect Linux feedback")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-")   Linux  
+                                                .row.client-config
+                                                    .col-xs-3
+                                                    .col-xs-9
+                                                        input.toggle-all(type="checkbox", name="toggleAll", value=validation._id + "-" + groupCount + "-all", id=validation._id + "-" + groupCount + "-all" title="Collect feedback for all clients")
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-all")   (Toggle All Clients) 
+
+                                                - groupCount += 1;
+                            p.zero-section-warning(style="font-size: 12px; color: red; display: none") Please select at least one section.        

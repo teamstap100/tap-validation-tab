@@ -93,12 +93,16 @@ function tenantHandler(dbParent) {
         //    res.json({});
         //    return;
         //}
+
         var email = req.body.email;
+        if (email == null) {
+            email = req.body.backup_context.upn;
+        }
 
         var clientVoteString = cleanEmail(email);
         var domain = getDomain(clientVoteString);
 
-        if (clientVoteString.includes("undefined")) {
+        if (!clientVoteString) {
             clientVoteString = email;
             tenantString = clientVoteString.split("@")[1].split(".")[0];
         }

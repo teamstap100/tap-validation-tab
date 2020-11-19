@@ -1,0 +1,65 @@
+extends ../layout.pug
+
+block morescripts
+  script(src='https://unpkg.com/@microsoft/teams-js@1.3.7/dist/MicrosoftTeams.min.js', integrity='sha384-glExfvkpce98dO2oN+diZ/Luv/5qrZJiOvWCeR8ng/ZxlhpvBgHKeVFRURrh+NEC', crossorigin='anonymous')
+  link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/v/bs/dt-1.10.18/datatables.min.css')
+  link(rel='stylesheet', type='text/css', href='/public/css/sticky-footer.css')
+  script(type='text/javascript', src='https://cdn.datatables.net/v/bs/dt-1.10.18/datatables.min.js')
+  //script(type='text/javascript', src='https://unpkg.com/analytics/dist/analytics.min.js')
+  script(type="text/javascript", src="/controllers/infoController.client.js")
+  script(type="text/javascript", src="/controllers/analytics.client.js")
+
+block content
+  br
+  .container
+    #role-select-form(style="display: none")
+        img.logo-icon(src="./public/img/teams-logo-200.png")
+        h4.logo-text Microsoft Teams Technology Adoption Program
+        div(style="clear: left")
+        label(for="roleSelect") I am in this discipline:
+        select.form-control#roleSelect
+            option
+            each role in roles
+                option(value=role._id, name=role.name) #{role.name}
+        br
+        #phaseSelectContainer
+            label(for="phaseSelect") I am interested in this phase:
+            select.form-control.phaseSelect
+                option
+                each phase in phases
+                    option(value=phase.id, name=phase.name) #{phase.name}
+    .row
+        .col-xs-1
+        .col-xs-10
+            each role in roles
+                .role-info.d-none(id=role._id + "-info" style="display: none; width: 100%")
+                    .row
+                        .col-xs-7
+                            img.logo-icon(src="./public/img/teams-logo-200.png")
+                            p(style="font-size: 20px") #[strong TAP100 for #{role.name}]  
+                        .col-xs-5
+                            button.btn.btn-secondary.switchRole(style="float: right")
+                                i.fa.fa-undo  
+                                |   Select another discipline
+                    .row
+                        .col-xs-7
+                        .col-xs-5
+                            select.form-control.phaseSelect
+                                option
+                                each phase in phases
+                                    option(value=phase.id, name=phase.name) #{phase.name}
+                    
+                    span !{role.content}
+            br
+        .col-xs-1
+
+block footer
+  footer.container.footer#ratingFooter(style="display: none")  
+    p(style="font-size: 20px") Did you find what you were looking for?  
+        button.btn.rating#thumbsUp(title="Yes")
+            i.fa.fa-thumbs-up 
+            | Yes
+        button.btn.rating#thumbsDown(title="No")
+            i.fa.fa-thumbs-down(style="color: red") 
+            | No
+    p#ratingConfirmation(style="display: none") We appreciate your feedback.

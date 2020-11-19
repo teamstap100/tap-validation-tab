@@ -2,33 +2,42 @@
 
 body {
     font-family: "Segoe UI", Frutiger, "Frutiger Linotype", "Dejavu Sans", "Helvetica Neue", Arial, sans-serif;
-    font-size: 16px;
+    font-size: 14px;
     background-color: #F3F2F1;
     color: #16233A;
 }
 
 a {
     font-family: "Segoe UI", Frutiger, "Frutiger Linotype", "Dejavu Sans", "Helvetica Neue", Arial, sans-serif;
-    font-size: 16px;
+    font-size: 14px;
 }
 
 p {
-    margin: 8px 0 0 0;
+    margin: 4px 0 4px 0;
 }
 
 .centered {
     text-align: center;
 }
 
+.display-flex-center {
+    display: flex;
+    align-items: center;
+}
+
 .case-text {
     font-family: "Segoe UI", sans-serif;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: normal;
     display: inline;
 }
 
 .case-description {
     text-align: left;
+}
+
+.d-none {
+    display: none;
 }
 
 .well {
@@ -90,7 +99,7 @@ img {
     padding: 0;
     margin: 0px 0 0 40px;
     font-weight: 500;
-    font-size: 24px;
+    font-size: 20px;
     color: #5356aa;
 }
 
@@ -140,6 +149,7 @@ img {
 
 .btn-secondary {
     color: #000000;
+    border-color: #C9CAE6;
 }
 
 .btn-default { /* Styling for buttons */
@@ -195,12 +205,12 @@ img {
 
 .subtle {
     color: #888888;
-    font-size: 10px;
+    font-size: 8px;
 }
 
 .vote {
     color: #111111;
-    font-size: 12px;
+    font-size: 10px;
 }
 
 .newBugDescription {
@@ -468,4 +478,84 @@ span.tenant, span.email {
 
 .checkbox-inline {
     margin-right: 20px;
+}
+
+@media screen and (min-width: 768px) {
+    .modal-dialog {
+        width: 700px; /* New width for default modal */
+    }
+
+    .modal-sm {
+        width: 350px; /* New width for small modal */
+    }
+}
+
+@media screen and (min-width: 992px) {
+    .modal-lg {
+        width: 950px; /* New width for large modal */
+    }
+}
+
+.feedback-text {
+    display: block;
+    overflow: hidden;
+    width: 90%;
+    height: 100%;
+}
+
+.editable-text {
+    display: block;
+    overflow: hidden;
+    width: 90%;
+    height: 100%;
+}
+
+.progress-bar {
+    background-color: #6264a7 !important;
+}
+
+.progress {
+    border: gray 1px solid !important;
+}
+
+.feedback-table {
+    font-size: 12px;
+}
+
+.feature-request-table {
+    font-size: 12px;
+}
+
+.edit-featureRequest-pencil {
+    float: left;
+}
+
+.edit-feedback {
+    float: left;
+}
+
+.role-info {
+    width: 100%;
+    color: #252423;
+    border-radius: 6px;
+}
+
+#role-select-form {
+    width: 500px;
+    height: 500px;
+    margin: auto;
+    left: 50%;
+    top: 50%;
+}
+
+.logo-icon {
+    height: 24px;
+    float: left;
+    margin: 10px 4px 10px 0px;
+    vertical-align: middle;
+}
+
+.logo-text {
+    float: left;
+    vertical-align: middle;
 }

@@ -1,0 +1,35 @@
+extends ../layout.pug
+block content
+
+    .container
+        .col-xs-2
+        .col-xs-8
+            h4 Customer Bugs Summary
+            p Bug counts are from the last 90 days.
+            p Bug tabs fetch the most recent 100 bugs.
+            p If a bug tab has not been opened yet, it will display 0 for all columns.
+            table.table.table-bordered.table-responsive.table-striped.hugeTable#tenantTable
+                thead
+                    tr
+                        th(scope="col") Customer
+                        th(scope="col") Bugs
+                        th(scope="col") Triaged
+                        th(scope="col") Close Requested
+                tbody
+                    each tenant in tenants
+                        tr
+                            td #[a(href=tenant.bug_tab_url target="_blank") #{tenant.name}]
+                            td #{tenant.bugs.length}
+                            td #{tenant.triagedBugs.length}
+                            td #{tenant.closedBugs.length}
+        .col-xs-2
+                            
+
+               
+    
+    script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js')
+    //script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap.min.js')
+    //link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap.min.css')
+    link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/v/bs/jszip-2.5.0/dt-1.10.20/b-1.6.1/b-html5-1.6.1/datatables.min.css')
+    script(type='text/javascript', src='https://cdn.datatables.net/v/bs/jszip-2.5.0/dt-1.10.20/b-1.6.1/b-html5-1.6.1/datatables.min.js')
+    script(type="text/javascript", src="/controllers/bugs/tenantBugsSummaryController.client.js")

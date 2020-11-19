@@ -1,0 +1,30 @@
+html
+  head
+    title Silent Authentication Sample
+  body
+    p
+      | This sample demonstrates silent authentication in a Microsoft Teams tab.
+    p
+      | The tab will try to get an id token for the user silently, validate the token and show the profile information decoded from the token.
+      | The "Login" button will appear only if silent authentication failed.
+    // Login button
+    button#btnLogin(onclick='login()' style='display: none') Login to Azure AD
+    // Result
+    p
+    #divError(style='display: none')
+    #divProfile(style='display: none')
+      div
+        b Name:
+        span#profileDisplayName
+      div
+        b UPN:
+        span#profileUpn
+      div
+        b Object id:
+        span#profileObjectId
+    p
+    script(src='https://code.jquery.com/jquery-3.1.1.js' integrity='sha384-VC7EHu0lDzZyFfmjTPJq+DFyIn8TUGAJbEtpXquazFVr00Q/OOx//RjiZ9yU9+9m' crossorigin='anonymous')
+    script(src='https://statics.teams.cdn.office.net/sdk/v1.6.0/js/MicrosoftTeams.min.js' crossorigin='anonymous')
+    // Check before upgrading your ADAL version, as this sample depends on an internal function to authenticate silently
+    script(src='https://secure.aadcdn.microsoftonline-p.com/lib/1.0.15/js/adal.min.js' integrity='sha384-lIk8T3uMxKqXQVVfFbiw0K/Nq+kt1P3NtGt/pNexiDby2rKU6xnDY8p16gIwKqgI' crossorigin='anonymous')
+    script(type="text/javascript", src="/controllers/auth.client.js")

@@ -1,0 +1,60 @@
+extends ../layout.pug
+
+block morescripts
+  script(src='https://unpkg.com/@microsoft/teams-js@1.3.7/dist/MicrosoftTeams.min.js', integrity='sha384-glExfvkpce98dO2oN+diZ/Luv/5qrZJiOvWCeR8ng/ZxlhpvBgHKeVFRURrh+NEC', crossorigin='anonymous')
+  link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/v/bs/dt-1.10.18/datatables.min.css')
+  script(type='text/javascript', src='https://cdn.datatables.net/v/bs/dt-1.10.18/datatables.min.js')
+  script(type="text/javascript", src="/controllers/bugs/bugsConfigController.client.js")
+
+
+
+block content
+  .container
+    br
+    p.centered #[strong Choose a tenant to display bugs for in the tab.]
+    form
+      if tenants
+        table.table.table-striped.table-responsive#tenants
+            thead
+                tr
+                    th(scope="col") Name
+                    th(scope="col") ID
+            each tenant in tenants
+                tr
+                    td
+                        input(type='radio', name='tenant', id=tenant.tid, value= tenant.name, onclick='microsoftTeams.settings.setValidityState(true);')
+                        label(for=tenant.tid)       #{tenant.name}
+                    td
+                        p.subtle #{tenant.tid}
+            // Special row for testing
+            tr
+                td
+                    input(type='radio', name='tenant', id="aaaa-aaaa-aaaa-aaaa-aaaa", value="Max Test", onclick='microsoftTeams.settings.setValidityState(true);')
+                    label(for="aaaa-aaaa-aaaa-aaaa-aaaa")       Max Test
+                    td
+                        p.subtle aaaa-aaaa-aaaa-aaaa-aaaa
+            // Special row for elites
+            tr
+                td
+                    input(type='radio', name='tenant', id="elite", value="Elites", onclick='microsoftTeams.settings.setValidityState(true);')
+                    label(for="elite")       All Elite Tenants
+                    td
+                        p.subtle elite
+            tr
+                td
+                    input(type='radio', name='tenant', id="summary", value="All Tenants Summary", onclick='microsoftTeams.settings.setValidityState(true);')
+                    label(for="summary")       All Tenants Summary
+                    td
+                        p.subtle Summary
+            tr
+                td
+                    input(type='radio', name='tenant', id="edu-summary", value="EDU Tenants Summary", onclick='microsoftTeams.settings.setValidityState(true);')
+                    label(for="edu-summary")       EDU Summary
+                    td
+                        p.subtle Summary
+            tr
+                td
+                    input(type='radio', name='tenant', id="far-east-summary", value="Far East Tenants Summary", onclick='microsoftTeams.settings.setValidityState(true);')
+                    label(for="far-east-summary")       Far East Summary
+                    td
+                        p.subtle Summary

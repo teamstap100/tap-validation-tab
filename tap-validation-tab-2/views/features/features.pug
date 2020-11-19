@@ -1,0 +1,73 @@
+extends ../layout.pug
+block content
+  .container
+    br
+    p.heading-text All Features in TAP
+    p #[strong This information is subject to change and is MICROSOFT CONFIDENTIAL. Sharing this in any form is a violation of your NDA with Microsoft.]
+
+    br
+
+    .container
+        .col-xs-1
+        .col-xs-10
+            table.table.table-striped.table-bordered.hugeTable#features
+                thead
+                    tr
+                        td(scope="col") #[strong Title]
+                        td(scope="col") #[strong Description]
+                        td(scope="col") #[strong Area]
+                        td(scope="col") #[strong TAP PM]
+                        td(scope="col") #[strong Announcement]
+                        td(scope="col") #[strong Sign-Off Link]
+                        td(scope="col") #[strong Status]
+                        td(scope="col") #[strong R1.5]
+                        td(scope="col") #[strong R3]
+
+                tbody
+                    each feature in features
+                        tr
+                            td #[strong #{feature.PBI.Title}]
+                            td #{feature.PBI.Description}
+                            td #{feature.PBI.Area}
+                            td #{feature.owner}
+                            td 
+                                if feature.PBI["Feature Announcement Link"]
+                                    a(href=feature.PBI["Feature Announcement Link"] style="font-size: 12px" target="_blank")
+                                        i.fa.fa-link
+                            td 
+                                if feature.PBI["IT-admin sign-off"]
+                                    a(href=feature.PBI["IT-admin sign-off"] style="font-size: 12px" target="_blank")
+                                        i.fa.fa-link
+                            if feature.PBI["TAP Validation Status"] == "Green"
+                                td(style="background-color: green; color: green") Green
+                            else if feature.PBI["TAP Validation Status"] == "Orange"
+                                td(style="background-color: orange; color: orange") Orange
+                            else if feature.PBI["TAP Validation Status"] == "Red"
+                                td(style="background-color: red; color: red") Red
+                            else
+                                td(style="background-color: green; color: green") Green
+                            td
+                                if feature.PBI.Ring1_5 == "Enabled"
+                                    i.fa.fa-check(title="Enabled" style="color: green")
+                                else if feature.PBI.Ring1_5 == "Enabled (Specific tenants)"
+                                    i.fa.fa-exclamation(title="Enabled (Specific tenants)")
+                                else if feature.PBI.Ring1_5 == "Not Enabled"
+                                    i.fa.fa-times(title="Not Enabled" style="color: red")
+                            td
+                                if feature.PBI.Ring3 == "Enabled"
+                                    i.fa.fa-check(title="Enabled" style="color: green")
+                                else if feature.PBI.Ring3 == "Enabled (Specific tenants)"
+                                    i.fa.fa-exclamation(title="Enabled (Specific tenants)")
+                                else if feature.PBI.Ring3 == "Not Enabled"
+                                    i.fa.fa-times(title="Not Enabled" style="color: red")
+                            
+        .col-xs-1
+                            
+
+                
+    script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js')
+    script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap.min.js')
+    link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap.min.css')
+    script(type="text/javascript", src="/controllers/features/featureController.client.js")
+
+  

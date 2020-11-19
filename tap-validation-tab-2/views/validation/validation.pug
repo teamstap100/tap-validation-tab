@@ -1,0 +1,708 @@
+extends ../layout.pug
+
+block content
+  .container
+    if !validation.active
+        .alert.alert-warning This validation has ended. You will not be able to sign-off on any more scenarios.
+    br
+    .row
+        .col-xs-9
+            p.heading-text #{validation.name}
+
+        .col-xs-3
+            if validation.tap == "Teams"
+                span.label.label-primary.tap-label #{validation.tap} TAP
+            else if validation.tap == "Windows"
+                span.label.label-info.tap-label WCCP
+            else
+                span.label.label-info.tap-label #{validation.tap} TAP
+
+    //p.validation-progress.centered
+
+
+    p#validation-tag(style="display: none") #{validation.tag}
+    p.subtle#tap(style="display: none") #{validation.tap}
+    p.subtle#validation-id(style="display: none") #{validation._id}
+
+    span#collectWindowsInfo(style="display: none") #{validation.settings.collectWindowsInfo}
+
+    br
+    if validation.blurb
+        .container
+            .well.blurb !{validation.blurb}
+    - var clients = ['windows', 'mac', 'android', 'ios', 'web', 'linux'];
+    - var walkie_clients = [];
+    - var walkie_headset_types = [];
+    - var arm_devices = [];
+    if validation.settings
+        if validation.settings.collectDeviceFeedback
+            if validation._id == 767324
+                - walkie_clients = ['Samsung XCP', 'Android + Wired H', 'Android + Wireless H'];
+            if validation._id == 938428
+                - walkie_clients = ['Samsung XCP', 'Zebra', 'Other Android Devices'];
+                - walkie_headset_types = ['No Headset', 'Wired (Klein)', 'Wireless (Jabra)', 'Other'];
+            if validation._id == 1101236
+                - arm_devices = ["Surface Pro X", "Samsung Galaxy Book S", "Lenovo Yoga 5G / Flex 5G", "Asus NoVo Go", "HP Envy x2"];
+
+    datalist#deviceList
+        option(value="Jabra EVOLVE 20 MS", data-value="Jabra EVOLVE 20 MS")
+        option(value="Jabra EVOLVE 30 II", data-value="Jabra EVOLVE 30 II")
+        option(value="Jabra EVOLVE LINK MS", data-value="Jabra EVOLVE LINK MS")
+        option(value="Jabra Link 370", data-value="Jabra Link 370")
+        option(value="Jabra SPEAK 510 USB", data-value="Jabra SPEAK 510 USB")
+        option(value="Logitech H570e Stereo", data-value="Logitech H570e Stereo")
+        option(value="Microsoft LifeChat LX-6000", data-value="Microsoft LifeChat LX-6000")
+        option(value="Plantronics Blackwire 3220 Series", data-value="Plantronics Blackwire 3220 Series")
+        option(value="Plantronics BT600", data-value="Plantronics BT600")
+        option(value="Plantronics C320-M", data-value="Plantronics C320-M")
+        option(value="Plantronics C725", data-value="Plantronics C725")
+        option(value="Plantronics P540-M", data-value="Plantronics P540-M")
+        option(value="Polycom CX300 R2", data-value="Polycom CX300 R2")
+        option(value="Polycom CX300", data-value="Polycom CX300")
+        option(value="Thinkcentre TIO22Gen3", data-value="Thinkcentre TIO22Gen3")
+        option(value="Thinkcentre TIO22Gen3Touch", data-value="Thinkcentre TIO22Gen3Touch")
+        option(value="Thinkcentre TIO24Gen3", data-value="Thinkcentre TIO24Gen3")
+        option(value="Tiny-in-One 22", data-value="Tiny-in-One 22")
+        option(value="Tiny-in-One 23", data-value="Tiny-in-One 23")
+        option(value="Tiny-in-One 24", data-value="Tiny-in-One 24")
+
+    - var network_scenarios = ["Indoor - Single wi-fi", "Indoor - Roaming", "Indoor to Outdoor (Roaming between Wi-Fi APs and Intermittent to No Internet)", "Indoor to Outdoor (Roaming between Wi-Fi and 4G/LTE)", "Outdoor (Connected to a single cellular tower only)", "Outdoor Roaming (Roaming between cellular towers)", "Outdoor Roaming (Roaming between Cell Towers and intermittent or No Internet)", "Other"];
+
+    if validation.settings
+        if validation.settings.collectDeviceFeedback
+            .container.arm-devices
+                .form-group.row
+                    .col-sm-3
+                    .col-sm-6
+                        .row
+                            label.control-label.col-form-label.col-sm-6(for='armDevice')
+                                span(style="color: red") (*) 
+                                | Select your device:
+                            select.setUserPrefs#deviceSelect.form-control.col-sm-6(placeholder="Select your ARM device.")
+                                option(value="", label="", selected) 
+                                each device in arm_devices
+                                    option(value=device label=device) #{device}
+                    .col-sm-3
+    if (validation._id == 767324) || (validation._id == 938428)
+        .container.teams-mode(style="display: none")
+            //.form-group.row
+            //    .col-sm-3
+            //    .col-sm-6
+            //        .row
+            //            label.control-label.col-form-label.col-sm-6(for='teamsMode')
+            //                span(style="color: red") (*) 
+            //                | Select your Teams Mode type:
+            //            select#teamsMode.form-control.col-sm-6(placeholder="Please select which Teams Mode you are using.")
+            //                option(value="", label="", selected) 
+            //                option(value="Teams Only Mode", label="Teams Only Mode") Teams Only Mode
+            //                option(value="Teams Islands Mode", label="Teams Islands Mode") Teams Islands Mode
+            //                option(value="SfB* Mode", label="SfB* Mode") SfB* Mode
+            //                option(value="Don't Know", label="Don't Know") Don't Know
+            //    .col-sm-3
+            //br
+            .form-group.row
+                .col-sm-3
+                .col-sm-6
+                    .row
+                        label.control-label.col-form-label.col-sm-6(for='walkieDevice')
+                            span(style="color: red") (*) 
+                            | Select your Device:
+                        select#walkieDevice.form-control.col-sm-6(placeholder="Select your device.")
+                            option(value="", label="", selected) 
+                            option(value="Samsung XCP", label="Samsung XCP") Samsung XCP
+                            option(value="Zebra", label="Zebra") Zebra
+                            option(value="Other Android Devices", label="Other Android Devices") Other Android Devices
+                .col-sm-3
+            .form-group.row
+                .col-sm-3
+                .col-sm-6
+                    .row
+                        label.control-label.col-form-label.col-sm-6(for='walkieHeadset')
+                            span(style="color: red") (*) 
+                            | Select your Headset:
+                        select#walkieHeadset.form-control.col-sm-6(placeholder="Select your headset.")
+                            option(value="", label="", selected) 
+                            option(value="No Headset", label="No Headset") No Headset
+                            option(value="Wired (Klein)", label="Wired (Klein)") Wired (Klein)
+                            option(value="Wireless (Jabra)", label="Wireless (Jabra)") Wireless (Jabra)
+                            option(value="Other", label="Other") Other
+                .col-sm-3
+            br
+
+    if validation.settings.collectWindowsInfo
+        .container#windows-build(style="display: none")
+            .container
+                h4 Your Info
+                .well
+                    .form-group.row
+                        .col-lg-4.col-md-3.col-sm-3
+                        .col-lg-4.col-md-6.col-sm-6
+                            .row
+                                label.control-label.col-form-label.col-md-7(for='windowsBuildType')
+                                    span(style="color: red") (*) 
+                                    | Windows build type:
+                                select.setUserPrefs#windowsBuildType.form-control.col-md-5(placeholder="Please select which type of Windows build you are running.")
+                                    option(value="", label="", selected) 
+                                    option(value="Pre-Release", label="Pre-Release") Pre-Release
+                                    option(value="Release", label="Release") Release
+                        .col-lg-4.col-md-3.col-sm-3
+                    .form-group.row
+                        .col-lg-4.col-md-3.col-sm-3
+                        .col-lg-4.col-md-6.col-sm-6
+                            .row
+                                label.control-label.col-form-label.col-md-7(for='windowsBuildVersion')
+                                    span(style="color: red") (*) 
+                                    | Windows build version:
+                                //input#windowsBuildVersion.form-control.col-md-5(placeholder="Please enter the version number of your Windows build.", type="text")
+                                select.setUserPrefs#windowsBuildVersion.form-control.col-md-5
+                                    if windowsBuilds
+                                        each build in windowsBuilds
+                                            option(value=build, label=build) #{build}
+                        .col-lg-4.col-md-3.col-sm-3
+   
+                br
+
+    if validation.tap == "Teams"
+        .container
+            .container.knownIssues(style="display: none")
+                h4 Known Issues
+                p We are aware of these issues, so you don't need to report them again.
+                table.table.table-striped.table-bordered#knownIssuesTable(style="font-size: 11px;")
+                    thead
+                        tr
+                            th(scope="col") Title
+                    tbody
+                br
+
+    .container
+      .container.caseList
+            h4 Scenarios
+
+            .progress
+              .progress-bar#scenario-progress-bar(role='progressbar', aria-valuenow='0', aria-valuemin='0', aria-valuemax='100', style='width:0%')
+                span.validation-progress
+
+            - var groupCount = 0;
+            .panel-group#accordion
+                each group in validation.groups
+                    - var safeGroupName = group.replace(/[^\w]/gi, '_');
+                    - var groupCases = [];
+                    if validation.customCaseOrder != null
+                        - groupCases = validation.customCaseOrder[group];
+                    else
+                        - groupCases = cases.filter(obj => {return obj.group == group}).map(obj => obj._id);
+                    - groupCount++;
+                    .panel.panel-default.group-panel(id="panel-" + safeGroupName)
+                        .panel-heading.group-panel-heading
+                            a.panel-title.toggle-collapse(data-toggle="collapse" data-target="#collapse-" + safeGroupName) #[strong #{groupCount}. #{group}] 
+                            span.group-progress
+                        
+                        .panel-collapse.group-collapse.collapse.in(id="collapse-" + safeGroupName)
+                            .panel-body.group-panel-body
+                                .panel-group(id="accordion-" + safeGroupname)
+                                - var caseCount = 1;
+
+                                each kaseId in groupCases
+                                  - var kase = cases.find(obj => { return obj._id.toString() === kaseId.toString() });
+                                  if kase
+                                      if kase.group == group
+
+                                        // New style collapsible case
+                                        .panel.panel-default.case-panel(id="panel-" + kase._id)
+                                            .panel-heading
+                                                a.toggle-collapse(data-toggle="collapse" data-target="#collapse-" + kase._id, style="color: black")
+                                                    p.case-text #{groupCount}-#{caseCount}. #{kase.name}
+                                                    - caseCount += 1;
+                                            .panel-collapse.case-collapse.collapse.in(id="collapse-" + kase._id)
+                                                .panel-body
+                                                    .col-sm-3.hidden-xs.centered
+                                                        span.upvotes-header Works
+                                                        .upvotes
+                                                            table.compact.upvotes-table.votes-table(id="upvotes-" + kase._id)
+                                                                thead(style="display: none")
+                                                                    tr
+                                                                        td(scope="col") Vote
+                                                                tbody
+
+                                                    .col-sm-6
+                                                        if kase.description
+                                                            .well.description-well
+                                                                p.case-description !{kase.description}
+                                                        else
+                                                            br
+
+                                                        .hidden-sm.hidden-md.hidden-lg.hidden-xl.mobile-works-fails(style="text-align: center")
+                                                            span.upvotes-header Works (0)  
+                                                            | | 
+                                                            span.downvotes-header Fails (0) 
+                                                            br
+                                                            br
+                                                        //.row.device-select-group(style="display: none")
+                                                        //    input.form-control.device-select.col-md-9(id=kase._id + "-device", type="text", list="deviceList", placeholder="Select or type your device's name.")
+                                                        //    br
+                                                        .client-checkboxes(style="display: none")
+                                                            if validation.active
+                                                                .row
+                                                                    each client in clients
+                                                                        if client == 'ios'
+                                                                            - var clientCaps = "iOS";
+                                                                        else
+                                                                            - var clientCaps = client.charAt(0).toUpperCase() + client.slice(1);
+                                                                        .col-sm-6(class=client + "-group")
+                                                                            .btn-group(data-toggle="buttons")
+                                                                                label.col-xs-8(for=kase._id + '-' + client + '-works') #{clientCaps}: 
+                                                                                label.col-xs-2.btn.radio-btn
+                                                                                    input(type="radio", name=clientCaps, value='works', id=kase._id + '-' + client + '-works')
+                                                                                    span.align-middle.thumbContainer
+                                                                                        i.fa.fa-thumbs-up
+                                                                                label.col-xs-2.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
+                                                                                    input(type="radio", name=clientCaps, value='fails', id=kase._id + '-' + client + '-fails')
+                                                                                    span.align-middle.thumbContainer
+                                                                                        i.fa.fa-thumbs-down
+                                                                if validation.settings
+                                                                    if validation.settings.commentsEnabled
+                                                                        button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal")
+                                                                            i.fa.fa-comments 
+                                                                            |   Feedback
+                                                        if validation.active
+                                                            if kase._id == 956385
+                                                                .network-scenario-checkboxes
+                                                                    each ns in network_scenarios
+                                                                        .row
+                                                                            input.col-xs-1(type="checkbox" value=ns name="network-scenarios")
+                                                                            label.safe-label.col-xs-11 #{ns}
+                                                            .walkie-checkboxes(style="display: none")
+                                                                .row
+                                                                    each client in walkie_clients
+                                                                        - var safeClient = client.replace(/[^\w]/gi, '_');
+                                                                        .div(class=safeClient + "-group")
+                                                                            .btn-group(data-toggle="buttons")
+                                                                                label.col-xs-8.lighter-label(for=kase._id + '-" + safeClient + "-works') #{client}:  
+                                                                                label.col-xs-2.btn.radio-btn
+                                                                                    input(type="radio", name=client, value='works', id=kase._id + '-' + safeClient + '-works')
+                                                                                    span.align-middle.thumbContainer
+                                                                                        i.fa.fa-thumbs-up
+                                                                                label.col-xs-2.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
+                                                                                    input(type="radio", name=client, value='fails', id=kase._id + '-' + safeClient + '-fails')
+                                                                                    span.align-middle.thumbContainer
+                                                                                        i.fa.fa-thumbs-down
+                                                                br
+
+                                                                .row.btn-container
+                                                                    if validation.settings
+                                                                        if validation.settings.commentsEnabled
+                                                                            button.btn.btn-comment
+                                                                                i.fa.fa-comments 
+                                                                                | Feedback
+                                                        .no-client-checkboxes.btn-container
+                                                            if validation.active
+                                                                button.btn.btn-upvote(type="submit")
+                                                                    i.fa.fa-thumbs-up 
+                                                                    |   Works
+                                                                if validation.settings
+                                                                    if validation.settings.commentsEnabled
+                                                                        button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal")
+                                                                            i.fa.fa-comments 
+                                                                            |   Feedback
+                                                                button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal")
+                                                                    i.fa.fa-thumbs-down 
+                                                                    |   Fails
+                                                            else
+                                                                button.btn.btn-upvote(type="submit" disabled)
+                                                                    i.fa.fa-thumbs-up 
+                                                                    |   Works
+                                                                if validation.settings
+                                                                    if validation.settings.commentsEnabled
+                                                                        button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal")
+                                                                            i.fa.fa-comments 
+                                                                            |   Feedback
+                                                                button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal" disabled)
+                                                                    i.fa.fa-thumbs-down 
+                                                                    |   Fails
+                                                        .btn-container
+                                                            if validation.tap == "Windows"
+                                                                br
+                                                                button.btn(id="view-feedback-" + kase._id, data-caseTitle=kase.title, type='submit', data-toggle="modal", data-target="#view-feedback-modal")
+                                                                    i.fa.fa-comments 
+                                                                    |   View All Feedback
+                                                    //p.centered.timestamp.subtle #{kase.timestamp.toLocaleDateString()}
+                                                    p.subtle.deep-link(style="display: none")
+                                                        i.fa.fa-link   Link
+                                                    p.subtle(style="display: none") #{kase._id}
+
+                                                    .col-sm-3.hidden-xs.centered
+                                                        span.downvotes-header Fails
+                                                        .downvotes
+                                                            table.compact.downvotes-table.votes-table(id="downvotes-" + kase._id)
+                                                                thead(style="display: none")
+                                                                    tr
+                                                                        td(scope="col") Vote
+                                                                tbody
+
+                    
+            - var caseCount = 1;
+            if cases.length > 0
+                - var groupCases = [];
+                // TODO: Disabled for now
+                //if validation.customCaseOrder != null
+                //    - groupCases = validation.customCaseOrder[""];
+                //else
+                //    - groupCases = cases.filter(obj => {return !obj.group}).map(obj => obj._id);
+                - groupCases = cases.filter(obj => {return !obj.group}).map(obj => obj._id);
+                each kaseId in groupCases
+                    - var kase = cases.find(obj => { return obj._id.toString() === kaseId.toString() });
+                    if kase
+                        if kase.group == null || kase.group == ""
+                            // New style collapsible case
+                            .panel.panel-default.case-panel.ungrouped(id="panel-" + kase._id)
+                                .panel-heading.ungrouped
+                                    a.toggle-collapse(data-toggle="collapse" data-target="#collapse-" + kase._id, style="color: black")
+                                        p.case-text #{caseCount}. #{kase.name}
+                                        - caseCount += 1;
+                                .panel-collapse.case-collapse.collapse.in(id="collapse-" + kase._id)
+                                    .panel-body
+                                        .col-sm-3.hidden-xs.centered
+                                            p.upvotes-header Works (0)
+                                            .upvotes
+                                                table.compact.upvotes-table.votes-table(id="upvotes-" + kase._id)
+                                                    thead(style="display: none")
+                                                        tr
+                                                            td(scope="col") Vote
+                                                    tbody
+
+                                        .col-sm-6
+                                            if kase.description
+                                                .well.description-well
+                                                    p.case-description !{kase.description}
+                                            else
+                                                br
+                                            .btn-container
+                                                .hidden-sm.hidden-md.hidden-lg.hidden-xl.mobile-works-fails(style="text-align: center")
+                                                    span.upvotes-header Works (0)  
+                                                    | | 
+                                                    span.downvotes-header Fails (0) 
+                                                    br
+                                                    br
+                                                if validation.active
+                                                    button.btn.btn-upvote(type="submit")
+                                                        i.fa.fa-thumbs-up 
+                                                        if ((kase._id == 1126711) || (kase._id == 1126715))
+                                                            |   Yes
+                                                        else
+                                                            |   Works
+                                                    if validation.settings
+                                                        if validation.settings.commentsEnabled
+                                                            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal") Feedback...
+                                                    button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal")
+                                                        i.fa.fa-thumbs-down 
+                                                        if ((kase._id == 1126711) || (kase._id == 1126715))
+                                                            |   No
+                                                        else
+                                                            |   Fails
+                                                else
+                                                    button.btn.btn-upvote(type="submit" disabled)
+                                                        i.fa.fa-thumbs-up 
+                                                        |   Works
+                                                    if validation.settings
+                                                        if validation.settings.commentsEnabled
+                                                            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal" disabled) Feedback...
+                                                    button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal" disabled)
+                                                        i.fa.fa-thumbs-down 
+                                                        |   Fails
+                                            .btn-container
+                                                if validation.tap == "Windows"
+                                                    br
+                                                    button.btn(id="view-feedback-" + kase._id, type='submit', data-toggle="modal", data-target="#view-feedback-modal")
+                                                        i.fa.fa-comments 
+                                                        |   View All Feedback
+                                            p.subtle.deep-link(style="display: none")
+                                                i.fa.fa-link   Link
+                                            p.subtle(style="display: none") #{kase._id}
+
+                                        .col-sm-3.hidden-xs.centered
+                                            p.downvotes-header Fails (0)
+                                            .downvotes
+                                                table.compact.downvotes-table.votes-table(id="downvotes-" + kase._id)
+                                                    thead(style="display: none")
+                                                        tr
+                                                            td(scope="col") Vote
+                                                    tbody
+            else
+                p No scenarios have been added yet. Check back later!
+
+      hr
+      .container.featureRequests(style="display: none")
+          h4 Feature Requests
+          each freq in featureRequests
+            .panel.panel-default.case-panel(id="panel-" + freq._id)
+                .panel-heading
+                    a.toggle-collapse(data-toggle="collapse" data-target="#collapse-" + freq._id, style="color: black")
+                        p.case-text 
+                        i.fa.fa-lightbulb  
+                        |    #{freq._id} - #{freq.title}
+                .panel-collapse.case-collapse.collapse.in(id="collapse-" + freq._id)
+                    .panel-body
+                        .col-sm-3.hidden-xs.centered
+                            p Score: 
+                                span.score(id="feature-request-score-" + freq._id) #{freq.upvotes.length}
+                            button.btn.btn-feedback-upvote(type="submit", id="feature-request-btn-" + freq._id)
+                                i.fa.fa-thumbs-up   
+                                |    Support
+
+                        .col-sm-9
+                            if freq.description
+                                .well.description-well
+                                    p.case-description !{freq.description}
+                            else
+                                br
+          .btn-container
+              button.btn(type='submit', data-toggle="modal", data-target="#feature-request-modal") 
+                  i.fa.fa-lightbulb
+                  |   Suggest a feature...
+
+      hr
+      .container.otherActions(style="display: none")
+        h4 Other Actions
+        .btn-container
+            button.btn(type='submit', data-toggle="modal", data-target="#feedback-modal")
+                i.fa.fa-comments
+                |   Share general feedback... 
+      br
+      br
+
+    #report-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='modalLabel', aria-hidden='true')
+      .modal-dialog(role='document')
+        .modal-content
+          .modal-header
+            button.close(type='button', data-dismiss='modal', aria-label='Close')
+              span(aria-hidden='true') &times;
+            h5.modal-title#modalLabel Please "Report a Problem"
+          .modal-body
+            | Your feedback has been recorded. Please submit more details through "Report a Problem" on the device you used for the scenario as well.
+          .modal-footer
+            button.btn.btn-primary(type='button', data-dismiss="modal") OK
+
+    #comment-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='commentLabel', aria-hidden='true')
+      #comment-id(style="display: none") Test
+      #comment-caseTitle(style="display: none") Test
+      .modal-dialog(role='document')
+        .modal-content
+          .modal-header
+            button.close(type='button', data-dismiss='modal', aria-label='Close')
+              span(aria-hidden='true') &times;
+            h5.modal-title#commentLabel Submit feedback for this scenario
+          .modal-body
+            p Your feedback will be shared with the team.
+            p If the scenario has failed, please "Report a Problem" instead.
+            br
+            textarea.form-control#commentField(rows=3, placeholder="Comment")
+          .modal-footer
+            button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
+            button.btn.btn-primary#submitComment(type='button', data-dismiss="modal") Submit
+
+    #windows-report-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='windowsReportLabel', aria-hidden='true')
+      #windows-report-id(style="display: none") Test
+      #windows-report-name(style="display: none") Name
+      .modal-dialog(role='document')
+        .modal-content
+          .modal-header
+            button.close(type='button', data-dismiss='modal', aria-label='Close')
+              span(aria-hidden='true') &times;
+            h4#windows-report-header.modal-title Report a problem with this scenario
+          .modal-body
+            .well.description-well
+                #windows-report-description
+            hr
+            form#windows-report-form(enctype="multipart/form-data" method="post")
+                .form-group
+                    .form-group
+                        label(for="windows-report-title-field") Title:  
+                            span#windows-report-title-required(style="color: red") (*)
+                        input.form-control#windows-report-title-field.windows-report-field(type="text" placeholder="Title your feedback.")
+                    .form-group
+                        label(for="windows-report-repro-steps-field") Repro Steps:  
+                            span#windows-report-repro-steps-required(style="color: red") (*)
+                        textarea.form-control#windows-report-repro-steps-field.windows-report-field(rows=4, placeholder="Please provide the steps to reproduce this.")
+                    .form-group
+                        label(for="windows-report-description-field") Description:  
+                            span#windows-report-description-required(style="color: red") (*)
+                        textarea.form-control#windows-report-description-field.windows-report-field(rows=4, placeholder="Please describe the problem.")
+                    .form-group
+                        label(for="windws-report-file") File Upload:
+                        input#windows-report-file(type="file" name="userFile")
+                    .form-group
+                        input(type="checkbox", name="votesPublic", value=true).setUserPrefs#votesPublicField  
+                        label(for='votesPublic') &nbsp; Make my feedback visible to other WCCP participants
+                        p(style="font-size: 12px;") If checked, your anonymous comment will be visible to others. Don't provide personally identificable information in your comment if this is checked.
+                
+          .modal-footer
+            button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
+            button.btn.btn-primary#windows-report-submit(type='submit', title="Submit" name="submit") Submit
+
+    #edit-report-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='windowsReportLabel', aria-hidden='true')
+      #edit-report-id(style="display: none") Test
+      #edit-report-name(style="display: none") Name
+      .modal-dialog(role='document')
+        .modal-content
+          .modal-header
+            button.close(type='button', data-dismiss='modal', aria-label='Close')
+              span(aria-hidden='true') &times;
+            h4#edit-report-header.modal-title Modify your feedback
+          .modal-body
+            form#edit-report-form(enctype="multipart/form-data" method="post")
+                .form-group
+                    .form-group
+                        label(for="edit-report-title-field") Title:  
+                            span#edit-report-title-required(style="color: red") (*)
+                        input.form-control#edit-report-title-field.edit-report-field(type="text" placeholder="Title your feedback.")
+                    .form-group
+                        label(for="edit-report-repro-steps-field") Repro Steps:  
+                            span#edit-report-repro-steps-required(style="color: red") (*)
+                        textarea.form-control#edit-report-repro-steps-field.edit-report-field(rows=4, placeholder="Please provide the steps to reproduce this.")
+                    .form-group
+                        label(for="edit-report-description-field") Description:  
+                            span#edit-report-description-required(style="color: red") (*)
+                        textarea.form-control#edit-report-description-field.edit-report-field(rows=4, placeholder="Please describe the problem.")
+                    .form-group
+                        label(for="windws-report-file") File Upload:
+                        input#edit-report-file(type="file" name="userFile")
+                    .form-group
+                        input(type="checkbox", name="votesPublic", value=true)#edit-feedback-public
+                        label(for='votesPublic') &nbsp; Make my feedback visible to other WCCP participants
+                        p(style="font-size: 12px;") If checked, your anonymous comment will be visible to others. Don't provide personally identificable information in your comment if this is checked.
+                
+          .modal-footer
+            button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
+            button.btn.btn-primary#edit-report-submit(type='submit', title="Submit" name="submit") Save changes
+
+    #feedback-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='feedbackLabel', aria-hidden='true')
+      .modal-dialog(role='document' style="width: 90%")
+        .modal-content
+          .modal-header
+            button.close(type='button', data-dismiss='modal', aria-label='Close')
+              span(aria-hidden='true') &times;
+            h4#feeback-header.modal-title Share general feedback on: #{validation.name}
+          .modal-body
+            //.alert.alert-success#feedback-success(role="alert", style="display: none") Thanks for your feedback - it will be shared with the team.
+            .modal-scrollable(style="max-height: 45%; overflow-y: scroll; overflow-x: hidden;")
+                p #[strong Your feedback]
+                table.table.table-striped.compact.feedback-table#your-feedback-table(style="width: 100%")
+                    thead
+                        tr
+                            th(scope="col" style="width: 5%") #[strong ID]
+                            th(scope="col" style="width: 70%") #[strong Feedback]
+                            th(scope="col" style="width: 10%") #[strong State]
+                            th(scope="col" style="width: 10%") #[strong Reason]
+                            th(scope="col" style="Width: 5%") #[strong Public?]
+                    tbody
+
+
+                p #[strong Others' public feedback]
+                table.table.table-striped.compact.feedback-table#feedback-table(style="width: 100%")
+                    thead
+                        tr
+                            th(scope="col" style="Width: 10%") #[strong ID]
+                            th(scope="col" style="width: 90%") #[strong Feedback]
+                    tbody
+            hr
+
+            .form-group
+                    .form-group
+                        label(for="feedback-title-field") Title:  
+                            span#feedback-title-required(style="color: red") (*)
+                        input.form-control#feedback-title-field.feedback-field(type="text" placeholder="Title your feedback.")
+                    .form-group
+                        label(for="feedback-description-field") Description:  
+                            span#feedback-description-required(style="color: red") (*)
+                        textarea.form-control#feedback-description-field.feedback-field(rows=4, placeholder="Please provide details.")
+            .form-group.form-check
+                input.form-check-input(type="checkbox", name="feedbackPublic").setUserPrefs#feedbackPublicField  
+                label(for='feedbackPublic') &nbsp; Make my feedback visible to other WCCP participants
+                p(style="font-size: 12px;") If checked, your anonymous comment will be visible to others. Don't provide personally identificable information in your comment if this is checked.
+                
+          .modal-footer
+              button.btn.btn-primary#submitFeedback(type='button', style="float: right", disabled) Submit
+
+    #feature-request-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='featureRequestLabel', aria-hidden='true')
+      .modal-dialog(role='document' style="width: 90%")
+        .modal-content
+          .modal-header
+            button.close(type='button', data-dismiss='modal', aria-label='Close')
+              span(aria-hidden='true') &times;
+            h4#feeback-header.modal-title Suggest a feature for: #{validation.name}
+          .modal-body
+            //.alert.alert-success#featureRequest-success(role="alert", style="display: none") Thanks for your featureRequest - it will be shared with the team.
+            .modal-scrollable(style="max-height: 45%; overflow-y: scroll; overflow-x: hidden;")
+                p Your feature requests
+                table.table.table-striped.compact.feature-request-table#your-featureRequest-table(style="width: 100%")
+                    thead
+                        tr
+                            th(scope="col" style="width: 10%") #[strong ID]
+                            th(scope="col" style="width: 25%") #[strong Title]
+                            th(scope="col" style="width: 50%") #[strong Description]
+                            th(scope="col" style="width: 5%") #[strong State]
+                            th(scope="col" style="width: 5%") #[strong Reason]
+
+                            th(scope="col" style="Width: 5%") #[strong Public?]
+                    tbody
+            .form-group
+                label(for="featureRequestTitleField") Title
+                textarea.form-control#featureRequestTitleField(rows=1, placeholder="Feature title")
+            .form-group
+                label(for="featureRequestDescriptionField") Suggest a feature:
+                textarea.form-control#featureRequestDescriptionField(rows=3, placeholder="Please describe your feature.")
+            .form-group.form-check
+                input.form-check-input(type="checkbox", name="featureRequestsPublic").setUserPrefs#featureRequestsPublicField  
+                label(for='featureRequestPublic') &nbsp; Make my feature request visible to other WCCP participants
+                p(style="font-size: 12px;") If checked, your anonymous feature request will be visible to others. Don't provide personally identificable information in your comment if this is checked.
+                
+          .modal-footer
+              button.btn.btn-primary#submitFeatureRequest(type='button', style="float: right", disabled) Submit
+
+    #view-feedback-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='viewFeedbackLabel', aria-hidden='true')
+      .modal-dialog(role='document', style="width: 90%")
+        .modal-content
+          .modal-header
+            button.close(type='button', data-dismiss='modal', aria-label='Close')
+              span(aria-hidden='true') &times;
+            h4#feeback-header.modal-title View all feedback:
+                span#caseTitle
+            span#caseId(style="display: none")
+          .modal-body
+            //.alert.alert-success#feedback-success(role="alert", style="display: none") Thanks for your feedback - it will be shared with the team.
+            .modal-scrollable(style="max-height: 45%; overflow-y: scroll; overflow-x: hidden;")
+                p #[strong Your scenario feedback]
+                table.table.table-striped.compact.feedback-table#your-scenario-feedback-table(style="width: 100%")
+                    thead
+                        tr
+                            th(scope="col" style="width: 10%") #[strong ID]
+                            th(scope="col" style="width: 60%") #[strong Title]
+                            th(scope="col" style="width: 10%") #[strong State]
+                            th(scope="col" style="width: 10%") #[strong Reason]
+                            th(scope="col" style="Width: 10%") #[strong Public?]
+                    tbody
+
+
+                p #[strong Others' public feedback]
+                table.table.table-striped.compact.feedback-table#other-scenario-feedback-table(style="width: 100%")
+                    thead
+                        tr
+                            th(scope="col" style="Width: 10%") #[strong ID]
+                            th(scope="col" style="Width: 10%") #[strong Vote]
+                            th(scope="col" style="Width: 10%") #[strong Comment]
+                            th(scope="col" style="width: 70%") #[strong Title]
+                    tbody
+                
+          .modal-footer
+              
+
+    script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js')
+    script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap.min.js')
+    link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap.min.css')
+    script(type="text/javascript", src="/helpers/helpers.js")
+    script(type="text/javascript", src="/controllers/validation/featureRequestController.client.js")
+
+    script(type="text/javascript", src="/controllers/validation/caseController.client.js")
+    script(type="text/javascript", src="/controllers/validation/userPrefsController.client.js")
+    script(type="text/javascript", src="/controllers/validation/feedbackController.client.js")
+    script(type="text/javascript", src="/controllers/validation/caseFeedbackController.client.js")
