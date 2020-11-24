@@ -5,6 +5,7 @@ var request = require('request');
 var atob = require('atob');
 const fs = require('fs');
 const path = require('path');
+const { safeOid, patToAuth, ADO_API_BASE } = require('../../helpers/helpers.server');
 
 function caseHandler(dbParent) {
 
@@ -14,24 +15,14 @@ function caseHandler(dbParent) {
     var tenants = db.collection('tenants');
     var votes = db.collection('votes');
     var validations = db.collection('validations');
+    var projects = db.collection("adoProjects");
 
     const ENV = process.env.ENV;
 
-    var WINDOWS_AUTH, WINDOWS_ADO_API_BASE;
-
-    if (ENV == "PROD") {
-        WINDOWS_AUTH = process.env.WINDOWS_AUTH;
-        WINDOWS_ADO_API_BASE = "https://dev.azure.com/microsoft/OS/_apis/wit/";
-    } else {
-        // Testing with Luciano tenant
-        WINDOWS_AUTH = process.env.LUCIANO_AUTH;
-        WINDOWS_ADO_API_BASE = "https://dev.azure.com/lucianooo/TestProject/_apis/wit/";
-    }
-
-    const WINDOWS_ADO_WORKITEM_ADD_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/${{WORKITEM_TYPE}}?api-version=4.11";
-    const WINDOWS_ADO_ATTACHMENT_CREATE_ENDPOINT = WINDOWS_ADO_API_BASE + "attachments";
-    const WINDOWS_ADO_WORKITEM_UPDATE_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/{id}?api-version=4.1";
-    const WINDOWS_ADO_WORKITEM_GET_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/{id}?api-version=4.1";
+    const ADO_WORKITEM_ADD_ENDPOINT = ADO_API_BASE + "workitems/${{WORKITEM_TYPE}}?api-version=4.11";
+    const ADO_ATTACHMENT_CREATE_ENDPOINT = ADO_API_BASE + "attachments?fileName={fileName}&api-version=4.1";
+    const ADO_WORKITEM_UPDATE_ENDPOINT = ADO_API_BASE + "workitems/{id}?api-version=4.1";
+    const ADO_WORKITEM_GET_ENDPOINT = ADO_API_BASE + "workitems/{id}?api-version=4.1";
 
     const TEAMS_ADO_API_BASE = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/";
     const TEAMS_ADO_WORKITEM_ADD_ENDPOINT = TEAMS_ADO_API_BASE + "workitems/$Bug?api-version=4.11";
@@ -165,6 +156,44 @@ function caseHandler(dbParent) {
         }
 
         return base64
+    }
+
+    function getWindowsReproSteps(body) {
+        // Take a bug and create Windows repro steps for it.
+        let systemInfo = "<br /><br />";
+        if (body.windowsBuildType) {
+            systemInfo += "<strong>Build Type</strong>: " + body.windowsBuildType + "<br />";
+        }
+        if (body.windowsBuildVersion) {
+            systemInfo += "<strong>Build Version</strong>: " + body.windowsBuildVersion + "<br />";
+        }
+
+        let userEmail;
+        if (body.email) {
+            userEmail = body.email;
+        } else if (body.userEmail) {
+            userEmail = body.userEmail;
+        } else if (body.submitterEmail) {
+            userEmail = body.submitterEmail;
+        }
+
+        systemInfo += "<strong>Submitter</strong>: " + cleanEmail(userEmail) + " (" + userEmail + ")<br />";
+
+        let safeComment = body.comment.replace(/\r?\n/g, '<br />');
+
+        let reproSteps = safeComment + systemInfo;
+        return reproSteps;
+    }
+
+    function getAuthForCase(validationId, callback) {
+        // Get the project details for a given validation.
+        validations.findOne({ _id: safeOid(validationId) }, function (err, valDoc) {
+            projects.findOne({ _id: safeOid(valDoc.project) }, function (err, projectDoc) {
+                projectDoc.auth = patToAuth(projectDoc.pat);
+
+                return callback(err, projectDoc);
+            });
+        });
     }
 
     this.getOneCase = function (req, res) {
@@ -519,6 +548,103 @@ function caseHandler(dbParent) {
         });
     }
 
+    function uploadAttachments(files, bugId, project, callback) {
+        console.log("Called uploadAttachments");
+        console.log(files);
+
+        var attachmentBodies = [];
+
+        function uploadAndLink(fileIndex, files) {
+            console.log("Called uploadAndLink on", fileIndex);
+            let file = files[fileIndex];
+            //console.log(file);
+            let filename = file.filename;
+            let filePath = path.join(process.cwd(), "uploads", filename);
+            console.log(filePath);
+
+            fs.readFile(filePath, (err, data) => {
+                if (err) throw err;
+                //console.log(data);
+
+                let cleanContents = data;
+                //console.log(cleanContents);
+
+                let attachment_endpoint = ADO_ATTACHMENT_CREATE_ENDPOINT
+                    .replace("{org}", project.org)
+                    .replace("{project}", project.project)
+                    .replace("{fileName}", filename);
+
+                let attachmentOptions = {
+                    url: attachment_endpoint,
+                    headers: {
+                        'Authorization': project.auth,
+                        'Content-Type': 'application/octet-stream'
+                    },
+                    body: cleanContents,
+                    encoding: null,
+                }
+
+                console.log(attachmentOptions);
+
+                request.post(attachmentOptions, function (adoErr, adoResp, adoBody) {
+                    if (adoErr) { throw adoErr; }
+
+                    console.log(adoBody);
+
+                    adoBody = JSON.parse(adoBody);
+                    let attachmentUrl = adoBody.url;
+
+                    let linkPatch = [
+                        {
+                            "op": "add",
+                            "path": "/relations/-",
+                            "value": {
+                                "rel": "AttachedFile",
+                                "url": attachmentUrl,
+                                "attributes": {
+                                    "comment": ""
+                                }
+                            },
+                        }
+                    ];
+
+                    let updateEndpoint = ADO_WORKITEM_UPDATE_ENDPOINT
+                        .replace("{org}", project.org)
+                        .replace("{project}", project.project)
+                        .replace('{id}', bugId);
+
+                    let linkOptions = {
+                        url: updateEndpoint,
+                        headers: {
+                            'Authorization': project.auth,
+                            'Content-Type': 'application/json-patch+json',
+                        },
+                        body: JSON.stringify(linkPatch),
+                    }
+
+                    request.patch(linkOptions, function (attachmentErr, attachmentResp, attachmentBody) {
+                        if (attachmentErr) { throw attachmentErr; }
+
+                        console.log(attachmentResp.statusCode);
+                        console.log(attachmentBody);
+
+                        attachmentBodies.push(attachmentBody);
+                        console.log("File done uploading");
+
+                        fileIndex++;
+                        if (files.length > fileIndex) {
+                            return uploadAndLink(fileIndex, files);
+                        } else {
+                            return callback(attachmentBodies);
+                        }
+                    });
+                });
+            });
+        }
+
+        uploadAndLink(0, files);
+    }
+
     function createWindowsBug(body, callback) {
         // Add the new bug to VSTS
 
@@ -550,24 +676,14 @@ function caseHandler(dbParent) {
             workitemType = "Bug";
         }
 
-        let systemInfo = "<br /><br />";
-        if (body.windowsBuildType) {
-            systemInfo += "<strong>Build Type</strong>: " + body.windowsBuildType + "<br />";
-        }
-        if (body.windowsBuildVersion) {
-            systemInfo += "<strong>Build Version</strong>: " + body.windowsBuildVersion + "<br />";
-        }
-        
-        systemInfo += "<strong>Submitter</strong>: " + body.cleanEmail + " (" + body.userEmail + ")<br />";
-
         let safeComment = body.comment.replace(/\r?\n/g, '<br />');
-
-        //bugTitle += " - " + safeComment;
         bugTitle = safeComment;
 
         if (bugTitle.length > 200) {
             bugTitle = bugTitle.slice(0, 197) + "...";
         }
+
+        let reproSteps = getWindowsReproSteps(body);
 
         var reqBody = [
             {
@@ -583,12 +699,7 @@ function caseHandler(dbParent) {
             {
                 "op": "add",
                 "path": "/fields/Microsoft.VSTS.TCM.ReproSteps",
-                "value": body.reproSteps
-            },
-            {
-                "op": "add",
-                "path": "/fields/Microsoft.VSTS.TCM.SystemInfo",
-                "value": safeComment + systemInfo
+                "value": reproSteps
             },
         ];
 
@@ -632,102 +743,44 @@ function caseHandler(dbParent) {
             //})
         }
 
-        let apiUrl = WINDOWS_ADO_WORKITEM_ADD_ENDPOINT.replace("{{WORKITEM_TYPE}}", workitemType);
+        getAuthForCase(body.validation._id, function (err, project) {
+            var apiUrl = ADO_WORKITEM_ADD_ENDPOINT
+                .replace("{org}", project.org)
+                .replace("{project}", project.project)
+                .replace("{{WORKITEM_TYPE}}", workitemType);
 
-        const options = {
-            url: apiUrl,
-            headers: {
-                'Authorization': WINDOWS_AUTH,
-                'Content-Type': 'application/json-patch+json'
-            },
-            body: JSON.stringify(reqBody)
-        };
+            const options = {
+                url: apiUrl,
+                headers: {
+                    'Authorization': project.auth,
+                    'Content-Type': 'application/json-patch+json'
+                },
+                body: JSON.stringify(reqBody)
+            };
 
-        console.log("Create workitem options:");
-        console.log(options);
+            console.log("Create workitem options:");
+            console.log(options);
 
-        request.post(options, function (vstsErr, vstsResp, vstsBody) {
-            if (vstsErr) { throw vstsErr; }
+            request.post(options, function (vstsErr, vstsResp, vstsBody) {
+                if (vstsErr) { throw vstsErr; }
 
-            console.log(vstsResp.statusCode);
+                console.log(vstsResp.statusCode);
 
-            vstsBody = JSON.parse(vstsBody);
-            console.log(vstsBody);
+                vstsBody = JSON.parse(vstsBody);
+                console.log(vstsBody);
 
-            let bugId = vstsBody.id;
+                let bugId = vstsBody.id;
 
-            console.log(body.attachmentFilename);
-
-            if (body.attachmentFilename) {
-                // The attachment is given the filename in body.attachmentFilename. It is at uploads/body.attachmentFilename.
-
-                let filePath = path.join(__dirname, '../../uploads', body.attachmentFilename);
-                console.log(filePath);
-
-                fs.readFile(filePath, (err, data) => {
-                    if (err) throw err;
-                    console.log(data);
-
-                    let cleanContents = data;
-                    //console.log(cleanContents);
-
-                    let attachment_endpoint = WINDOWS_ADO_ATTACHMENT_CREATE_ENDPOINT + "?fileName=" + body.attachmentFilename + "&api-version=4.1";
-
-                    let attachmentOptions = {
-                        url: attachment_endpoint,
-                        headers: {
-                            'Authorization': WINDOWS_AUTH,
-                            'Content-Type': 'application/octet-stream'
-                        },
-                        body: cleanContents,
-                        encoding: null,
-                    }
-
-                    console.log(attachmentOptions);
-
-                    request.post(attachmentOptions, function (adoErr, adoStatus, adoResponse) {
-                        if (adoErr) { throw adoErr; }
-
-                        console.log(adoResponse);
-
-                        adoResponse = JSON.parse(adoResponse);
-                        let attachmentUrl = adoResponse.url;
-
-                        let linkPatch = [
-                            {
-                                "op": "add",
-                                "path": "/relations/-",
-                                "value": {
-                                    "rel": "AttachedFile",
-                                    "url": attachmentUrl,
-                                    "attributes": {
-                                        "comment": ""
-                                    }
-                                },
-                            }
-                        ];
-
-                        let linkOptions = {
-                            url: WINDOWS_ADO_WORKITEM_UPDATE_ENDPOINT.replace('{id}', bugId),
-                            headers: {
-                                'Authorization': WINDOWS_AUTH,
-                                'Content-Type': 'application/json-patch+json',
-                            },
-                            body: JSON.stringify(linkPatch),
-                        }
-
-                        request.patch(linkOptions, function (attachmentErr, attachmentResp, attachmentBody) {
-                            if (adoErr) { throw err; }
-
-                            return callback(vstsBody, attachmentBody);
-                        });
-
+                if (body.attachments) {
+                    uploadAttachments(body.attachments, bugId, project, function (attachmentBodies) {
+                        return callback(vstsBody, attachmentBodies);
                     });
-                });
-            } else {
-                return callback(vstsBody, null);
-            }
+                } else {
+                    return callback(vstsBody, null);
+                }
+            });
         });
+
     }
 
     this.getCaseVoteByUser = function (req, res) {
@@ -866,7 +919,6 @@ function caseHandler(dbParent) {
 
             if (tap == "Windows") {
                 voteObj.title = req.body.title;
-                voteObj.reproSteps = req.body.reproSteps;
 
                 voteObj.windowsBuildType = req.body.windowsBuildType;
                 voteObj.windowsBuildVersion = req.body.windowsBuildVersion;
@@ -884,22 +936,29 @@ function caseHandler(dbParent) {
                     valQuery._id = parseInt(req.body.validationId);
                 }
 
-                console.log(valQuery);
+                //console.log(valQuery);
 
 
                 validations.findOne(valQuery, function (err, valDoc) {
                     if (err) { console.log(err); }
-                    console.log(valDoc);
+                    //console.log(valDoc);
                     if (valDoc) {
-                        console.log("Setting body.validation to a validation");
+                        //console.log("Setting body.validation to a validation");
                         req.body.validation = valDoc;
                     }
 
-                    createWindowsBug(req.body, function (workitemBody, attachmentBody) {
-                        console.log(workitemBody);
+                    createWindowsBug(req.body, function (workitemBody, attachmentBodies) {
+                        //console.log(workitemBody);
                         let id = workitemBody.id;
-
                         voteObj.id = id;
+
+                        if (attachmentBodies) {
+                            let attachmentCount = attachmentBodies.length;
+                            voteObj.attachmentCount = attachmentCount;
+                        } else {
+                            voteObj.attachmentCount = 0;
+                        }
+
                         composeDataOps();
                     });
                 });
@@ -964,7 +1023,7 @@ function caseHandler(dbParent) {
                     ops = [updateOp, updateOp2];
                 }
 
-                console.log(ops);
+                //console.log(ops);
 
                 ops.forEach(function (op) {
                     cases.findOneAndUpdate(query, op, { returnOriginal: false }, function (err, result) {
@@ -1030,15 +1089,6 @@ function caseHandler(dbParent) {
                         }
                     });
                 });
-
-                //cases.findOneAndUpdate(query, updateOp, { returnOriginal: false }, function (err, result) {
-                //    if (err) { throw err; }
-                //    console.log("Update Op 2:");
-                //    console.log(updateOp2);
-                //    cases.findOneAndUpdate(query, updateOp2, { returnOriginal: false }, function (err2, result) {
-
-                    //})
-                //});
             }
 
             function writeVoteToADO(kase) {
@@ -1134,55 +1184,85 @@ function caseHandler(dbParent) {
     };
 
     this.getCaseFeedbackByUser = function(req, res) {
-        console.log(req.body);
+        //console.log(req.body);
 
         let votesChecked = 0;
         let votesTotal = 0;
 
         let feedback = [];
         function checkIfDone() {
-            console.log(votesChecked + " / " + votesTotal);
+            //console.log(votesChecked + " / " + votesTotal);
             if (votesChecked == votesTotal) {
                 return res.json({ feedback: feedback });
             }
         }
 
         cases.findOne({ _id: ObjectID(req.body.caseId) }, function (err, caseDoc) {
-            console.log(caseDoc);
+            //console.log(caseDoc);
+
+            caseDoc.upvotes_v2.forEach(function (vote) {
+                vote.type = "Works";
+            });
+
+            caseDoc.comments.forEach(function (vote) {
+                vote.type = "Feedback";
+            });
+
+            caseDoc.downvotes_v2.forEach(function (vote) {
+                vote.type = "Fails";
+            });
             let allFeedback = caseDoc.upvotes_v2.concat(caseDoc.downvotes_v2).concat(caseDoc.comments).filter(x => x.email == req.body.userEmail);
-            console.log(allFeedback);
+            //console.log(allFeedback);
 
             votesTotal = allFeedback.length;
-            // TODO: Filter this list by this user only
 
-            allFeedback.forEach(function (vote) {
-                if (vote.id) {
-                    let ado_endpoint = WINDOWS_ADO_WORKITEM_GET_ENDPOINT.replace("{id}", vote.id);
-                    console.log(ado_endpoint);
+            getAuthForCase(caseDoc.validationId, function (err, project) {
 
-                    const options = {
-                        url: ado_endpoint,
-                        headers: {
-                            'Authorization': WINDOWS_AUTH,
-                        }
-                    };
-                    request.get(options, function (err, resp, body) {
-                        try {
-                            body = JSON.parse(body);
-                            console.log(body.fields["System.State"]);
-                            console.log(body.fields["System.Reason"]);
+                allFeedback.forEach(function (vote) {
+                    if (vote.id) {
+                        let ado_endpoint = ADO_WORKITEM_GET_ENDPOINT
+                            .replace("{org}", project.org)
+                            .replace("{project}", project.project)
+                            .replace("{id}", vote.id);
 
-                            vote.state = body.fields["System.State"];
-                            vote.reason = body.fields["System.Reason"];
-                        } catch (e) {
-                            console.log(e);
-                            console.log("Falling back on default");
-                            vote.state = "New";
-                            vote.reason = "New";
-                        }
+                        const options = {
+                            url: ado_endpoint,
+                            headers: {
+                                'Authorization': project.auth
+                            }
+                        };
+                        request.get(options, function (err, resp, body) {
+                            try {
+                                body = JSON.parse(body);
+                                //console.log(body.fields["System.State"]);
+                                //console.log(body.fields["System.Reason"]);
+
+                                vote.state = body.fields["System.State"];
+                                vote.reason = body.fields["System.Reason"];
+                            } catch (e) {
+                                console.log(e);
+                                console.log("Falling back on default");
+                                vote.state = "New";
+                                vote.reason = "New";
+                            }
+
+                            // Placeholder for no title (older feedback)
+
+                            if (!vote.title) {
+                                vote.title = vote.comment;
+                            }
+
+                            feedback.push(vote);
+                            votesChecked++;
+                            checkIfDone();
+                        });
+                    } else {
+                        // Placeholders for no ID
+                        vote.id = "?";
+                        vote.state = "New";
+                        vote.reason = "New";
 
                         // Placeholder for no title (older feedback)
-
                         if (!vote.title) {
                             vote.title = vote.comment;
                         }
@@ -1190,26 +1270,10 @@ function caseHandler(dbParent) {
                         feedback.push(vote);
                         votesChecked++;
                         checkIfDone();
-                    });
-                } else {
-                    // Placeholders for no ID
-                    vote.id = "?";
-                    vote.state = "New";
-                    vote.reason = "New";
-
-                    // Placeholder for no title (older feedback)
-                    if (!vote.title) {
-                        vote.title = vote.comment;
                     }
-
-                    feedback.push(vote);
-                    votesChecked++;
-                    checkIfDone();
-                }
+                });
             });
-
         })
-
     }
 
     this.getCaseFeedbackPublic = function (req, res) {
@@ -1263,6 +1327,10 @@ function caseHandler(dbParent) {
                             if (caseDoc3.matchedCount) { console.log("It was a comment") }
 
                             console.log("Recorded the upvote");
+
+                            // TODO: Update ADO item
+
+
                             return res.status(200).send();
                         });
                     });
@@ -1298,7 +1366,6 @@ function caseHandler(dbParent) {
         let modifyUpvotesQuery = {
             $set: {
                 "upvotes_v2.$.title": req.body.title,
-                "upvotes_v2.$.reproSteps": req.body.reproSteps,
                 "upvotes_v2.$.comment": req.body.comment,
                 "upvotes_v2.$.public": req.body.public,
             }
@@ -1307,7 +1374,6 @@ function caseHandler(dbParent) {
         let modifyDownvotesQuery = {
             $set: {
                 "downvotes_v2.$.title": req.body.title,
-                "downvotes_v2.$.reproSteps": req.body.reproSteps,
                 "downvotes_v2.$.comment": req.body.comment,
                 "downvotes_v2.$.public": req.body.public,
             }
@@ -1316,7 +1382,6 @@ function caseHandler(dbParent) {
         let modifyCommentsQuery = {
             $set: {
                 "comments.$.title": req.body.title,
-                "comments.$.reproSteps": req.body.reproSteps,
                 "comments.$.comment": req.body.comment,
                 "comments.$.public": req.body.public,
             }
@@ -1324,18 +1389,96 @@ function caseHandler(dbParent) {
 
         console.log(any_feedback_query);
 
+        let feedbackDoc;
+        let feedbackField;
+
         cases.findOne(any_feedback_query, function (err, caseDoc) {
             if (caseDoc) {
                 cases.updateOne({ "upvotes_v2.id": feedbackId }, modifyUpvotesQuery, function (err, caseDoc1) {
-                    if (caseDoc1.matchedCount) { console.log("It was an upvote") }
+                    if (caseDoc1.matchedCount) {
+                        console.log(caseDoc1);
+                        console.log("It was an upvote")
+                        feedbackField = "upvotes_v2";
+                    }
                     cases.updateOne({ "downvotes_v2.id": feedbackId }, modifyDownvotesQuery, function (err, caseDoc2) {
-                        if (caseDoc2.matchedCount) { console.log("It was a downvote") }
+                        if (caseDoc2.matchedCount) {
+                            console.log(caseDoc2);
+                            console.log("It was a downvote")
+                            feedbackField = "downvotes_v2";
+                        }
 
                         cases.updateOne({ "comments.id": feedbackId }, modifyCommentsQuery, function (err, caseDoc3) {
-                            if (caseDoc3.matchedCount) { console.log("It was a comment") }
+                            if (caseDoc3.matchedCount) {
+                                console.log(caseDoc3);
+                                console.log("It was a comment")
+                                feedback_fields = "comments";
+                            }
 
-                            console.log("Modified the feedback");
-                            return res.status(200).send();
+                            console.log("Modified the feedback in DB");
+                            console.log(feedbackField);
+
+                            // Now, edit it in ADO
+
+                            let feedbackItem = caseDoc[feedbackField].find(x => x.id == feedbackId);
+                            console.log(feedbackItem);
+                            feedbackItem.title = req.body.title;
+                            feedbackItem.comment = req.body.comment;
+                            feedbackItem.public = req.body.public;
+
+                            let reproSteps = getWindowsReproSteps(feedbackItem);
+
+                            console.log(reproSteps);
+
+                            var reqBody = [
+                                {
+                                    op: "add",
+                                    path: "/fields/System.Title",
+                                    value: req.body.title
+                                },
+                                {
+                                    op: "add",
+                                    path: "/fields/Microsoft.VSTS.TCM.ReproSteps",
+                                    value: reproSteps
+                                }
+                            ];
+
+                            getAuthForCase(caseDoc.validationId, function (err, project) {
+
+                                var update_endpoint = ADO_WORKITEM_UPDATE_ENDPOINT
+                                    .replace("{org}", project.org)
+                                    .replace("{project}", project.project)
+                                    .replace("{id}", feedbackId);
+
+                                const options = {
+                                    url: update_endpoint,
+                                    headers: {
+                                        'Authorization': project.auth,
+                                        'Content-Type': 'application/json-patch+json'
+                                    },
+                                    body: JSON.stringify(reqBody)
+                                };
+
+                                request.patch(options, function (vstsErr, vstsResp, vstsBody) {
+                                    console.log(vstsResp.statusCode);
+                                    console.log(vstsBody);
+
+                                    // Handle attachments
+                                    if (req.body.attachments) {
+                                        console.log("Handling attachments");
+                                        uploadAttachments(req.body.attachments, feedbackId, project, function (attachmentBodies) {
+                                            console.log(attachmentBodies);
+                                            return res.status(200).send();
+                                        });
+                                    } else {
+                                        return res.status(200).send();
+                                    }
+
+                                    
+
+                                });
+                            })
+
+
                         });
                     });
                 });

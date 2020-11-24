@@ -520,16 +520,14 @@ block content
                             span#windows-report-title-required(style="color: red") (*)
                         input.form-control#windows-report-title-field.windows-report-field(type="text" placeholder="Title your feedback.")
                     .form-group
-                        label(for="windows-report-repro-steps-field") Repro Steps:  
-                            span#windows-report-repro-steps-required(style="color: red") (*)
-                        textarea.form-control#windows-report-repro-steps-field.windows-report-field(rows=4, placeholder="Please provide the steps to reproduce this.")
-                    .form-group
                         label(for="windows-report-description-field") Description:  
                             span#windows-report-description-required(style="color: red") (*)
                         textarea.form-control#windows-report-description-field.windows-report-field(rows=4, placeholder="Please describe the problem.")
                     .form-group
                         label(for="windws-report-file") File Upload:
-                        input#windows-report-file(type="file" name="userFile")
+                        p You can upload up to 10 files of any type, up to 60MB each.
+                        input#windows-report-file(type="file" name="userFile" multiple)
+
                     .form-group
                         input(type="checkbox", name="votesPublic", value=true).setUserPrefs#votesPublicField  
                         label(for='votesPublic') &nbsp; Make my feedback visible to other WCCP participants
@@ -556,16 +554,14 @@ block content
                             span#edit-report-title-required(style="color: red") (*)
                         input.form-control#edit-report-title-field.edit-report-field(type="text" placeholder="Title your feedback.")
                     .form-group
-                        label(for="edit-report-repro-steps-field") Repro Steps:  
-                            span#edit-report-repro-steps-required(style="color: red") (*)
-                        textarea.form-control#edit-report-repro-steps-field.edit-report-field(rows=4, placeholder="Please provide the steps to reproduce this.")
-                    .form-group
                         label(for="edit-report-description-field") Description:  
                             span#edit-report-description-required(style="color: red") (*)
                         textarea.form-control#edit-report-description-field.edit-report-field(rows=4, placeholder="Please describe the problem.")
                     .form-group
                         label(for="windws-report-file") File Upload:
-                        input#edit-report-file(type="file" name="userFile")
+                        p You can upload up to 10 files of any type, up to 60MB each.
+                        input#edit-report-file(type="file" name="userFile" multiple)
+                        
                     .form-group
                         input(type="checkbox", name="votesPublic", value=true)#edit-feedback-public
                         label(for='votesPublic') &nbsp; Make my feedback visible to other WCCP participants
@@ -590,7 +586,8 @@ block content
                     thead
                         tr
                             th(scope="col" style="width: 5%") #[strong ID]
-                            th(scope="col" style="width: 70%") #[strong Feedback]
+                            th(scope="col" style="width: 30%") #[strong Title]
+                            th(scope="col" style="width: 40%") #[strong Details]
                             th(scope="col" style="width: 10%") #[strong State]
                             th(scope="col" style="width: 10%") #[strong Reason]
                             th(scope="col" style="Width: 5%") #[strong Public?]
@@ -602,7 +599,8 @@ block content
                     thead
                         tr
                             th(scope="col" style="Width: 10%") #[strong ID]
-                            th(scope="col" style="width: 90%") #[strong Feedback]
+                            th(scope="col" style="width: 40%") #[strong Title]
+                            th(scope="col" style="width: 50%") #[strong Details]
                     tbody
             hr
 
@@ -676,6 +674,7 @@ block content
                     thead
                         tr
                             th(scope="col" style="width: 10%") #[strong ID]
+                            th(scope="col" style="width: 5%") #[strong Type]
                             th(scope="col" style="width: 60%") #[strong Title]
                             th(scope="col" style="width: 10%") #[strong State]
                             th(scope="col" style="width: 10%") #[strong Reason]

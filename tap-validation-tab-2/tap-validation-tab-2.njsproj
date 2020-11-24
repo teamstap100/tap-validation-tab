@@ -72,6 +72,8 @@ AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZ
       <SubType>Code</SubType>
     </Compile>
     <Content Include="app\controllers\bugs\tenantBugsSummaryController.client.js" />
+    <Content Include="app\controllers\validation\caseFeedbackController.client.js" />
+    <Content Include="app\helpers\helpers.server.js" />
     <Content Include="package.json" />
     <None Include="Properties\PublishProfiles\tap-validation-tab - Web Deploy.pubxml" />
     <Content Include="public\css\bootstrap.min.css" />

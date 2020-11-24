@@ -253,6 +253,11 @@ img {
     cursor: pointer;
 }
 
+.edit-existing-feedback {
+    cursor: pointer;
+    text-decoration: none;
+}
+
 .upvotes {
     overflow-y: auto;
     overflow-x: hidden;

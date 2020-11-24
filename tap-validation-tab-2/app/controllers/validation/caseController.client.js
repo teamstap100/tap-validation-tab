@@ -933,8 +933,6 @@ var config = {};
                     //data.append("comment", $('#windows-report-description-field').text());
                     data.append("comment", $('#windows-report-description-field').val().replace(/\r?\n/g, '<br>'));
 
-                    console.log(data);
-
                     // disable the submit button
                     $("#windows-report-submit").attr("disabled", true);
                     $("#windows-report-submit").html(spinner + $('#windows-report-submit').text());
@@ -950,10 +948,12 @@ var config = {};
                     voteParams.windowsBuildVersion = windowsBuildVersionField.val();
                     voteParams.public = $('#votesPublicField').is(':checked');
 
+                    voteParams.attachmentFilenames = [];
+
                     $.ajax({
                         type: "POST",
                         enctype: 'multipart/form-data',
-                        url: "/api/upload",
+                        url: "/api/upload/multiple",
                         data: data,
                         processData: false,
                         contentType: false,
@@ -963,10 +963,10 @@ var config = {};
                             $("#result").text(data);
                             console.log("SUCCESS : ", data);
 
-                            voteParams.attachmentFilename = data.filename;
+                            voteParams.attachments = data.files;
 
                             voteParams.title = $('#windows-report-title-field').val();
-                            voteParams.reproSteps = $('#windows-report-repro-steps-field').val().replace(/\r?\n/g, '<br>');
+                            //voteParams.reproSteps = $('#windows-report-repro-steps-field').val().replace(/\r?\n/g, '<br>');
                             voteParams.comment = $('#windows-report-description-field').val().replace(/\r?\n/g, '<br>');
 
                             let submitUrl = apiUrl + '/' + voteParams.cId;
@@ -1044,7 +1044,7 @@ var config = {};
                         $('.windows-report-field').off();
                         $('.windows-report-field').on('change input', function (e) {
                             let title = $('#windows-report-title-field').val();
-                            let reproSteps = $('#windows-report-repro-steps-field').val();
+                            //let reproSteps = $('#windows-report-repro-steps-field').val();
                             let description = $('#windows-report-description-field').val();
                             if (title) {
                                 console.log("All required fields filled in");
@@ -1090,9 +1090,9 @@ var config = {};
                         $('.windows-report-field').off();
                         $('.windows-report-field').on('change input', function (e) {
                             let title = $('#windows-report-title-field').val();
-                            let reproSteps = $('#windows-report-repro-steps-field').val();
+                            //let reproSteps = $('#windows-report-repro-steps-field').val();
                             let description = $('#windows-report-description-field').val();
-                            if (title && reproSteps && description) {
+                            if (title && description) {
                                 $('#windows-report-submit').attr('disabled', false);
                             } else {
                                 $('#windows-report-submit').attr('disabled', true);
@@ -1134,7 +1134,7 @@ var config = {};
                         $('.windows-report-field').off();
                         $('.windows-report-field').on('change input', function (e) {
                             let title = $('#windows-report-title-field').val();
-                            let reproSteps = $('#windows-report-repro-steps-field').val();
+                            //let reproSteps = $('#windows-report-repro-steps-field').val();
                             let description = $('#windows-report-description-field').val();
                             if (title && description) {
                                 $('#windows-report-submit').attr('disabled', false);

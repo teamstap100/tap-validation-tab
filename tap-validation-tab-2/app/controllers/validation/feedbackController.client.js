@@ -82,8 +82,8 @@ $(document).ready(function () {
         var feedbackTable = $('#your-feedback-table').DataTable({
             info: false,
             paging: false,
-            searching: false,
-            ordering: false,
+            //searching: false,
+            //ordering: false,
             autoWidth: false,
             ajax: {
                 url: "/api/feedback",
@@ -99,6 +99,7 @@ $(document).ready(function () {
             },
             columns: [
                 { "data": "_id" },
+                { "data": "title" },
                 { "data": "text" },
                 { "data": "state" },
                 { "data": "reason" },
@@ -123,7 +124,7 @@ $(document).ready(function () {
                             return "<input type='checkbox' class='feedback-public-checkbox' id='feedback-public-" + id + "'></input>";
                         }
                     },
-                    targets: 4
+                    targets: 5
                 }
             ],
             initComplete: bindEditButtons,
@@ -134,8 +135,8 @@ $(document).ready(function () {
         var otherFeedbackTable = $('#feedback-table').DataTable({
             info: false,
             paging: false,
-            searching: false,
-            ordering: false,
+            //searching: false,
+            //ordering: false,
             ajax: {
                 url: "/api/feedback/public",
                 type: "POST",
@@ -150,20 +151,8 @@ $(document).ready(function () {
             },
             columns: [
                 { "data": "_id" },
+                { "data": "title" },
                 { "data": "text" },
-            ],
-            columnDefs: [
-                {
-                    "render": function (data, type, row) {
-                        let cell = '<i>"' + data + '"</i>';
-                        // TODO: Taking this out for now
-                        //if (row.showEditButton) {
-                        //    cell = "<i class='fa fa-pencil-alt edit-feedback' id='edit-feedback-" + row._id + "'></i>  " + cell;
-                        // }
-                        return cell;
-                    },
-                    "targets": 1
-                },
             ],
             initComplete: bindEditButtons,
         });

@@ -2,38 +2,30 @@
 
 var ObjectID = require('mongodb').ObjectID;
 var request = require('request');
-const { safeOid } = require(process.cwd() + "/app/helpers/helpers.server.js");
-
+const { safeOid, patToAuth, ADO_API_BASE } = require(process.cwd() + "/app/helpers/helpers.server.js");
 
 function featureRequestHandler(dbParent) {
     var db = dbParent.db("clementine");
     var validations = db.collection('validations');
+    var projects = db.collection("adoProjects");
 
     var featureRequests = db.collection('featureRequests');
 
-    //const VSTS_API_BASE = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/";
-    //const VSTS_WORKITEM_UPDATE_ENDPOINT = VSTS_API_BASE + "workitems/{id}?api-version=4.1";
-    //const AUTH = process.env.AUTH;
-
     const ENV = process.env.ENV;
 
-    var WINDOWS_AUTH, WINDOWS_ADO_API_BASE;
+    const ADO_WORKITEM_ADD_ENDPOINT = ADO_API_BASE + "workitems/$Bug?api-version=4.11";
+    const ADO_WORKITEM_EDIT_ENDPOINT = ADO_API_BASE + "workitems/{id}?api-version=5.1";
+    const ADO_WORKITEM_GET_ENDPOINT = ADO_API_BASE + "workitems/{id}?api-version=5.1";
 
-    if (ENV == "PROD") {
-        WINDOWS_AUTH = process.env.WINDOWS_AUTH;
-        WINDOWS_ADO_API_BASE = "https://dev.azure.com/microsoft/OS/_apis/wit/";
-    } else {
-        // Testing with Luciano tenant
-        WINDOWS_AUTH = process.env.LUCIANO_AUTH;
-        WINDOWS_ADO_API_BASE = "https://dev.azure.com/lucianooo/TestProject/_apis/wit/";
+    function getAuthForCase(validationId, callback) {
+        validations.findOne({ _id: safeOid(validationId) }, function (err, valDoc) {
+            projects.findOne({ _id: safeOid(valDoc.project) }, function (err, projectDoc) {
+                projectDoc.auth = patToAuth(projectDoc.pat);
+
+                return callback(err, projectDoc);
+            });
+        });
     }
-
-    const WINDOWS_ADO_WORKITEM_ADD_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/$Bug?api-version=4.11";
-    const WINDOWS_ADO_WORKITEM_EDIT_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/{ID}?api-version=5.1";
-    const WINDOWS_ADO_WORKITEM_GET_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/{id}?api-version=5.1";
-
-
-    const WINDOWS_BUG_ASSIGNEE = "ericmain@microsoft.com";
 
     function cleanEmail(email) {
         email = email.toLowerCase();
@@ -64,7 +56,7 @@ function featureRequestHandler(dbParent) {
 
         // Get all featureRequest submitted by this user, or others' public featureRequest
         let featureRequestQuery = {
-            validationId: validationId,
+            validationId: safeOid(validationId),
             submitterEmail: userEmail,
         };
 
@@ -83,36 +75,42 @@ function featureRequestHandler(dbParent) {
             freqCount = featureRequestDocs.length;
 
             featureRequestDocs.forEach(function (freq) {
-                let ado_endpoint = WINDOWS_ADO_WORKITEM_GET_ENDPOINT.replace("{id}", freq._id);
-                console.log(ado_endpoint);
 
-                const options = {
-                    url: ado_endpoint,
-                    headers: {
-                        'Authorization': WINDOWS_AUTH,
-                    }
-                };
-                request.get(options, function (err, resp, body) {
-                    try {
-                        body = JSON.parse(body);
-                        console.log(body.fields["System.State"]);
-                        console.log(body.fields["System.Reason"]);
+                getAuthForCase(req.body.validationId, function (err, project) {
+                    if (err) { throw err; }
+                    let ado_endpoint = ADO_WORKITEM_GET_ENDPOINT
+                        .replace("{org}", project.org)
+                        .replace("{project}", project.project)
+                        .replace("{id}", freq._id);
 
-                        freq.state = body.fields["System.State"];
-                        freq.reason = body.fields["System.Reason"];
-                    } catch (e) {
-                        console.log(e);
-                        console.log("Falling back on default");
-                        freq.state = "New";
-                        freq.reason = "New";
-                    }
+                    const options = {
+                        url: ado_endpoint,
+                        headers: {
+                            'Authorization': project.auth,
+                        }
+                    };
 
-                    freqs.push(freq);
-                    freqsDone++;
-                    checkIfDone();
+                    request.get(options, function (err, resp, body) {
+                        try {
+                            body = JSON.parse(body);
+                            console.log(body.fields["System.State"]);
+                            console.log(body.fields["System.Reason"]);
+
+                            freq.state = body.fields["System.State"];
+                            freq.reason = body.fields["System.Reason"];
+                        } catch (e) {
+                            console.log(e);
+                            console.log("Falling back on default");
+                            freq.state = "New";
+                            freq.reason = "New";
+                        }
+
+                        freqs.push(freq);
+                        freqsDone++;
+                        checkIfDone();
+                    });
                 });
-
-            })
+            });
         });
     }
 
@@ -204,11 +202,19 @@ function featureRequestHandler(dbParent) {
 
             if (ENV == "PROD") {
                 // This area path only works in production
-                reqBody.push({
-                    "op": "add",
-                    "path": "/fields/System.AreaPath",
-                    "value": "OS\\Core\\EMX\\CXE\\Customer Connection\\TAP"
-                });
+                if (valDoc.areaPath != null) {
+                    reqBody.push({
+                        "op": "add",
+                        "path": "/fields/System.AreaPath",
+                        "value": valDoc.areaPath
+                    });
+                } else {
+                    reqBody.push({
+                        "op": "add",
+                        "path": "/fields/System.AreaPath",
+                        "value": "OS\\Core\\EMX\\CXE\\Customer Connection\\TAP"
+                    });
+                }
 
                 if (userEmail) {
                     reqBody.push({
@@ -225,24 +231,31 @@ function featureRequestHandler(dbParent) {
                 });
             }
 
-            const options = {
-                url: WINDOWS_ADO_WORKITEM_ADD_ENDPOINT,
-                headers: {
-                    'Authorization': WINDOWS_AUTH,
-                    'Content-Type': 'application/json-patch+json'
-                },
-                body: JSON.stringify(reqBody)
-            };
+            getAuthForCase(req.body.validationId, function (err, project) {
+                if (err) { throw err; }
+                let ado_add_endpoint = ADO_WORKITEM_ADD_ENDPOINT
+                    .replace("{org}", project.org)
+                    .replace("{project}", project.project);
 
-            console.log(options);
+                const options = {
+                    url: ado_add_endpoint,
+                    headers: {
+                        'Authorization': project.auth,
+                        'Content-Type': 'application/json-patch+json'
+                    },
+                    body: JSON.stringify(reqBody)
+                };
 
-            request.post(options, function (vstsErr, vstsStatus, vstsResponse) {
-                if (vstsErr) { console.log(vstsErr); }
-                vstsResponse = JSON.parse(vstsResponse);
-                featureRequestObj._id = vstsResponse.id;
+                console.log(options);
 
-                featureRequests.insertOne(featureRequestObj, function (err, featureRequestDoc) {
-                    res.status(200).send();
+                request.post(options, function (vstsErr, vstsStatus, vstsResponse) {
+                    if (vstsErr) { console.log(vstsErr); }
+                    vstsResponse = JSON.parse(vstsResponse);
+                    featureRequestObj._id = vstsResponse.id;
+
+                    featureRequests.insertOne(featureRequestObj, function (err, featureRequestDoc) {
+                        res.status(200).send();
+                    });
                 });
             });
         });
@@ -290,27 +303,30 @@ function featureRequestHandler(dbParent) {
                     "value": description,
                 }
             ];
-            let endpoint = WINDOWS_ADO_WORKITEM_EDIT_ENDPOINT.replace("{ID}", req.params.id);
-            const options = {
-                url: endpoint,
-                headers: {
-                    'Authorization': WINDOWS_AUTH,
-                    'Content-Type': 'application/json-patch+json'
-                },
-                body: JSON.stringify(reqBody)
-            };
+            getAuthForCase(featureRequestDoc.validationId, function (err, project) {
+                let ado_edit_endpoint = ADO_WORKITEM_EDIT_ENDPOINT
+                    .replace("{org}", project.org)
+                    .replace("{project}", project.project)
+                    .replace("{id}", req.params.id)
 
-            console.log(options);
+                const options = {
+                    url: ado_edit_endpoint,
+                    headers: {
+                        'Authorization': project.auth,
+                        'Content-Type': 'application/json-patch+json'
+                    },
+                    body: JSON.stringify(reqBody)
+                };
 
-            request.patch(options, function (vstsErr, resp, body) {
-                if (vstsErr) { console.log(vstsErr); }
-                console.log(resp.statusCode);
+                request.patch(options, function (vstsErr, resp, body) {
+                    if (vstsErr) { console.log(vstsErr); }
+                    console.log(resp.statusCode);
 
-                res.status(200).send();
+                    res.status(200).send();
+                });
 
+                return res.status(200).send();
             });
-
-            return res.status(200).send();
         });
     }
 

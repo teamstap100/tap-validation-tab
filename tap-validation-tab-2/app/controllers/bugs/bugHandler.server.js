@@ -434,6 +434,9 @@ function bugHandler (dbParent) {
             triageBugs.find({ tid: { $in: tids }, timestamp: { $gt: ninety_days_ago } }).sort({ timestamp: -1 }).toArray(function (err, bugs) {
                 let one_hour_ago = new Date(Date.now() - 3600 * 1000)
                 if (bugs.length > 0) {
+                    bugs.forEach(function (bug) {
+                        console.log(bug);
+                    });
                     let lastBugRefresh = bugs[0].timestamp;
                     if (lastBugRefresh > one_hour_ago) {
                         console.log("Bugs were updated recently");
@@ -682,8 +685,6 @@ function bugHandler (dbParent) {
                 });
             });
 
-            //console.log(simpleBugs);
-
             console.log(simpleBugs.length + " newly-fetched bugs");
 
             let simplePlusCached = [];
@@ -691,7 +692,11 @@ function bugHandler (dbParent) {
                 simplePlusCached.push(sb);
             })
             cachedBugs.forEach(function (cb) {
-                // TODO: Don't push duplicates
+                // This step is redundant for now
+                if (cb.closeRequested) {
+                    cb.state = "Close Requested";
+                }
+
                 if (simplePlusCached.find(x => x.id == cb.id)) {
                     console.log("Skipping duplicate");
                     return;
@@ -907,8 +912,14 @@ function bugHandler (dbParent) {
                 let severity = "3 - Medium";
                 let priority = 2;
                 if (req.body.extent == "Several") {
-                    severity = "2 - High";
-                    tagList += " TAPAdminS2;";
+                    if (req.body.everWorked == "Yes") {
+                        severity = "1 - Critical";
+                        priority = 1;
+                        tagList += " TAPAdminS1; TAPAdminP1;";
+                    } else {
+                        severity = "2 - High";
+                        tagList += " TAPAdminS2;";
+                    }
                 } else if (req.body.extent == "All") {
                     severity = "1 - Critical";
                     priority = 1;
@@ -922,7 +933,7 @@ function bugHandler (dbParent) {
                 });
 
                 // Only need to set priority if extent is All
-                if (req.body.extent == "All") {
+                if (priority != 2) {
                     patch.push({
                         op: "add",
                         path: "/fields/Microsoft.VSTS.Common.Priority",
@@ -944,11 +955,14 @@ function bugHandler (dbParent) {
                     request.patch(patchOptions, function (vstsErr, vstsResponse, vstsBody) {
                         if (vstsErr) { console.log(vstsErr); }
                         console.log(vstsBody);
-                        triageBugs.updateOne({ _id: req.body.id }, { $set: { triaged: true } }, function (err, doc) {
+
+                        let safeId = parseInt(req.body.id);
+
+                        triageBugs.updateOne({ _id: safeId }, { $set: { triaged: true } }, function (err, doc) {
                             if (err) {
-                                console.log("Failed to update bug with id: " + req.body.id);
+                                console.log("Failed to update bug with id: " + safeId);
                             } else {
-                                console.log("Marked bug " + req.body.id + " as triaged");
+                                console.log("Marked bug " + safeId + " as triaged");
                             }
                             return res.status(200).send();
                         });
@@ -1173,14 +1187,14 @@ function bugHandler (dbParent) {
             }
 
             request.patch(patchOptions, function (vstsErr, vstsResponse, vstsBody) {
-                console.log(vstsBody);
-                //res.status(200).send();
-                triageBugs.updateOne({ _id: req.body.id }, { $set: { closeRequested: true } }, function (err, doc) {
+                let safeId = parseInt(req.body.id);
+                triageBugs.updateOne({ _id: safeId }, { $set: { closeRequested: true, state: "Close Requested" } }, function (err, doc) {
                     if (err) {
-                        console.log("Failed to update bug with id: " + req.body.id);
+                        console.log("Failed to update bug with id: " + safeId);
                     } else {
-                        console.log("Marked bug " + req.body.id + " as close-requested");
+                        console.log("Marked bug " + safeId + " as closeRequested");
                     }
+                    console.log(doc);
                     return callback();
                 });
             })

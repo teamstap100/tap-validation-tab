@@ -22,13 +22,6 @@ function validationHandler(dbParent) {
     const VSTS_WORKITEM_UPDATE_ENDPOINT = VSTS_API_BASE + "workitems/{id}?api-version=4.1";
     const AUTH = process.env.AUTH;
 
-    // Testing with Luciano tenant
-    //const WINDOWS_AUTH = process.env.LUCIANO_AUTH;
-    //const WINDOWS_ADO_API_BASE = "https://dev.azure.com/lucianooo/TestProject/_apis/wit/";
-    //const WINDOWS_ADO_WORKITEM_ADD_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/$Task?api-version=4.11";
-    //const WINDOWS_ADO_ATTACHMENT_CREATE_ENDPOINT = WINDOWS_ADO_API_BASE + "attachments";
-    //const WINDOWS_ADO_WORKITEM_UPDATE_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/{id}?api-version=4.1";
-
     this.getIndex = function (req, res) {
         res.render('index', {});
     };

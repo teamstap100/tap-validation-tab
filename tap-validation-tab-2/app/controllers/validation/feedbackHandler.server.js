@@ -2,13 +2,14 @@
 
 var ObjectID = require('mongodb').ObjectID;
 var request = require('request');
-const { safeOid } = require(process.cwd() + "/app/helpers/helpers.server.js");
+const { safeOid, patToAuth, ADO_API_BASE } = require(process.cwd() + "/app/helpers/helpers.server.js");
 
 function feedbackHandler(dbParent) {
     var db = dbParent.db("clementine");
     var validations = db.collection('validations');
 
     var feedback = db.collection('feedback');
+    var projects = db.collection("adoProjects");
 
     //const VSTS_API_BASE = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/";
     //const VSTS_WORKITEM_UPDATE_ENDPOINT = VSTS_API_BASE + "workitems/{id}?api-version=4.1";
@@ -27,12 +28,23 @@ function feedbackHandler(dbParent) {
         WINDOWS_ADO_API_BASE = "https://dev.azure.com/lucianooo/TestProject/_apis/wit/";
     }
 
+    const ADO_WORKITEM_ADD_ENDPOINT = ADO_API_BASE + "workitems/$Bug?api-version=4.11";
+    const ADO_WORKITEM_EDIT_ENDPOINT = ADO_API_BASE + "workitems/{id}?api-version=5.1";
+    const ADO_WORKITEM_GET_ENDPOINT = ADO_API_BASE + "workitems/{id}?api-version=4.1";
+
     const WINDOWS_ADO_WORKITEM_ADD_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/$Bug?api-version=4.11";
-    const WINDOWS_ADO_WORKITEM_EDIT_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/{ID}?api-version=5.1";
+    const WINDOWS_ADO_WORKITEM_EDIT_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/{id}?api-version=5.1";
     const WINDOWS_ADO_WORKITEM_GET_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/{id}?api-version=4.1";
 
+    function getAuthForCase(validationId, callback) {
+        validations.findOne({ _id: safeOid(validationId) }, function (err, valDoc) {
+            projects.findOne({ _id: safeOid(valDoc.project) }, function (err, projectDoc) {
+                projectDoc.auth = patToAuth(projectDoc.pat);
 
-    const WINDOWS_BUG_ASSIGNEE = "ericmain@microsoft.com";
+                return callback(err, projectDoc);
+            });
+        });
+    }
 
     function cleanEmail(email) {
         email = email.toLowerCase();
@@ -83,33 +95,44 @@ function feedbackHandler(dbParent) {
         feedback.find(feedbackQuery).toArray(function (err, feedbackDocs) {
             feedbackCount = feedbackDocs.length;
             feedbackDocs.forEach(function (feedback) {
-                let ado_endpoint = WINDOWS_ADO_WORKITEM_GET_ENDPOINT.replace("{id}", feedback._id);
-                console.log(ado_endpoint);
+                getAuthForCase(req.body.validationId, function (err, project) {
+                    if (err) { throw err; }
+                    let ado_endpoint = ADO_WORKITEM_GET_ENDPOINT
+                        .replace("{org}", project.org)
+                        .replace("{project}", project.project)
+                        .replace("{id}", feedback._id);
 
-                const options = {
-                    url: ado_endpoint,
-                    headers: {
-                        'Authorization': WINDOWS_AUTH,
-                    }
-                };
-                request.get(options, function (err, resp, body) {
-                    try {
-                        body = JSON.parse(body);
-                        console.log(body.fields["System.State"]);
-                        console.log(body.fields["System.Reason"]);
+                    const options = {
+                        url: ado_endpoint,
+                        headers: {
+                            'Authorization': project.auth
+                        }
+                    };
+                    request.get(options, function (err, resp, body) {
+                        try {
+                            body = JSON.parse(body);
+                            console.log(body.fields["System.State"]);
+                            console.log(body.fields["System.Reason"]);
 
-                        feedback.state = body.fields["System.State"];
-                        feedback.reason = body.fields["System.Reason"];
-                    } catch (e) {
-                        console.log(e);
-                        console.log("Falling back on default");
-                        feedback.state = "New";
-                        feedback.reason = "New";
-                    }
-                    result.push(feedback);
-                    feedbackDone++;
-                    checkIfDone();
+                            feedback.state = body.fields["System.State"];
+                            feedback.reason = body.fields["System.Reason"];
+                        } catch (e) {
+                            console.log(e);
+                            console.log("Falling back on default");
+                            feedback.state = "New";
+                            feedback.reason = "New";
+                        }
+
+                        if (!(feedback.title)) {
+                            feedback.title = "Untitled";
+                        }
+
+                        result.push(feedback);
+                        feedbackDone++;
+                        checkIfDone();
+                    });
                 });
+
             });
 
         });
@@ -136,6 +159,9 @@ function feedbackHandler(dbParent) {
                     doc.showEditButton = false;
                 } else {
                     doc.showEditButton = true;
+                }
+                if (!(doc.title)) {
+                    doc.title = "Untitled";
                 }
             });
             return res.json({ feedback: feedbackDocs });
@@ -236,28 +262,36 @@ function feedbackHandler(dbParent) {
                 });
             }
 
-            const options = {
-                url: WINDOWS_ADO_WORKITEM_ADD_ENDPOINT,
-                headers: {
-                    'Authorization': WINDOWS_AUTH,
-                    'Content-Type': 'application/json-patch+json'
-                },
-                body: JSON.stringify(reqBody)
-            };
+            getAuthForCase(req.body.validationId, function (err, project) {
+                if (err) { throw err; }
+                let ado_endpoint = ADO_WORKITEM_ADD_ENDPOINT
+                    .replace("{org}", project.org)
+                    .replace("{project}", project.project);
 
-            console.log(options);
+                const options = {
+                    url: ado_endpoint,
+                    headers: {
+                        'Authorization': project.auth,
+                        'Content-Type': 'application/json-patch+json'
+                    },
+                    body: JSON.stringify(reqBody)
+                };
 
-            request.post(options, function (vstsErr, vstsStatus, vstsResponse) {
-                if (vstsErr) { console.log(vstsErr); }
-                vstsResponse = JSON.parse(vstsResponse);
-                feedbackObj._id = vstsResponse.id;
+                console.log(options);
 
-                feedback.insertOne(feedbackObj, function (err, feedbackDoc) {
-                    if (err) { console.log(err); }
-                    console.log(feedbackDoc);
-                    return res.status(200).send();
+                request.post(options, function (vstsErr, vstsStatus, vstsResponse) {
+                    if (vstsErr) { console.log(vstsErr); }
+                    vstsResponse = JSON.parse(vstsResponse);
+                    feedbackObj._id = vstsResponse.id;
+
+                    feedback.insertOne(feedbackObj, function (err, feedbackDoc) {
+                        if (err) { console.log(err); }
+                        console.log(feedbackDoc);
+                        return res.status(200).send();
+                    });
                 });
             });
+
         });
     }
 
@@ -277,8 +311,9 @@ function feedbackHandler(dbParent) {
 
         let query = { _id: safeOid(req.params.id) };
 
-        feedback.updateOne(query, op, function (err, feedbackDoc) {
-            console.log(feedbackDoc);
+        feedback.findOneAndUpdate(query, op, { returnOriginal: false }, function (err, feedbackDoc) {
+            if (err) { throw err; }
+            feedbackDoc = feedbackDoc.value;
             // Write changes to ADO
             let safeTitle = "Feedback - " + req.body.text;
             if (safeTitle.length > 120) {
@@ -298,27 +333,34 @@ function feedbackHandler(dbParent) {
                     "value": description,
                 }
             ];
-            let endpoint = WINDOWS_ADO_WORKITEM_EDIT_ENDPOINT.replace("{ID}", req.params.id);
-            const options = {
-                url: endpoint,
-                headers: {
-                    'Authorization': WINDOWS_AUTH,
-                    'Content-Type': 'application/json-patch+json'
-                },
-                body: JSON.stringify(reqBody)
-            };
+            console.log(feedbackDoc.validationId);
+            getAuthForCase(feedbackDoc.validationId, function (err, project) {
+                if (err) { throw err; }
+                let endpoint = ADO_WORKITEM_EDIT_ENDPOINT
+                    .replace("{org}", project.org)
+                    .replace("{project}", project.project)
+                    .replace("{id}", req.params.id);
+                const options = {
+                    url: endpoint,
+                    headers: {
+                        'Authorization': project.auth,
+                        'Content-Type': 'application/json-patch+json'
+                    },
+                    body: JSON.stringify(reqBody)
+                };
 
-            console.log(options);
+                console.log(options);
 
-            request.patch(options, function (vstsErr, resp, body) {
-                if (vstsErr) { console.log(vstsErr); }
-                console.log(resp.statusCode);
+                request.patch(options, function (vstsErr, resp, body) {
+                    if (vstsErr) { console.log(vstsErr); }
+                    console.log(resp.statusCode);
 
-                res.status(200).send();
+                    res.status(200).send();
 
+                });
+
+                return res.status(200).send();
             });
-
-            return res.status(200).send();
         });
     }
 };

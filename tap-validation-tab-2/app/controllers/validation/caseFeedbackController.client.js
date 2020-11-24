@@ -30,7 +30,7 @@ $(document).ready(function () {
         $.ajax({
             type: "POST",
             enctype: 'multipart/form-data',
-            url: "/api/upload",
+            url: "/api/upload/multiple",
             data: data,
             processData: false,
             contentType: false,
@@ -40,10 +40,9 @@ $(document).ready(function () {
                 $("#result").text(data);
                 console.log("SUCCESS : ", data);
 
-                voteParams.attachmentFilename = data.filename;
+                voteParams.attachments = data.files;
 
                 voteParams.title = $('#edit-report-title-field').val();
-                voteParams.reproSteps = $('#edit-report-repro-steps-field').val().replace(/\r?\n/g, '<br>');
                 voteParams.comment = $('#edit-report-description-field').val().replace(/\r?\n/g, '<br>');
 
                 let submitUrl = "../api/feedback/scenario/" + voteParams.id;
@@ -72,7 +71,6 @@ $(document).ready(function () {
         console.log(feedback);
         $('#edit-report-id-field').val(feedback.id);
         $('#edit-report-title-field').val(feedback.title);
-        $('#edit-report-repro-steps-field').val(feedback.reproSteps);
         $('#edit-report-description-field').val(feedback.comment);
 
         $('#edit-feedback-public').attr('checked', feedback.public)
@@ -86,7 +84,6 @@ $(document).ready(function () {
                     userEmail: context['userPrincipalName'],
                     id: feedback.id,
                     title: $('#edit-report-title-field').val(),
-                    reproSteps: $('#edit-report-repro-steps-field').val(),
                     comment: $('#edit-report-description-field').val(),
                 }
                 submitEditReport(event, voteParams);
@@ -167,6 +164,7 @@ $(document).ready(function () {
                 },
                 columns: [
                     { "data": "id" },
+                    { "data": "type" },
                     { "data": "title" },
                     { "data": "state" },
                     { "data": "reason" },
@@ -182,7 +180,7 @@ $(document).ready(function () {
                             let cell = '<a data-toggle="modal", data-feedback=' + b64EncodeUnicode(JSON.stringify(row)) + ' class="edit-existing-feedback" id="feedback-text-' + id + '">' + data + '</span>';
                             return cell;
                         },
-                        targets: 1
+                        targets: 2
                     },
                     {
                         render: function (data, type, row) {
@@ -193,7 +191,7 @@ $(document).ready(function () {
                                 return "<input type='checkbox' class='feedback-public-checkbox' id='feedback-public-" + id + "'></input>";
                             }
                         },
-                        targets: 4
+                        targets: 5
                     }
                 ],
                 initComplete: bindEditButtons,
@@ -272,7 +270,6 @@ $(document).ready(function () {
 
         $('#edit-report-modal').on('hidden.bs.modal', function (e) {
             $('#edit-report-title-field').val("");
-            $('#edit-report-repro-steps-field').val("");
             $('#edit-report-description-field').val("");
         });
     });

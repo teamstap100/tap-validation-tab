@@ -29,6 +29,7 @@ var storage = multer.diskStorage({
     }
 });
 var upload = multer({ storage: storage }).single('userFile');
+var uploadMultiple = multer({ storage: storage }).array('userFile', 10);
 
 function ensureAuthenticated(req, res, next) {
     console.log("user: ");
@@ -189,14 +190,37 @@ module.exports = function (app, db) {
 
     app.route('/api/upload')
         .post(function (req, res) {
+            console.log("Posting to /api/upload");
             upload(req, res, function (err) {
                 if (err) {
                     console.log(err);
                     return res.end("Error uploading file.");
                 }
                 if (req.file) {
+                    console.log("File exists");
                     return res.send({ filename: req.file.filename })
                 } else {
+                    console.log("No files");
+                    console.log(file);
+                    return res.status(200).send();
+                }
+            });
+        });
+
+    app.route('/api/upload/multiple')
+        .post(function (req, res) {
+            console.log("Posting to /api/upload/multiple");
+            uploadMultiple(req, res, function (err) {
+                if (err) {
+                    console.log(err);
+                    return res.end("Error uploading files.");
+                }
+                if (req.files) {
+                    console.log("Files exist");
+                    console.log(req.files);
+                    return res.send({ files: req.files });
+                } else {
+                    console.log("No files");
                     return res.status(200).send();
                 }
             });
