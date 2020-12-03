@@ -372,6 +372,10 @@
                 $('#bug-reproSteps').html(rowData.reproSteps);
                 $('#bug-comments-count').html("(" + rowData.commentCount + ")");
 
+                let movedToEngineering = rowData.areaPath.includes("Customer Feedback") ? "No" : "Yes";
+
+                $('#bug-movedToEngineering').html("<strong>Moved to Engineering?: </strong> " + movedToEngineering);
+
 
                 if (rowData.commentCount > 0) {
                     $('#bug-comments').html(centerSpinner);

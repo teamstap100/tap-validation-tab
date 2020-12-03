@@ -17,6 +17,7 @@ function feedbackHandler(dbParent) {
 
     const ENV = process.env.ENV;
 
+    /*
     var WINDOWS_AUTH, WINDOWS_ADO_API_BASE;
 
     if (ENV == "PROD") {
@@ -27,14 +28,11 @@ function feedbackHandler(dbParent) {
         WINDOWS_AUTH = process.env.LUCIANO_AUTH;
         WINDOWS_ADO_API_BASE = "https://dev.azure.com/lucianooo/TestProject/_apis/wit/";
     }
+    */
 
     const ADO_WORKITEM_ADD_ENDPOINT = ADO_API_BASE + "workitems/$Bug?api-version=4.11";
     const ADO_WORKITEM_EDIT_ENDPOINT = ADO_API_BASE + "workitems/{id}?api-version=5.1";
     const ADO_WORKITEM_GET_ENDPOINT = ADO_API_BASE + "workitems/{id}?api-version=4.1";
-
-    const WINDOWS_ADO_WORKITEM_ADD_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/$Bug?api-version=4.11";
-    const WINDOWS_ADO_WORKITEM_EDIT_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/{id}?api-version=5.1";
-    const WINDOWS_ADO_WORKITEM_GET_ENDPOINT = WINDOWS_ADO_API_BASE + "workitems/{id}?api-version=4.1";
 
     function getAuthForCase(validationId, callback) {
         validations.findOne({ _id: safeOid(validationId) }, function (err, valDoc) {
@@ -189,19 +187,7 @@ function feedbackHandler(dbParent) {
             public: req.body.public,
         };
 
-        let bugTitle = "Feedback - " + req.body.text;
-
-        /*
-        if (isNaN(req.body.validationId)) {
-            valQuery._id = ObjectID(req.body.validationId);
-        } else {
-            valQuery._id = parseInt(req.body.validationId);
-        }
-        */
-
-        console.log(valQuery);
-
-        validations.findOne(valQuery, { projection: { tag: 1 } }, function (err, valDoc) {
+        validations.findOne(valQuery, { projection: { tag: 1, areaPath: 1 } }, function (err, valDoc) {
             if (err) { console.log(err); }
 
 
@@ -238,31 +224,48 @@ function feedbackHandler(dbParent) {
 
             ];
 
-            if (ENV == "PROD") {
-                // This area path only works in production
-                reqBody.push({
-                    "op": "add",
-                    "path": "/fields/System.AreaPath",
-                    "value": "OS\\Core\\EMX\\CXE\\Customer Connection\\TAP"
-                });
+            getAuthForCase(req.body.validationId, function (err, project) {
+                if (err) { throw err; }
 
-                if (userEmail) {
+                if (valDoc.areaPath.length > 0) {
+                    // Validation-specific area path
                     reqBody.push({
                         "op": "add",
-                        "path": "/fields/OSG.Partner.PartnerPOC",
-                        "value": userEmail
+                        "path": "/fields/System.AreaPath",
+                        "value": valDoc.areaPath
+                    });
+                } else if (project.areaPath) {
+                    // Project default area path
+                    reqBody.push({
+                        "op": "add",
+                        "path": "/fields/System.AreaPath",
+                        "value": project.areaPath
+                    });
+                } else {
+                    // Root of project (shouldn't really happen)
+                    reqBody.push({
+                        "op": "add",
+                        "path": "/fields/System.AreaPath",
+                        "value": project.project
                     });
                 }
 
+                if (project.project == "OS") {
+                    if (userEmail) {
+                        reqBody.push({
+                            "op": "add",
+                            "path": "/fields/OSG.Partner.PartnerPOC",
+                            "value": userEmail
+                        });
+                    }
 
-                reqBody.push({
-                    "op": "add",
-                    "path": "/fields/Microsoft.VSTS.Common.Release",
-                    "value": "Cobalt"
-                });
-            }
+                    reqBody.push({
+                        "op": "add",
+                        "path": "/fields/Microsoft.VSTS.Common.Release",
+                        "value": "Cobalt"
+                    });
+                }
 
-            getAuthForCase(req.body.validationId, function (err, project) {
                 if (err) { throw err; }
                 let ado_endpoint = ADO_WORKITEM_ADD_ENDPOINT
                     .replace("{org}", project.org)

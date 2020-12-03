@@ -643,11 +643,14 @@ block content
 
                             th(scope="col" style="Width: 5%") #[strong Public?]
                     tbody
+            h4 Suggest a feature
             .form-group
-                label(for="featureRequestTitleField") Title
+                label(for="featureRequestTitleField") Title 
+                    span#feature-request-title-required(style="color: red") (*)
                 textarea.form-control#featureRequestTitleField(rows=1, placeholder="Feature title")
             .form-group
-                label(for="featureRequestDescriptionField") Suggest a feature:
+                label(for="featureRequestDescriptionField") Description 
+                    span#feature-requestt-title-required(style="color: red") (*)
                 textarea.form-control#featureRequestDescriptionField(rows=3, placeholder="Please describe your feature.")
             .form-group.form-check
                 input.form-check-input(type="checkbox", name="featureRequestsPublic").setUserPrefs#featureRequestsPublicField  

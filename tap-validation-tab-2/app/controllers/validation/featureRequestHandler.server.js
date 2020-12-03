@@ -167,7 +167,7 @@ function featureRequestHandler(dbParent) {
 
         console.log(valQuery);
 
-        validations.findOne(valQuery, {projection: { tag: 1 }}, function (err, valDoc) {
+        validations.findOne(valQuery, {projection: { tag: 1, areaPath: 1 }}, function (err, valDoc) {
             let tags = "WCCP; WCCP-FeatureRequest; " + valDoc.tag;
 
             //let systemInfo = "<strong>Build Type</strong>: " + body.windowsBuildType + "<br />";
@@ -200,39 +200,48 @@ function featureRequestHandler(dbParent) {
                 },
             ];
 
-            if (ENV == "PROD") {
-                // This area path only works in production
-                if (valDoc.areaPath != null) {
+            getAuthForCase(req.body.validationId, function (err, project) {
+                if (err) { throw err; }
+
+                if (valDoc.areaPath.length > 0) {
+                    // Validation-specific area path
                     reqBody.push({
                         "op": "add",
                         "path": "/fields/System.AreaPath",
                         "value": valDoc.areaPath
                     });
-                } else {
+                } else if (project.areaPath) {
+                    // Project default area path
                     reqBody.push({
                         "op": "add",
                         "path": "/fields/System.AreaPath",
-                        "value": "OS\\Core\\EMX\\CXE\\Customer Connection\\TAP"
+                        "value": project.areaPath
                     });
-                }
-
-                if (userEmail) {
+                } else {
+                    // Root of project (shouldn't really happen)
                     reqBody.push({
                         "op": "add",
-                        "path": "/fields/OSG.Partner.PartnerPOC",
-                        "value": userEmail
+                        "path": "/fields/System.AreaPath",
+                        "value": project.project
                     });
                 }
 
-                reqBody.push({
-                    "op": "add",
-                    "path": "/fields/Microsoft.VSTS.Common.Release",
-                    "value": "Cobalt"
-                });
-            }
+                if (project.project == "OS") {
+                    if (userEmail) {
+                        reqBody.push({
+                            "op": "add",
+                            "path": "/fields/OSG.Partner.PartnerPOC",
+                            "value": userEmail
+                        });
+                    }
 
-            getAuthForCase(req.body.validationId, function (err, project) {
-                if (err) { throw err; }
+                    reqBody.push({
+                        "op": "add",
+                        "path": "/fields/Microsoft.VSTS.Common.Release",
+                        "value": "Cobalt"
+                    });
+                }
+
                 let ado_add_endpoint = ADO_WORKITEM_ADD_ENDPOINT
                     .replace("{org}", project.org)
                     .replace("{project}", project.project);

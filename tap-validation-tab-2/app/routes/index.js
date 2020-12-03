@@ -101,10 +101,10 @@ module.exports = function (app, db) {
     app.route('/validations/:vId')
         .get(validationHandler.getValidation);
 
-    // TODO: Determine if this gets used
-    app.route('/api/bugs')
+    // TODO: Seems like this is not used - the function is called in admin instead
+    //app.route('/api/bugs')
         //.get(bugHandler.getBug)
-        .post(bugHandler.addBug);
+        //.post(bugHandler.addBug);
 
     app.route("/api/bugs/triage")
         .post(bugHandler.triageBug);

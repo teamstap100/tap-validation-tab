@@ -17,9 +17,6 @@ function bugHandler (dbParent) {
     var bugComments = db.collection('bugComments');
     var triageBugs = db.collection('triageBugs');
 
-  // db used to return the db, now it returns the parent in mongo 3.0.0.
-  // So, need to point it to the real db each time.
-
     const TEAMS_ADO_API_BASE = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/";
     const TEAMS_ADO_BUGS_ENDPOINT = TEAMS_ADO_API_BASE + "workitems/$bug?api-version=4.1";
     const TEAMS_ADO_WORKITEM_UPDATE_ENDPOINT = TEAMS_ADO_API_BASE + "workitems/{id}?api-version=4.1";
@@ -65,7 +62,7 @@ function bugHandler (dbParent) {
         return comment;
     }
 
-    /*
+
       this.getBug = function(req, res) {
         console.log("Calling getBug");
         console.log(req.params.vId);
@@ -100,8 +97,8 @@ function bugHandler (dbParent) {
           console.log(doc);
         })
       }
-      */
 
+    /*
     this.getOneBug = function (req, res) {
         // Not yet implemented
         return res.status(200).send();
@@ -241,6 +238,7 @@ function bugHandler (dbParent) {
             }
           })
       };
+      */
 
     //* TODO: does this get used at all? */
     /*
@@ -680,6 +678,7 @@ function bugHandler (dbParent) {
                     closeRequested: closeRequested,
                     //history: wit.fields["System.History"] || "",
                     //comments: wit.comments,
+                    areaPath: wit.fields["System.AreaPath"],
                     commentCount: wit.commentCount,
                     timestamp: new Date(),
                 });
@@ -717,7 +716,7 @@ function bugHandler (dbParent) {
 
             dbCount = simpleBugs.length;
 
-            // Do some database work after it's rendered
+            // Do the database work after it's rendered
             simpleBugs.forEach(function (bug) {
                 triageBugs.findOne({ id: bug._id }, function (err, existingBug) {
                     if (existingBug) {
@@ -958,7 +957,7 @@ function bugHandler (dbParent) {
 
                         let safeId = parseInt(req.body.id);
 
-                        triageBugs.updateOne({ _id: safeId }, { $set: { triaged: true } }, function (err, doc) {
+                        triageBugs.updateOne({ _id: safeId }, { $set: { triaged: true, priority: priority, severity: severity } }, function (err, doc) {
                             if (err) {
                                 console.log("Failed to update bug with id: " + safeId);
                             } else {
