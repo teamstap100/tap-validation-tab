@@ -28,8 +28,8 @@ function bugHandler (dbParent) {
     const QUERY_BY_WIQL_ENDPOINT = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/wiql?$top=100&api-version=5.1";
     //const QUERY_BY_WIQL_ENDPOINT = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/wiql&api-version=5.1";
 
-
     // This one's for production
+    // Used to run queries and write comments to workitems
     var AUTH = process.env.AUTH;
 
     function fixHtml(html) {
@@ -398,7 +398,7 @@ function bugHandler (dbParent) {
 
         if (tid == "elite") {
             tenants.find({ status: "Elite" }).project({ name: 1, tid: 1 }).toArray(function (err, eliteTenantDocs) {
-                console.log(eliteTenantDocs);
+                //console.log(eliteTenantDocs);
                 eliteTenantDocs.forEach(function (doc) {
                     tids.push(doc.tid);
                 });
@@ -432,9 +432,9 @@ function bugHandler (dbParent) {
             triageBugs.find({ tid: { $in: tids }, timestamp: { $gt: ninety_days_ago } }).sort({ timestamp: -1 }).toArray(function (err, bugs) {
                 let one_hour_ago = new Date(Date.now() - 3600 * 1000)
                 if (bugs.length > 0) {
-                    bugs.forEach(function (bug) {
-                        console.log(bug);
-                    });
+                    // bugs.forEach(function (bug) {
+                    //    console.log(bug);
+                    //});
                     let lastBugRefresh = bugs[0].timestamp;
                     if (lastBugRefresh > one_hour_ago) {
                         console.log("Bugs were updated recently");
@@ -449,7 +449,7 @@ function bugHandler (dbParent) {
                         //});
                     } else {
                         console.log("Bug cache is old");
-                        console.log(lastBugRefresh, one_hour_ago);
+                        //console.log(lastBugRefresh, one_hour_ago);
                         return getBugsForTids(tids, bugId, "@today-90");
                     }
                 } else {
@@ -460,8 +460,8 @@ function bugHandler (dbParent) {
         }
 
         function getBugsForTids(tids, bugId, lastBugRefresh) {
-            console.log("getBugsForTids on:");
-            console.log(tids);
+            //console.log("getBugsForTids on:");
+            //console.log(tids);
             //console.log(cachedBugs);
 
             var body = {
@@ -482,7 +482,7 @@ function bugHandler (dbParent) {
                 body.query += " and [System.Id] = " + bugId;
             }
 
-            console.log(body);
+            //console.log(body);
 
             var options = {
                 url: QUERY_BY_WIQL_ENDPOINT,
@@ -493,18 +493,18 @@ function bugHandler (dbParent) {
                 body: JSON.stringify(body)
             };
 
-            console.log(options);
+            //console.log(options);
 
             request.post(options, function (vstsErr, vstsResponse, vstsBody) {
                 if (vstsErr) {
                     console.log(vstsErr);
                     throw vstsErr;
                 }
-                console.log(vstsResponse.statusCode);
+                //console.log(vstsResponse.statusCode);
                 //console.log(vstsBody);
 
                 vstsBody = JSON.parse(vstsBody);
-                console.log(vstsBody);
+                //console.log(vstsBody);
                 var workitems = vstsBody.workItems;
                 witsCount = vstsBody.workItems.length;
 
@@ -517,10 +517,10 @@ function bugHandler (dbParent) {
                         }
                     }
 
-                    console.log(wit.url);
+                    //console.log(wit.url);
 
                     request.get(witOptions, function (vstsErr, vstsResponse, vstsBody) {
-                        console.log(vstsResponse.statusCode);
+                        //console.log(vstsResponse.statusCode);
                         if (vstsResponse.statusCode.toString()[0] == "5") {
                             console.log("Server error");
                             return res.status(500).send();
@@ -643,6 +643,16 @@ function bugHandler (dbParent) {
                         state = "Close Requested";
                         closeRequested = true;
                     }
+
+                    if (wit.fields["System.Tags"].includes("TAPAdminS1")) {
+                        wit.priority = "P1S1";
+                    } else if (wit.fields["System.Tags"].includes("TAPAdminS2")) {
+                        wit.priority = "S2";
+                    } else {
+                        wit.priority = "S3";
+                    }
+                } else {
+                    wit.priority = "S3";
                 }
 
                 let triaged = false;
@@ -680,6 +690,7 @@ function bugHandler (dbParent) {
                     //comments: wit.comments,
                     areaPath: wit.fields["System.AreaPath"],
                     commentCount: wit.commentCount,
+                    priority: wit.priority,
                     timestamp: new Date(),
                 });
             });

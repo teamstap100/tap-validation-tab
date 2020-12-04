@@ -201,7 +201,6 @@ module.exports = function (app, db) {
                     return res.send({ filename: req.file.filename })
                 } else {
                     console.log("No files");
-                    console.log(file);
                     return res.status(200).send();
                 }
             });
@@ -217,7 +216,6 @@ module.exports = function (app, db) {
                 }
                 if (req.files) {
                     console.log("Files exist");
-                    console.log(req.files);
                     return res.send({ files: req.files });
                 } else {
                     console.log("No files");

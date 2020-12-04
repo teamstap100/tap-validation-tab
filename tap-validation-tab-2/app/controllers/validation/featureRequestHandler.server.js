@@ -73,6 +73,9 @@ function featureRequestHandler(dbParent) {
 
         featureRequests.find(featureRequestQuery).toArray(function (err, featureRequestDocs) {
             freqCount = featureRequestDocs.length;
+            if (freqCount == 0) {
+                return res.json({ featureRequest: [] });
+            }
 
             featureRequestDocs.forEach(function (freq) {
 

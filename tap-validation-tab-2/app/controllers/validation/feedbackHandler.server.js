@@ -13,22 +13,8 @@ function feedbackHandler(dbParent) {
 
     //const VSTS_API_BASE = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/";
     //const VSTS_WORKITEM_UPDATE_ENDPOINT = VSTS_API_BASE + "workitems/{id}?api-version=4.1";
-    //const AUTH = process.env.AUTH;
 
     const ENV = process.env.ENV;
-
-    /*
-    var WINDOWS_AUTH, WINDOWS_ADO_API_BASE;
-
-    if (ENV == "PROD") {
-        WINDOWS_AUTH = process.env.WINDOWS_AUTH;
-        WINDOWS_ADO_API_BASE = "https://dev.azure.com/microsoft/OS/_apis/wit/";
-    } else {
-        // Testing with Luciano tenant
-        WINDOWS_AUTH = process.env.LUCIANO_AUTH;
-        WINDOWS_ADO_API_BASE = "https://dev.azure.com/lucianooo/TestProject/_apis/wit/";
-    }
-    */
 
     const ADO_WORKITEM_ADD_ENDPOINT = ADO_API_BASE + "workitems/$Bug?api-version=4.11";
     const ADO_WORKITEM_EDIT_ENDPOINT = ADO_API_BASE + "workitems/{id}?api-version=5.1";
@@ -92,6 +78,11 @@ function feedbackHandler(dbParent) {
 
         feedback.find(feedbackQuery).toArray(function (err, feedbackDocs) {
             feedbackCount = feedbackDocs.length;
+
+            if (feedbackCount == 0) {
+                return res.json({ feedback: [] });
+            }
+
             feedbackDocs.forEach(function (feedback) {
                 getAuthForCase(req.body.validationId, function (err, project) {
                     if (err) { throw err; }

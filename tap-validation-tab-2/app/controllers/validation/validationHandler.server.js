@@ -18,10 +18,6 @@ function validationHandler(dbParent) {
 
     var pms = db.collection('pms');
 
-    const VSTS_API_BASE = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/";
-    const VSTS_WORKITEM_UPDATE_ENDPOINT = VSTS_API_BASE + "workitems/{id}?api-version=4.1";
-    const AUTH = process.env.AUTH;
-
     this.getIndex = function (req, res) {
         res.render('index', {});
     };
