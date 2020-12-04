@@ -508,6 +508,7 @@ function caseHandler(dbParent) {
 
                             console.log("Setting id: " + workitemBody.id);
                             commentDoc.id = workitemBody.id;
+                            commentDoc.publicId = new ObjectID();
 
                             cases.updateOne({ _id: cId }, { $push: { comments: commentDoc } }, function (err, result) {
                                 return res.status(200).send();
@@ -1014,6 +1015,7 @@ function caseHandler(dbParent) {
                         //console.log(workitemBody);
                         let id = workitemBody.id;
                         voteObj.id = id;
+                        voteObj.publicId = new ObjectID();
 
                         if (attachmentBodies) {
                             let attachmentCount = attachmentBodies.length;
@@ -1274,7 +1276,10 @@ function caseHandler(dbParent) {
             caseDoc.downvotes_v2.forEach(function (vote) {
                 vote.type = "Fails";
             });
-            let allFeedback = caseDoc.upvotes_v2.concat(caseDoc.downvotes_v2).concat(caseDoc.comments).filter(x => x.email == req.body.userEmail);
+
+            let currentUserComments = caseDoc.comments.filter(x => x.email != req.body.userEmail);
+
+            let allFeedback = caseDoc.upvotes_v2.concat(caseDoc.downvotes_v2).filter(x => x.email == req.body.userEmail).concat(currentUserComments);
             //console.log(allFeedback);
 
             votesTotal = allFeedback.length;
@@ -1344,9 +1349,11 @@ function caseHandler(dbParent) {
 
         cases.findOne({ _id: ObjectID(req.body.caseId) }, function (err, caseDoc) {
             console.log(caseDoc);
-            let allFeedback = caseDoc.upvotes_v2.concat(caseDoc.downvotes_v2).concat(caseDoc.comments).filter(x => x.email != req.body.userEmail).filter(x => x.public);
-            console.log(allFeedback);
 
+            // Can't just concat comments, as upvotes/downvotes use "email" field where comments use "userEmail"
+            let nonCurrentUserComments = caseDoc.comments.filter(x => x.userEmail != req.body.userEmail).filter(x => x.public);
+
+            let allFeedback = caseDoc.upvotes_v2.concat(caseDoc.downvotes_v2).filter(x => x.email != req.body.userEmail).filter(x => x.public).concat(nonCurrentUserComments);
             console.log(allFeedback);
 
             allFeedback.forEach(function (fb) {
@@ -1513,6 +1520,7 @@ function caseHandler(dbParent) {
         }
 
         console.log(any_feedback_query);
+        console.log(modifyCommentsQuery);
 
         let feedbackDoc;
         let feedbackField;
@@ -1588,7 +1596,7 @@ function caseHandler(dbParent) {
                                     console.log(vstsBody);
 
                                     // Handle attachments
-                                    if (req.body.attachments) {
+                                    if (req.body.attachments.length > 0) {
                                         console.log("Handling attachments");
                                         uploadAttachments(req.body.attachments, feedbackId, project, function (attachmentBodies) {
                                             console.log(attachmentBodies);

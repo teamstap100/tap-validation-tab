@@ -261,6 +261,7 @@ function featureRequestHandler(dbParent) {
                     if (vstsErr) { console.log(vstsErr); }
                     vstsResponse = JSON.parse(vstsResponse);
                     featureRequestObj._id = vstsResponse.id;
+                    featureRequestObj.publicId = new ObjectID();
 
                     featureRequests.insertOne(featureRequestObj, function (err, featureRequestDoc) {
                         res.status(200).send();

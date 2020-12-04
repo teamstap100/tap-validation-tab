@@ -44,6 +44,7 @@ $(document).ready(function () {
 
                 voteParams.title = $('#edit-report-title-field').val();
                 voteParams.comment = $('#edit-report-description-field').val().replace(/\r?\n/g, '<br>');
+                voteParams.public = $('#edit-feedback-public').is(':checked');
 
                 let submitUrl = "../api/feedback/scenario/" + voteParams.id;
 
@@ -53,7 +54,7 @@ $(document).ready(function () {
                     $("#edit-report-submit").text($('#edit-report-submit').html().replace(spinner, ""));
 
                     // TEMP: Disabling for easier testing
-                    //$('#edit-report-modal').modal('hide');
+                    $('#edit-report-modal').modal('hide');
                 });
 
                 $("#edit-report-submit").attr("disabled", false);
@@ -220,7 +221,7 @@ $(document).ready(function () {
                 columns: [
                     { "data": "id" },
                     {},
-                    {},
+                    //{},
                     { "data": "title" },
                 ],
                 columnDefs: [
@@ -244,6 +245,7 @@ $(document).ready(function () {
                         },
                         targets: 1
                     },
+                    /*
                     {
                         render: function (data, type, row) {
                             let id = row.id;
@@ -253,6 +255,7 @@ $(document).ready(function () {
                         },
                         targets: 2
                     }
+                    */
                 ],
                 initComplete: bindVoteButtons
             });

@@ -526,6 +526,7 @@ block content
                     .form-group
                         label(for="windws-report-file") File Upload:
                         p You can upload up to 10 files of any type, up to 60MB each.
+                        p For files larger than 60 MB, please contact this program's owner to arrange a secure file transfer.
                         input#windows-report-file(type="file" name="userFile" multiple)
 
                     .form-group
@@ -536,6 +537,45 @@ block content
           .modal-footer
             button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
             button.btn.btn-primary#windows-report-submit(type='submit', title="Submit" name="submit") Submit
+
+    #view-feedback-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='viewFeedbackLabel', aria-hidden='true')
+      .modal-dialog.modal-lg(role='document', style="width: 90%")
+        .modal-content
+          .modal-header
+            button.close(type='button', data-dismiss='modal', aria-label='Close')
+              span(aria-hidden='true') &times;
+            h4#feeback-header.modal-title View all feedback:
+                span#caseTitle
+            span#caseId(style="display: none")
+          .modal-body
+            //.alert.alert-success#feedback-success(role="alert", style="display: none") Thanks for your feedback - it will be shared with the team.
+            p #[strong Your scenario feedback]
+            .modal-scrollable(style="max-height: 35%; overflow-y: scroll; overflow-x: hidden;")
+                table.table.table-striped.compact.feedback-table#your-scenario-feedback-table(style="width: 100%")
+                    thead
+                        tr
+                            th(scope="col" style="width: 10%") #[strong ID]
+                            th(scope="col" style="width: 5%") #[strong Type]
+                            th(scope="col" style="width: 60%") #[strong Title]
+                            th(scope="col" style="width: 10%") #[strong State]
+                            th(scope="col" style="width: 10%") #[strong Reason]
+                            th(scope="col" style="Width: 10%") #[strong Visible?]
+                    tbody
+
+
+            hr
+            p #[strong Others' feedback (visible to WCCP participants)]
+            .modal-scrollable(style="max-height: 35%; overflow-y: scroll; overflow-x: hidden;")
+                table.table.table-striped.compact.feedback-table#other-scenario-feedback-table(style="width: 100%")
+                    thead
+                        tr
+                            th(scope="col" style="Width: 10%") #[strong ID]
+                            th(scope="col" style="Width: 10%") #[strong Vote]
+                            //th(scope="col" style="Width: 10%") #[strong Comment]
+                            th(scope="col" style="width: 70%") #[strong Title]
+                    tbody
+                
+          .modal-footer
 
     #edit-report-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='windowsReportLabel', aria-hidden='true')
       #edit-report-id(style="display: none") Test
@@ -560,6 +600,7 @@ block content
                     .form-group
                         label(for="windws-report-file") File Upload:
                         p You can upload up to 10 files of any type, up to 60MB each.
+                        p For files larger than 60 MB, please contact this program's owner to arrange a secure file transfer.
                         input#edit-report-file(type="file" name="userFile" multiple)
                         
                     .form-group
@@ -580,8 +621,8 @@ block content
             h4#feeback-header.modal-title Share general feedback on: #{validation.name}
           .modal-body
             //.alert.alert-success#feedback-success(role="alert", style="display: none") Thanks for your feedback - it will be shared with the team.
-            .modal-scrollable(style="max-height: 45%; overflow-y: scroll; overflow-x: hidden;")
-                p #[strong Your feedback]
+            p #[strong Your feedback]
+            .modal-scrollable(style="max-height: 20%; overflow-y: scroll; overflow-x: hidden;")
                 table.table.table-striped.compact.feedback-table#your-feedback-table(style="width: 100%")
                     thead
                         tr
@@ -590,11 +631,11 @@ block content
                             th(scope="col" style="width: 40%") #[strong Details]
                             th(scope="col" style="width: 10%") #[strong State]
                             th(scope="col" style="width: 10%") #[strong Reason]
-                            th(scope="col" style="Width: 5%") #[strong Public?]
+                            th(scope="col" style="Width: 5%") #[strong Visible?]
                     tbody
 
-
-                p #[strong Others' public feedback]
+            p #[strong Others' feedback (visible to WCCP participants)]
+            .modal-scrollable(style="max-height: 20%; overflow-y: scroll; overflow-x: hidden;")
                 table.table.table-striped.compact.feedback-table#feedback-table(style="width: 100%")
                     thead
                         tr
@@ -631,7 +672,7 @@ block content
           .modal-body
             //.alert.alert-success#featureRequest-success(role="alert", style="display: none") Thanks for your featureRequest - it will be shared with the team.
             .modal-scrollable(style="max-height: 45%; overflow-y: scroll; overflow-x: hidden;")
-                p Your feature requests
+                p #[strong Your feature requests]
                 table.table.table-striped.compact.feature-request-table#your-featureRequest-table(style="width: 100%")
                     thead
                         tr
@@ -641,7 +682,7 @@ block content
                             th(scope="col" style="width: 5%") #[strong State]
                             th(scope="col" style="width: 5%") #[strong Reason]
 
-                            th(scope="col" style="Width: 5%") #[strong Public?]
+                            th(scope="col" style="Width: 5%") #[strong Visible?]
                     tbody
             h4 Suggest a feature
             .form-group
@@ -659,43 +700,6 @@ block content
                 
           .modal-footer
               button.btn.btn-primary#submitFeatureRequest(type='button', style="float: right", disabled) Submit
-
-    #view-feedback-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='viewFeedbackLabel', aria-hidden='true')
-      .modal-dialog(role='document', style="width: 90%")
-        .modal-content
-          .modal-header
-            button.close(type='button', data-dismiss='modal', aria-label='Close')
-              span(aria-hidden='true') &times;
-            h4#feeback-header.modal-title View all feedback:
-                span#caseTitle
-            span#caseId(style="display: none")
-          .modal-body
-            //.alert.alert-success#feedback-success(role="alert", style="display: none") Thanks for your feedback - it will be shared with the team.
-            .modal-scrollable(style="max-height: 45%; overflow-y: scroll; overflow-x: hidden;")
-                p #[strong Your scenario feedback]
-                table.table.table-striped.compact.feedback-table#your-scenario-feedback-table(style="width: 100%")
-                    thead
-                        tr
-                            th(scope="col" style="width: 10%") #[strong ID]
-                            th(scope="col" style="width: 5%") #[strong Type]
-                            th(scope="col" style="width: 60%") #[strong Title]
-                            th(scope="col" style="width: 10%") #[strong State]
-                            th(scope="col" style="width: 10%") #[strong Reason]
-                            th(scope="col" style="Width: 10%") #[strong Public?]
-                    tbody
-
-
-                p #[strong Others' public feedback]
-                table.table.table-striped.compact.feedback-table#other-scenario-feedback-table(style="width: 100%")
-                    thead
-                        tr
-                            th(scope="col" style="Width: 10%") #[strong ID]
-                            th(scope="col" style="Width: 10%") #[strong Vote]
-                            th(scope="col" style="Width: 10%") #[strong Comment]
-                            th(scope="col" style="width: 70%") #[strong Title]
-                    tbody
-                
-          .modal-footer
               
 
     script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js')

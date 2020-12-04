@@ -286,6 +286,7 @@ function feedbackHandler(dbParent) {
                     if (vstsErr) { console.log(vstsErr); }
                     vstsResponse = JSON.parse(vstsResponse);
                     feedbackObj._id = vstsResponse.id;
+                    feedbackObj.publicId = ObjectID();
 
                     feedback.insertOne(feedbackObj, function (err, feedbackDoc) {
                         if (err) { console.log(err); }
