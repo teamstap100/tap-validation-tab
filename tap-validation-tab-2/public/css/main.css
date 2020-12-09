@@ -564,3 +564,11 @@ span.tenant, span.email {
     float: left;
     vertical-align: middle;
 }
+
+.modal-backdrop {
+    visibility: hidden !important;
+}
+
+.modal.in {
+    background-color: rgba(0,0,0,0.5);
+}

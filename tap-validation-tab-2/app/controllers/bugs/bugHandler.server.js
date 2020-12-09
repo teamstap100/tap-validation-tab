@@ -968,7 +968,16 @@ function bugHandler (dbParent) {
 
                         let safeId = parseInt(req.body.id);
 
-                        triageBugs.updateOne({ _id: safeId }, { $set: { triaged: true, priority: priority, severity: severity } }, function (err, doc) {
+                        let updateQuery = {
+                            $set: {
+                                triaged: true,
+                                priority: priority,
+                                severity: severity,
+                                triagedBy: req.body.submitter
+                            }
+                        }
+
+                        triageBugs.updateOne({ _id: safeId }, updateQuery, function (err, doc) {
                             if (err) {
                                 console.log("Failed to update bug with id: " + safeId);
                             } else {
@@ -1116,7 +1125,7 @@ function bugHandler (dbParent) {
                                 url: TEAMS_ADO_WORKITEM_UPDATE_ENDPOINT.replace('{id}', req.body.id),
                                 headers: {
                                     'Authorization': AUTH,
-                                    'Content-TYpe': 'application/json-patch+json',
+                                    'Content-Type': 'application/json-patch+json',
                                 },
                                 body: JSON.stringify(linkPatch),
                             }
@@ -1124,7 +1133,21 @@ function bugHandler (dbParent) {
                             request.patch(linkOptions, function (adoErr, adoStatus, adoResponse) {
                                 if (adoErr) { throw err; }
 
-                                return res.status(200).send();
+                                let safeId = parseInt(req.body.id);
+                                let updateQuery = {
+                                    $set: {
+                                        commented: true,
+                                        triagedBy: req.body.submitter
+                                    }
+                                }
+                                triageBugs.updateOne({ _id: safeId }, updateQuery, function (err, doc) {
+                                    if (err) {
+                                        console.log("Failed to update bug with id: " + safeId);
+                                    } else {
+                                        console.log("Marked bug " + safeId + " as commented");
+                                    }
+                                    return res.status(200).send();
+                                });
                             });
 
                         });
@@ -1198,7 +1221,14 @@ function bugHandler (dbParent) {
 
             request.patch(patchOptions, function (vstsErr, vstsResponse, vstsBody) {
                 let safeId = parseInt(req.body.id);
-                triageBugs.updateOne({ _id: safeId }, { $set: { closeRequested: true, state: "Close Requested" } }, function (err, doc) {
+                let updateQuery = {
+                    $set: {
+                        closeRequested: true,
+                        state: "Close Requested",
+                        triagedBy: req.body.submitter
+                    }
+                }
+                triageBugs.updateOne({ _id: safeId }, updateQuery, function (err, doc) {
                     if (err) {
                         console.log("Failed to update bug with id: " + safeId);
                     } else {

@@ -1,6 +1,7 @@
 $(document).ready(function () {
     const FEEDBACK_API_URL = "../api/validations/feedback";
     const UPVOTE_API_URL = "../api/feedback/{id}/upvote";
+    const COMMENT_API_URL = "../api/feedback/{id}/comment";
 
     console.log("Hello");
     microsoftTeams.initialize();
@@ -53,7 +54,6 @@ $(document).ready(function () {
 
                     $("#edit-report-submit").text($('#edit-report-submit').html().replace(spinner, ""));
 
-                    // TEMP: Disabling for easier testing
                     $('#edit-report-modal').modal('hide');
                 });
 
@@ -78,6 +78,7 @@ $(document).ready(function () {
 
         $('#edit-report-submit').off();
         $('#edit-report-submit').click(function () {
+            
             $('#edit-report-submit').attr('disabled', true);
 
             microsoftTeams.getContext(function (context) {
@@ -109,14 +110,15 @@ $(document).ready(function () {
                     console.log(this);
                     var feedback = JSON.parse(b64DecodeUnicode($(this).data('feedback')));
 
-                    $('#view-feedback-modal').modal('hide');
+                    //$('#view-feedback-modal').modal('hide');
                     $('#edit-report-modal').modal('show');
                     setupEditModal(feedback);
-                })
+                });
             }
 
             function bindVoteButtons() {
                 console.log("Called bindVoteButtons");
+                $('.upvote-feedback').off();
                 $('.upvote-feedback').click(function () {
                     console.log("Clicked an upvote button");
                     let id = this.id.replace("upvote-feedback-", "");
@@ -135,15 +137,37 @@ $(document).ready(function () {
                     });
                 });
 
+                $('.comment-feedback').off();
                 $('.comment-feedback').click(function () {
                     console.log("Clicked a comment button");
                     let id = this.id.replace("comment-feedback-", "");
                     console.log(id);
-                    // TODO: Need some sort of new interface for entering a comment. Another modal?
+
+                    // Show the comment modal
+                    $('#feedback-comment-modal').modal('show');
+
+                    $('#feedback-comment-submit').off();
+                    $('#feedback-comment-submit').click(function () {
+                        console.log("Clicked submit comment button");
+                        $('#feedback-comment-id').text(id);
+
+                        let commentUrl = COMMENT_API_URL.replace("{id}", id);
+                        let commentParams = {
+                            email: context['userPrincipalName'],
+                            comment: $('#feedback-comment-field').val()
+                        }
+                        ajaxRequest('POST', commentUrl, commentParams, function () {
+                            console.log("Done");
+                            $('#feedback-comment-modal').modal('hide');
+
+                        });
+
+                    })
                 });
             }
 
             myFeedbackTable = $('#your-scenario-feedback-table').DataTable({
+                //dom: '<"toolbar">frtip',
                 info: false,
                 paging: false,
                 //searching: false,
@@ -177,8 +201,13 @@ $(document).ready(function () {
                             let id = row._id;
 
                             // data-toggle="modal", data-target="#view-feedback-modal
-
-                            let cell = '<a data-toggle="modal", data-feedback=' + b64EncodeUnicode(JSON.stringify(row)) + ' class="edit-existing-feedback" id="feedback-text-' + id + '">' + data + '</span>';
+                            let cell;
+                            if (id == "?") {
+                                cell = data;
+                            } else {
+                                cell = '<a data-feedback=' + b64EncodeUnicode(JSON.stringify(row)) + ' class="edit-existing-feedback" id="feedback-text-' + id + '">' + data + '</span>';
+                            }
+                            
                             return cell;
                         },
                         targets: 2
@@ -221,7 +250,7 @@ $(document).ready(function () {
                 columns: [
                     { "data": "id" },
                     {},
-                    //{},
+                    {},
                     { "data": "title" },
                 ],
                 columnDefs: [
@@ -245,7 +274,7 @@ $(document).ready(function () {
                         },
                         targets: 1
                     },
-                    /*
+                    
                     {
                         render: function (data, type, row) {
                             let id = row.id;
@@ -255,7 +284,7 @@ $(document).ready(function () {
                         },
                         targets: 2
                     }
-                    */
+                    
                 ],
                 initComplete: bindVoteButtons
             });
@@ -274,6 +303,10 @@ $(document).ready(function () {
         $('#edit-report-modal').on('hidden.bs.modal', function (e) {
             $('#edit-report-title-field').val("");
             $('#edit-report-description-field').val("");
+        });
+
+        $("#feedback-comment-modal").on('hidden.bs.modal', function (e) {
+            $('#feedback-comment-field').val("");
         });
     });
 });

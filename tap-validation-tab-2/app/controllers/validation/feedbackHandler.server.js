@@ -218,7 +218,7 @@ function feedbackHandler(dbParent) {
             getAuthForCase(req.body.validationId, function (err, project) {
                 if (err) { throw err; }
 
-                if (valDoc.areaPath.length > 0) {
+                if (valDoc.areaPath) {
                     // Validation-specific area path
                     reqBody.push({
                         "op": "add",

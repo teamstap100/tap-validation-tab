@@ -571,7 +571,7 @@ block content
                         tr
                             th(scope="col" style="Width: 10%") #[strong ID]
                             th(scope="col" style="Width: 10%") #[strong Vote]
-                            //th(scope="col" style="Width: 10%") #[strong Comment]
+                            th(scope="col" style="Width: 10%") #[strong Comment]
                             th(scope="col" style="width: 70%") #[strong Title]
                     tbody
                 
@@ -611,6 +611,27 @@ block content
           .modal-footer
             button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
             button.btn.btn-primary#edit-report-submit(type='submit', title="Submit" name="submit") Save changes
+
+    #feedback-comment-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='feedback-commentlabel', aria-hidden='true')
+      #feedback-comment-id(style="display: none") Test
+      #feedback-comment-name(style="display: none") Name
+      .modal-dialog(role='document')
+        .modal-content
+          .modal-header
+            button.close(type='button', data-dismiss='modal', aria-label='Close')
+              span(aria-hidden='true') &times;
+            h4#feedback-coment-header.modal-title Comment on feedback
+          .modal-body
+            form#feedback-comment-form(enctype="multipart/form-data" method="post")
+                .form-group
+                    .form-group
+                        label(for="feedback-comment-field") Comment:  
+                            span#edit-report-title-required(style="color: red") (*)
+                        input.form-control#feedback-comment-field.feedback-comment-field(type="text" placeholder="Submit a comment.")
+                
+          .modal-footer
+            button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
+            button.btn.btn-primary#feedback-comment-submit(type='submit', title="Submit" name="submit") Submit
 
     #feedback-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='feedbackLabel', aria-hidden='true')
       .modal-dialog(role='document' style="width: 90%")

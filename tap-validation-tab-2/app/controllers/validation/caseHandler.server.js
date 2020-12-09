@@ -202,7 +202,7 @@ function caseHandler(dbParent) {
         let commentsTable = `<table style='${tableStyle} width: 100%'><tbody>`;
         if (body.comments) {
             body.comments.forEach(function (comment) {
-                commentsTable += `<tr style='${tableStyle}'> <td style='${tableStyle}'> "${comment.text}" - ${comment.userEmail}</td></tr>`
+                commentsTable += `<tr style='${tableStyle}'> <td style='${tableStyle}'> "${comment.comment}" - ${comment.email}</td></tr>`
             });
         }
         commentsTable += "</tbody></table>";
@@ -761,13 +761,13 @@ function caseHandler(dbParent) {
         ];
 
         getAuthForCase(body.validation._id, function (err, project) {
-            if (body.validation.areaPath.length > 0) {
-                // Validation-specific area path
+            if (body.validation.areaPath) {
                 reqBody.push({
                     "op": "add",
                     "path": "/fields/System.AreaPath",
                     "value": body.validation.areaPath
                 });
+
             } else if (project.areaPath) {
                 // Project default area path
                 reqBody.push({
@@ -1277,10 +1277,14 @@ function caseHandler(dbParent) {
                 vote.type = "Fails";
             });
 
-            let currentUserComments = caseDoc.comments.filter(x => x.email != req.body.userEmail);
+            let currentUserComments = caseDoc.comments.filter(x => x.email == req.body.userEmail);
 
             let allFeedback = caseDoc.upvotes_v2.concat(caseDoc.downvotes_v2).filter(x => x.email == req.body.userEmail).concat(currentUserComments);
             //console.log(allFeedback);
+
+            if (allFeedback.length == 0) {
+                return res.json({ feedback: [] });
+            }
 
             votesTotal = allFeedback.length;
 
@@ -1414,17 +1418,6 @@ function caseHandler(dbParent) {
                             console.log(feedbackItem);
                             feedbackItem.upvotes.indexOf(req.body.email) === -1 ? feedbackItem.upvotes.push(req.body.email) : console.log("Already present");
 
-                            // TEMP: Putting in test comments
-                            feedbackItem.comments = [
-                                {
-                                    "text": "Here's a test comment",
-                                    "userEmail": "v-maxsil@microsoft.com"
-                                },
-                                {
-                                    "text": "Here's another test comment",
-                                    "userEmail": "v-maxsil@microsoft.com"
-                                },
-                            ];
 
                             console.log(feedbackItem);
                             let reproSteps = getWindowsReproSteps(feedbackItem);
@@ -1477,9 +1470,115 @@ function caseHandler(dbParent) {
     }
 
     this.commentOnCaseFeedback = function (req, res) {
-        console.log(req.body);
-        console.log("Not yet implemented");
-        return res.status(200).send();
+
+        let feedbackId = parseInt(req.params.id);
+
+        let any_feedback_query = {
+            $or: [
+                { "upvotes_v2.id": feedbackId },
+                { "downvotes_v2.id": feedbackId },
+                { "comments.id": feedbackId },
+            ]
+        };
+
+        let commentObj = {
+            email: req.body.email,
+            comment: req.body.comment
+        }
+
+        let feedbackField;
+
+        cases.findOne(any_feedback_query, function (err, caseDoc) {
+            if (caseDoc) {
+                cases.updateOne({ "upvotes_v2.id": feedbackId }, { $addToSet: { "upvotes_v2.$.comments": commentObj } }, function (err, caseDoc1) {
+                    if (caseDoc1.matchedCount) {
+                        console.log("It was an upvote")
+                        feedbackField = "upvotes_v2";
+                    }
+                    cases.updateOne({ "downvotes_v2.id": feedbackId }, { $addToSet: { "upvotes_v2.$.comments": commentObj } }, function (err, caseDoc2) {
+                        if (caseDoc2.matchedCount) {
+                            console.log("It was a downvote");
+                            feedbackField = "downvotes_v2";
+                        }
+
+                        cases.updateOne({ "comments.id": feedbackId }, { $addToSet: { "upvotes_v2.$.comments": commentObj } }, function (err, caseDoc3) {
+                            if (caseDoc3.matchedCount) {
+                                console.log("It was a comment")
+                                feedbackField = "comments";
+                            }
+
+                            console.log("Recorded the upvote");
+
+                            // Update ADO item
+                            let feedbackItem = caseDoc[feedbackField].find(x => x.id == feedbackId);
+                            console.log(feedbackItem);
+                            if (feedbackItem.comments) {
+                                feedbackItem.comments.push(commentObj);
+                            } else {
+                                feedbackItem.comments = [commentObj,];
+                            }
+
+                            // TEMP: Putting in test comments
+                            /*
+                            feedbackItem.comments = [
+                                {
+                                    "text": "Here's a test comment",
+                                    "userEmail": "v-maxsil@microsoft.com"
+                                },
+                                {
+                                    "text": "Here's another test comment",
+                                    "userEmail": "v-maxsil@microsoft.com"
+                                },
+                            ];
+                            */
+
+                            console.log(feedbackItem);
+                            let reproSteps = getWindowsReproSteps(feedbackItem);
+                            console.log(reproSteps);
+
+                            // Post updates to ADO
+
+                            var reqBody = [
+                                {
+                                    op: "add",
+                                    path: "/fields/Microsoft.VSTS.TCM.ReproSteps",
+                                    value: reproSteps
+                                }
+                            ];
+
+                            getAuthForCase(caseDoc.validationId, function (err, project) {
+                                var update_endpoint = ADO_WORKITEM_UPDATE_ENDPOINT
+                                    .replace("{org}", project.org)
+                                    .replace("{project}", project.project)
+                                    .replace("{id}", feedbackId);
+
+                                const options = {
+                                    url: update_endpoint,
+                                    headers: {
+                                        'Authorization': project.auth,
+                                        'Content-Type': 'application/json-patch+json'
+                                    },
+                                    body: JSON.stringify(reqBody)
+                                };
+
+                                request.patch(options, function (vstsErr, vstsResp, vstsBody) {
+                                    console.log(vstsResp.statusCode);
+                                    console.log(vstsBody);
+
+                                    return res.status(200).send();
+
+                                });
+                            });
+
+                        });
+                    });
+                });
+            } else {
+                console.log("No case found with that feedback");
+                return res.status(404).send();
+            }
+
+        });
     }
 
     this.modifyCaseFeedback = function (req, res) {

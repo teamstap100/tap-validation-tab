@@ -72,6 +72,7 @@ AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZ
       <SubType>Code</SubType>
     </Compile>
     <Content Include="app\controllers\bugs\tenantBugsSummaryController.client.js" />
+    <Content Include="app\controllers\layout\layoutController.client.js" />
     <Content Include="app\controllers\validation\caseFeedbackController.client.js" />
     <Content Include="app\helpers\helpers.server.js" />
     <Content Include="package.json" />
@@ -119,6 +120,7 @@ AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZ
     <Folder Include="app\controllers\tap100-app\" />
     <Folder Include="app\controllers\validation\" />
     <Folder Include="app\helpers\" />
+    <Folder Include="app\controllers\layout\" />
     <Folder Include="app\routes\" />
     <Folder Include="Properties\" />
     <Folder Include="Properties\PublishProfiles\" />
