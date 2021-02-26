@@ -1,1 +1,0 @@
-﻿// Dummy file necessary for the "uploads" folder to be published.

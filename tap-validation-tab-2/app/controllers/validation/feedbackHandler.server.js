@@ -2,7 +2,7 @@
 
 var ObjectID = require('mongodb').ObjectID;
 var request = require('request');
-const { safeOid, patToAuth, ADO_API_BASE } = require(process.cwd() + "/app/helpers/helpers.server.js");
+const { safeOid, patToAuth, ADO_API_BASE, uploadAttachments } = require(process.cwd() + "/app/helpers/helpers.server.js");
 
 function feedbackHandler(dbParent) {
     var db = dbParent.db("clementine");
@@ -19,6 +19,63 @@ function feedbackHandler(dbParent) {
     const ADO_WORKITEM_ADD_ENDPOINT = ADO_API_BASE + "workitems/$Bug?api-version=4.11";
     const ADO_WORKITEM_EDIT_ENDPOINT = ADO_API_BASE + "workitems/{id}?api-version=5.1";
     const ADO_WORKITEM_GET_ENDPOINT = ADO_API_BASE + "workitems/{id}?api-version=4.1";
+
+    function getWindowsReproSteps(body) {
+        let tableStyle = "border: solid black 1px; padding: 4px 4px 4px 4px;";
+
+        // Take a bug and create Windows repro steps for it.
+        let reproSteps = `<br /><table style='${tableStyle}'><tbody>`;
+
+        // Original description
+        reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Details </td> <td style='${tableStyle}'>${body.text} </td></tr>`;
+
+        // Submitter
+        let userEmail;
+        if (body.email) {
+            userEmail = body.email;
+        } else if (body.userEmail) {
+            userEmail = body.userEmail;
+        } else if (body.submitterEmail) {
+            userEmail = body.submitterEmail;
+        }
+
+        userEmail = cleanEmail(userEmail);
+
+        reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Submitter </td> <td id='userEmail' style='${tableStyle}'>${userEmail} </td></tr>`;
+
+        // Windows build info
+        if (body.windowsBuildType) {
+            reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Build Type </td> <td style='${tableStyle}'>${body.windowsBuildType} </td></tr>`;
+        }
+
+        if (body.windowsBuildVersion) {
+            reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Build Version </td> <td style='${tableStyle}'>${body.windowsBuildVersion} </td></tr>`;
+        }
+
+        // Upvotes
+        let upvotesCount = 0;
+        if (body.upvotes) {
+            upvotesCount = body.upvotes.length;
+        }
+
+        reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Upvotes </td> <td style='${tableStyle}'>${upvotesCount} </td></tr>`;
+
+        // Comments
+        let commentsTable = `<table style='${tableStyle} width: 100%'><tbody>`;
+        if (body.comments) {
+            body.comments.forEach(function (comment) {
+                commentsTable += `<tr style='${tableStyle}'> <td style='${tableStyle}'> "${comment.comment}" - ${comment.email}</td></tr>`
+            });
+        }
+        commentsTable += "</tbody></table>";
+
+        reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Comments </td> <td style='${tableStyle}'>${commentsTable} </td></tr>`;
+
+        reproSteps += "</tbody></table>";
+        reproSteps += "</br>";
+
+        return reproSteps;
+    }
 
     function getAuthForCase(validationId, callback) {
         validations.findOne({ _id: safeOid(validationId) }, function (err, valDoc) {
@@ -51,10 +108,46 @@ function feedbackHandler(dbParent) {
         return email;
     }
 
+    function getStateAndReason(validationId, feedback, callback) {
+        // Set the ADO fields for a given piece of feedback
+        getAuthForCase(validationId, function (err, project) {
+            if (err) { throw err; }
+            let ado_endpoint = ADO_WORKITEM_GET_ENDPOINT
+                .replace("{org}", project.org)
+                .replace("{project}", project.project)
+                .replace("{id}", feedback._id);
+
+            const options = {
+                url: ado_endpoint,
+                headers: {
+                    'Authorization': project.auth
+                }
+            };
+            request.get(options, function (err, resp, body) {
+                try {
+                    //console.log(body);
+                    body = JSON.parse(body);
+
+                    feedback.state = body.fields["System.State"];
+                    feedback.reason = body.fields["Microsoft.VSTS.Common.ResolvedReason"] || body.fields["System.Reason"];
+                } catch (e) {
+                    console.log("Falling back on default");
+                    feedback.state = "New";
+                    feedback.reason = "New";
+                }
+
+                if (!(feedback.title)) {
+                    feedback.title = "Untitled";
+                }
+
+                callback(feedback);
+            });
+        });
+    }
+
     this.getFeedbackByUser = function (req, res) {
-        //let validationId = parseInt(req.body.validationId);
-        let validationId = req.body.validationId;
-        let userEmail = req.body.userEmail;
+        let validationId = req.query.validationId;
+        let userEmail = req.query.userEmail;
 
         // Get all feedback submitted by this user, or others' public feedback
         let feedbackQuery = {
@@ -84,55 +177,21 @@ function feedbackHandler(dbParent) {
             }
 
             feedbackDocs.forEach(function (feedback) {
-                getAuthForCase(req.body.validationId, function (err, project) {
-                    if (err) { throw err; }
-                    let ado_endpoint = ADO_WORKITEM_GET_ENDPOINT
-                        .replace("{org}", project.org)
-                        .replace("{project}", project.project)
-                        .replace("{id}", feedback._id);
-
-                    const options = {
-                        url: ado_endpoint,
-                        headers: {
-                            'Authorization': project.auth
-                        }
-                    };
-                    request.get(options, function (err, resp, body) {
-                        try {
-                            body = JSON.parse(body);
-                            console.log(body.fields["System.State"]);
-                            console.log(body.fields["System.Reason"]);
-
-                            feedback.state = body.fields["System.State"];
-                            feedback.reason = body.fields["System.Reason"];
-                        } catch (e) {
-                            console.log(e);
-                            console.log("Falling back on default");
-                            feedback.state = "New";
-                            feedback.reason = "New";
-                        }
-
-                        if (!(feedback.title)) {
-                            feedback.title = "Untitled";
-                        }
-
-                        result.push(feedback);
-                        feedbackDone++;
-                        checkIfDone();
-                    });
-                });
-
+                getStateAndReason(validationId, feedback, function (updatedFeedback) {
+                    result.push(updatedFeedback);
+                    feedbackDone++;
+                    checkIfDone();
+                })
             });
-
         });
     }
 
     this.getPublicFeedback = function (req, res) {
         // Get the public feedback not by this user.
         console.log(req.body);
-        let validationId = req.body.validationId;
+        let validationId = req.query.validationId;
         //let validationId = parseInt(req.body.validationId);
-        let userEmail = req.body.userEmail;
+        let userEmail = req.query.userEmail;
 
         // Get all feedback submitted by this user, or others' public feedback
         let feedbackQuery = {
@@ -141,29 +200,44 @@ function feedbackHandler(dbParent) {
             public: true,
         }
 
+        var result = [];
+        var feedbackDone = 0;
+        var feedbackCount = 0;
+
+        function checkIfDone() {
+            if (feedbackDone == feedbackCount) {
+                return res.json({ feedback: result });
+            }
+        }
+
         feedback.find(feedbackQuery).toArray(function (err, feedbackDocs) {
-            feedbackDocs.forEach(function (doc) {
-                if (!(doc.submitterEmail == userEmail)) {
-                    doc.submitterEmail = "someone else";
-                    doc.showEditButton = false;
-                } else {
-                    doc.showEditButton = true;
-                }
-                if (!(doc.title)) {
-                    doc.title = "Untitled";
-                }
+            feedbackCount = feedbackDocs.length;
+
+            if (feedbackCount == 0) {
+                return res.json({ feedback: [] });
+            }
+
+            feedbackDocs.forEach(function (feedback) {
+                getStateAndReason(validationId, feedback, function (updatedFeedback) {
+                    if (updatedFeedback.upvotes) {
+                        updatedFeedback.userUpvoted = updatedFeedback.upvotes.includes(req.body.userEmail);
+                    } else {
+                        updatedFeedback.userUpvoted = false;
+                    }
+                    result.push(updatedFeedback);
+                    feedbackDone++;
+                    checkIfDone();
+                });
             });
-            return res.json({ feedback: feedbackDocs });
         });
     }
 
     this.addFeedback = function (req, res) {
         console.log(req.body);
 
-        // Temp
-        //req.body.submitterEmail = "someone@gmail.com";
-
         let validationId = safeOid(req.body.validationId);
+        const windowsBuildType = req.body.windowsBuildType;
+        const windowsBuildVersion = req.body.windowsBuildVersion;
 
         let valQuery = {
             _id: validationId
@@ -176,6 +250,10 @@ function feedbackHandler(dbParent) {
             validationId: validationId,
             timestamp: new Date(),
             public: req.body.public,
+            windowsBuildType: windowsBuildType,
+            windowsBuildVersion: windowsBuildVersion,
+            upvotes: [],
+            comments: [],
         };
 
         validations.findOne(valQuery, { projection: { tag: 1, areaPath: 1 } }, function (err, valDoc) {
@@ -194,7 +272,8 @@ function feedbackHandler(dbParent) {
 
             let userEmail = cleanEmail(req.body.submitterEmail);
 
-            let description = '"' + req.body.text + '"<br /><strong>Submitter</strong>: ' + userEmail + " (" + req.body.submitterEmail + ")";
+            //let description = '"' + req.body.text + '"<br /><strong>Submitter</strong>: ' + userEmail + " (" + req.body.submitterEmail + ")";
+            let description = getWindowsReproSteps(req.body);
 
             var reqBody = [
                 {
@@ -250,6 +329,14 @@ function feedbackHandler(dbParent) {
                         });
                     }
 
+                    if (windowsBuildVersion) {
+                        reqBody.push({
+                            "op": "add",
+                            "path": "/fields/Microsoft.VSTS.Build.FoundIn",
+                            "value": windowsBuildVersion
+                        });
+                    }
+
                     reqBody.push({
                         "op": "add",
                         "path": "/fields/Microsoft.VSTS.Common.Release",
@@ -279,9 +366,30 @@ function feedbackHandler(dbParent) {
                     feedbackObj._id = vstsResponse.id;
                     feedbackObj.publicId = ObjectID();
 
+                    console.log(vstsResponse);
+                    console.log(vstsResponse.id);
+                    console.log(feedbackObj);
+
                     feedback.insertOne(feedbackObj, function (err, feedbackDoc) {
                         if (err) { console.log(err); }
-                        console.log(feedbackDoc);
+
+                        // Handle attachments
+                        if (req.body.attachments) {
+                            if (req.body.attachments.length > 0) {
+                                console.log("Handling attachments");
+                                console.log(feedbackObj);
+                                console.log(feedbackObj.validationId);
+                                getAuthForCase(feedbackObj.validationId, function (err, project) {
+                                    console.log(project);
+                                    uploadAttachments(req.body.attachments, feedbackObj._id, project, function (attachmentBodies) {
+                                        //console.log(attachmentBodies);
+                                        return res.status(200).send();
+                                    });
+                                });
+                            } else {
+                                return res.status(200).send();
+                            }
+                        }
                         return res.status(200).send();
                     });
                 });
@@ -295,26 +403,67 @@ function feedbackHandler(dbParent) {
         console.log(req.body);
         console.log(req.body.public)
 
-        let op = {};
+        let id = safeOid(req.params.id);
+
+        let op = { $set: {} };
         if ('text' in req.body) {
-            op = { $set: { text: req.body.text } };
-        } else if ('public' in req.body) {
-            op = { $set: { public: req.body.public } };
+            op["$set"].text = req.body.text;
+        }
+        if ('title' in req.body) {
+            op["$set"].title = req.body.title;
+        }
+        if ('public' in req.body) {
+            op["$set"].public = req.body.public;
         }
 
         console.log(op);
 
-        let query = { _id: safeOid(req.params.id) };
+        let query = { _id: id };
 
         feedback.findOneAndUpdate(query, op, { returnOriginal: false }, function (err, feedbackDoc) {
             if (err) { throw err; }
+
             feedbackDoc = feedbackDoc.value;
-            // Write changes to ADO
-            let safeTitle = "Feedback - " + req.body.text;
+
+            updateWorkitem(id, function (err, status) {
+                console.log(status);
+                console.log("Updated");
+
+                // Handle attachments
+                if (req.body.attachments) {
+                    if (req.body.attachments.length > 0) {
+                        console.log("Handling attachments");
+                        console.log(feedbackDoc);
+                        console.log(feedbackDoc.validationId);
+                        getAuthForCase(feedbackDoc.validationId, function (err, project) {
+                            console.log(project);
+                            uploadAttachments(req.body.attachments, id, project, function (attachmentBodies) {
+                                console.log(attachmentBodies);
+                                return res.status(200).send();
+                            });
+                        });
+                    } else {
+                        return res.status(200).send();
+                    }
+                } else {
+                    return res.status(200).send();
+                }
+
+                return res.status(200).send();
+            });
+        });
+    }
+
+    function updateWorkitem(id, callback) {
+        // Single function for syncing the changes in the DB obj to the ADO workitem.
+        id = safeOid(id);
+        feedback.findOne({ _id: id }, function (err, feedbackDoc) {
+            let safeTitle = feedbackDoc.title;
             if (safeTitle.length > 120) {
                 safeTitle = safeTitle.substring(0, 117) + "...";
             }
-            let description = '"' + req.body.text + '"<br /><strong>Submitter</strong>: ' + feedbackDoc.submitterEmail;
+
+            let reproSteps = getWindowsReproSteps(feedbackDoc);
 
             var reqBody = [
                 {
@@ -325,16 +474,16 @@ function feedbackHandler(dbParent) {
                 {
                     "op": "add",
                     "path": "/fields/Microsoft.VSTS.TCM.ReproSteps",
-                    "value": description,
+                    "value": reproSteps
                 }
             ];
-            console.log(feedbackDoc.validationId);
+
             getAuthForCase(feedbackDoc.validationId, function (err, project) {
                 if (err) { throw err; }
                 let endpoint = ADO_WORKITEM_EDIT_ENDPOINT
                     .replace("{org}", project.org)
                     .replace("{project}", project.project)
-                    .replace("{id}", req.params.id);
+                    .replace("{id}", id);
                 const options = {
                     url: endpoint,
                     headers: {
@@ -349,15 +498,57 @@ function feedbackHandler(dbParent) {
                 request.patch(options, function (vstsErr, resp, body) {
                     if (vstsErr) { console.log(vstsErr); }
                     console.log(resp.statusCode);
-
-                    res.status(200).send();
-
+                    callback(vstsErr, resp.statusCode);
                 });
-
-                return res.status(200).send();
             });
         });
     }
+
+    this.upvoteFeedback = function (req, res) {
+        console.log(req.body);
+
+        let id = safeOid(req.params.id);
+
+        feedback.findOne({ _id: id }, function (err, feedbackDoc) {
+            if (feedbackDoc) {
+                feedback.findOneAndUpdate({ _id: id }, { $addToSet: { upvotes: req.body.email } }, { returnOriginal: false }, function (err, updatedDoc) {
+                    console.log("About to call updateWorkitem");
+                    updateWorkitem(id, function (err, updateDoc) {
+                        return res.status(200).send();
+                    });
+                });
+            } else {
+                return res.status(404).send();
+            }
+        });
+    }
+
+    this.commentOnFeedback = function (req, res) {
+        console.log(req.body);
+
+        let id = safeOid(req.params.id);
+        console.log(id);
+
+        let commentObj = {
+            email: req.body.email,
+            comment: req.body.comment
+        }
+
+        feedback.findOne({ _id: id }, function (err, feedbackDoc) {
+            if (feedbackDoc) {
+                feedback.findOneAndUpdate({ _id: id }, { $addToSet: { comments: commentObj } }, { returnOriginal: false }, function (err, updatedDoc) {
+                    updateWorkitem(id, function (err, statusCode) {
+                        console.log(statusCode);
+                        console.log("Updated workitem");
+                        return res.status(200).send();
+                    });
+                });
+            } else {
+                return res.status(404).send();
+            }
+        });
+    }
+
 };
 
 module.exports = feedbackHandler;

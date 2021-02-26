@@ -82,7 +82,6 @@ p.not-centered {
 /****** Logo Div Styling ******/
 
 img {
-    margin: 20px auto 0 auto;
     display: block;
 }
 
@@ -254,6 +253,11 @@ img {
 }
 
 .edit-existing-feedback {
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.edit-freq:hover {
     cursor: pointer;
     text-decoration: none;
 }

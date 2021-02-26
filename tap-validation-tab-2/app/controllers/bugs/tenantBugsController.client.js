@@ -341,9 +341,7 @@
                     select.append('<option value="No">No</option');
                 } else {
                     column.data().unique().sort().each(function (d, j) {
-                        console.log(d, j);
                         if (d != null) {
-                            console.log(colIndex);
                             select.append('<option value="' + d + '">' + d + '</option>')
                         }
                     });
@@ -354,7 +352,7 @@
             $('.bug-modal-launch').click(function (e) {
                 let id = this.id;
                 id = id.replace("initial-", "");
-                console.log(id);
+                //console.log(id);
                 let witRow = table.row('#' + id);
                 let rowData = witRow.data();
 
@@ -388,7 +386,6 @@
                         data = JSON.parse(data);
                         let comments = data.comments;
                         comments.forEach(function (comment) {
-                            console.log(comment);
                             showComment(comment);
                         })
                         //$('#bug-comments-count').html("(" + comments.length + ")");
@@ -598,20 +595,6 @@
                     // Create an FormData object
                     var data = new FormData(form);
 
-                    for (var [key, value] of data.entries()) {
-                        console.log(key, value);
-                    }
-
-                    //let fileInputElement = document.getElementById("comment-upload-file");
-
-                    //data.append("file", fileInputElement.files[0]);
-
-                    // If you want to add an extra field for the FormData
-                    //data.append("comment", $('#commentField').text());
-
-                    console.log(form);
-                    console.log(data);
-
                     // disabled the submit button
                     $("#commentSubmit").attr("disabled", true);
                     $("#commentSubmit").html(spinner + $('#commentSubmit').text());
@@ -680,8 +663,6 @@
                     bugIds.push(this.value);
                 });
 
-                console.log(bugIds);
-
                 if (bugIds.length > 0) {
                     $('#getBugbashList').attr("disabled", false);
                     $('#bulkClose').attr("disabled", false);
@@ -703,7 +684,6 @@
                 $('input[name="bugSelect"]:checked').each(function () {
                     bugIds.push(this.value);
                 });
-                console.log(bugIds);
 
                 bugIds.forEach(function (bugId) {
                     let row = table.row('#' + bugId).data();
@@ -720,11 +700,9 @@
                 $('input[name="bugSelect"]:checked').each(function () {
                     bugIds.push(this.value);
                 });
-                console.log(bugIds);
 
                 bugIds.forEach(function (bugId) {
                     let row = table.row('#' + bugId).data();
-                    console.log(row);
                     $('#bulk-close-table-tbody').append("<tr><td>" + row.id + "</td><td>" + row.title + "</td></tr>");
                 });
             })

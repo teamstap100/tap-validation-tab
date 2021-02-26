@@ -1,0 +1,13 @@
+html
+  head
+    title Login Complete - TAP Validation
+  body
+    p
+      | Login complete, this window will close now.
+    p This is silent-auth-end.
+    script(src='https://code.jquery.com/jquery-3.1.1.js' integrity='sha384-VC7EHu0lDzZyFfmjTPJq+DFyIn8TUGAJbEtpXquazFVr00Q/OOx//RjiZ9yU9+9m' crossorigin='anonymous')
+    script(src='https://statics.teams.cdn.office.net/sdk/v1.6.0/js/MicrosoftTeams.min.js' crossorigin='anonymous')
+    // Check before upgrading your ADAL version, as this sample depends on an internal function to authenticate silently
+    script(src='https://secure.aadcdn.microsoftonline-p.com/lib/1.0.15/js/adal.min.js' integrity='sha384-lIk8T3uMxKqXQVVfFbiw0K/Nq+kt1P3NtGt/pNexiDby2rKU6xnDY8p16gIwKqgI' crossorigin='anonymous')
+    script(type='text/javascript', src='/controllers/auth/authConfig.js')
+    script(type="text/javascript", src="/controllers/auth/auth-end.client.js")

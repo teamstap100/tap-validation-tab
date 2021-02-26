@@ -1,16 +1,12 @@
 $(document).ready(function () {
-    const FEEDBACK_API_URL = "../api/validations/feedback";
-    const UPVOTE_API_URL = "../api/feedback/{id}/upvote";
-    const COMMENT_API_URL = "../api/feedback/{id}/comment";
+    const EDIT_FEEDBACK_API_URL = "../api/feedback/scenario/{id}";
+    const UPVOTE_API_URL = "../api/feedback/scenario/{id}/upvote";
+    const COMMENT_API_URL = "../api/feedback/scenario/{id}/comment";
 
     console.log("Hello");
     microsoftTeams.initialize();
 
     console.log("ScenarioFeedbackController ready");
-
-    var feedbackField = $('#feedbackField');
-    var submitFeedback = $('#submitFeedback');
-    var feedbackPublicField = $('#feedbackPublicField');
 
     function submitEditReport(event, voteParams) {
         //stop submit the form, we will post it manually.
@@ -22,11 +18,8 @@ $(document).ready(function () {
         // Create an FormData object
         var data = new FormData(form);
 
-        console.log(data);
-
         // disable the submit button
-        $("#edit-report-submit").attr("disabled", true);
-        $("#edit-report-submit").html(spinner + $('#edit-report-submit').text());
+        disableAndSpin('#edit-report-submit');
 
         $.ajax({
             type: "POST",
@@ -47,17 +40,13 @@ $(document).ready(function () {
                 voteParams.comment = $('#edit-report-description-field').val().replace(/\r?\n/g, '<br>');
                 voteParams.public = $('#edit-feedback-public').is(':checked');
 
-                let submitUrl = "../api/feedback/scenario/" + voteParams.id;
+                let submitUrl = EDIT_FEEDBACK_API_URL.replace("{id}", voteParams.id);
 
                 ajaxRequest('PUT', submitUrl, voteParams, function () {
-                    $("#edit-report-submit").attr("disabled", false);
-
-                    $("#edit-report-submit").text($('#edit-report-submit').html().replace(spinner, ""));
+                    enableAndRemoveSpin('#edit-report-submit');
 
                     $('#edit-report-modal').modal('hide');
                 });
-
-                $("#edit-report-submit").attr("disabled", false);
             },
             error: function (e) {
                 // TODO: Do more helpful stuff, probably still submit the text feedback
@@ -69,12 +58,17 @@ $(document).ready(function () {
     }
 
     function setupEditModal(feedback) {
+        $('#edit-report-header').text("Modify your feedback");
+
         console.log(feedback);
+
         $('#edit-report-id-field').val(feedback.id);
         $('#edit-report-title-field').val(feedback.title);
         $('#edit-report-description-field').val(feedback.comment);
 
         $('#edit-feedback-public').attr('checked', feedback.public)
+        $('#edit-report-attachment-group').show();
+
 
         $('#edit-report-submit').off();
         $('#edit-report-submit').click(function () {
@@ -100,36 +94,40 @@ $(document).ready(function () {
 
         $('#view-feedback-modal').on('shown.bs.modal', function (e) {
             $('#caseId').text(e.relatedTarget.id.replace("view-feedback-", ""));
-            console.log($(e.relatedTarget).data("caseTitle"));
-            $('#caseTitle').text($(e.relatedTarget).data("caseTitle"));
+            $('#caseTitle').text($(e.relatedTarget).data("title"));
 
             function bindEditButtons() {
-                console.log("Called bindEditButtons");
                 $('.edit-existing-feedback').click(function () {
-                    console.log("Clicked edit exisitng feedback button");
-                    console.log(this);
                     var feedback = JSON.parse(b64DecodeUnicode($(this).data('feedback')));
 
-                    //$('#view-feedback-modal').modal('hide');
                     $('#edit-report-modal').modal('show');
                     setupEditModal(feedback);
+                });
+
+                $('.scenario-feedback-public-checkbox').change(function () {
+                    let feedbackId = parseInt(this.id.replace("scenario-feedback-public-", ""));
+                    let updateUrl = EDIT_FEEDBACK_API_URL.replace("{id}", feedbackId);
+                    let params = {
+                        public: this.checked,
+                        submitterEmail: context['userPrincipalName'],
+                    };
+
+                    ajaxRequest('PUT', updateUrl, params, function () {
+                        console.log("Done");
+                    });
                 });
             }
 
             function bindVoteButtons() {
-                console.log("Called bindVoteButtons");
                 $('.upvote-feedback').off();
                 $('.upvote-feedback').click(function () {
                     console.log("Clicked an upvote button");
                     let id = this.id.replace("upvote-feedback-", "");
-                    console.log(id);
 
                     let voteUrl = UPVOTE_API_URL.replace("{id}", id);
                     let voteParams = {
                         email: context['userPrincipalName']
                     };
-
-                    console.log(voteParams);
 
                     ajaxRequest('POST', voteUrl, voteParams, function () {
                         console.log("Done");
@@ -139,7 +137,6 @@ $(document).ready(function () {
 
                 $('.comment-feedback').off();
                 $('.comment-feedback').click(function () {
-                    console.log("Clicked a comment button");
                     let id = this.id.replace("comment-feedback-", "");
                     console.log(id);
 
@@ -148,7 +145,8 @@ $(document).ready(function () {
 
                     $('#feedback-comment-submit').off();
                     $('#feedback-comment-submit').click(function () {
-                        console.log("Clicked submit comment button");
+                        disableAndSpin('#feedback-comment-submit');
+
                         $('#feedback-comment-id').text(id);
 
                         let commentUrl = COMMENT_API_URL.replace("{id}", id);
@@ -156,8 +154,11 @@ $(document).ready(function () {
                             email: context['userPrincipalName'],
                             comment: $('#feedback-comment-field').val()
                         }
+                        console.log(commentUrl);
                         ajaxRequest('POST', commentUrl, commentParams, function () {
                             console.log("Done");
+                            enableAndRemoveSpin('#feedback-comment-submit');
+                            $('#feedback-comment-field').val("")
                             $('#feedback-comment-modal').modal('hide');
 
                         });
@@ -179,7 +180,6 @@ $(document).ready(function () {
                     contentType: "application/json",
                     data: function (d) {
                         let caseId = $('#caseId').text();
-                        console.log("Getting data");
                         return JSON.stringify({
                             caseId: caseId,
                             userEmail: context["userPrincipalName"],
@@ -198,7 +198,7 @@ $(document).ready(function () {
                 columnDefs: [
                     {
                         render: function (data, type, row) {
-                            let id = row._id;
+                            let id = row._id || row.id;
 
                             // data-toggle="modal", data-target="#view-feedback-modal
                             let cell;
@@ -214,11 +214,11 @@ $(document).ready(function () {
                     },
                     {
                         render: function (data, type, row) {
-                            let id = row._id;
+                            let id = row._id || row.id;
                             if (data == true) {
-                                return "<input type='checkbox' checked class='feedback-public-checkbox' id='feedback-public-" + id + "'></input>";
+                                return "<input type='checkbox' checked class='scenario-feedback-public-checkbox' id='scenario-feedback-public-" + id + "'></input>";
                             } else {
-                                return "<input type='checkbox' class='feedback-public-checkbox' id='feedback-public-" + id + "'></input>";
+                                return "<input type='checkbox' class='scenario-feedback-public-checkbox' id='scenario-feedback-public-" + id + "'></input>";
                             }
                         },
                         targets: 5
@@ -239,7 +239,6 @@ $(document).ready(function () {
                     contentType: "application/json",
                     data: function (d) {
                         let caseId = $('#caseId').text();
-                        console.log("Getting data");
                         return JSON.stringify({
                             caseId: caseId,
                             userEmail: context["userPrincipalName"],
@@ -252,24 +251,24 @@ $(document).ready(function () {
                     {},
                     {},
                     { "data": "title" },
+                    { "data": "state" },
+                    { "data": "reason" },
                 ],
                 columnDefs: [
                     {
                         render: function (data, type, row) {
                             let id = row.id;
-                            console.log(row);
-                            console.log(id);
 
                             let upvoteCount = row.upvotes ? row.upvotes.length : 0;
 
-                            console.log(row.upvotes);
-
                             let statusClass = "";
+                            let disabled = "";
                             if (row.userUpvoted) {
                                 statusClass = "active";
+                                disabled = "disabled";
                             }
 
-                            let cell = "<button class='btn btn-minor upvote-feedback " + statusClass + "' id='upvote-feedback-" + id + "'><i class='fa fa-thumbs-up' title='Upvote'></i> " + upvoteCount + "</button>"
+                            let cell = "<button class='btn btn-minor upvote-feedback " + statusClass + "'" + disabled + " id='upvote-feedback-" + id + "'><i class='fa fa-thumbs-up' title='Upvote'></i> " + upvoteCount + "</button>"
                             return cell;
                         },
                         targets: 1
@@ -303,10 +302,19 @@ $(document).ready(function () {
         $('#edit-report-modal').on('hidden.bs.modal', function (e) {
             $('#edit-report-title-field').val("");
             $('#edit-report-description-field').val("");
+            $('#edit-report-file').val("");
         });
 
         $("#feedback-comment-modal").on('hidden.bs.modal', function (e) {
             $('#feedback-comment-field').val("");
+        });
+
+        $(window).keydown(function (event) {
+            // Prevent glitchy "submit form" behavior on pressing enter
+            if (event.keyCode == 13) {
+                event.preventDefault();
+                return false;
+            }
         });
     });
 });

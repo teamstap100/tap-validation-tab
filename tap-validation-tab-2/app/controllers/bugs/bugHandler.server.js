@@ -62,6 +62,20 @@ function bugHandler (dbParent) {
         return comment;
     }
 
+    function ringsToRingBlocker(rings) {
+        // Takes a string like "R1.5,R3,R4" and returns the string to use for the Ring Blocker field.
+        // The next ring up is the one that is blocked.
+        if (rings.includes("R4")) {
+            return "DoD";
+        } else if (rings.includes("R3")) {
+            return "3.6 - Public Preview";
+        } else if (rings.includes("R1.5")) {
+            return "2 - Microsoft";
+        } else {
+            return null;
+        }
+    }
+
 
       this.getBug = function(req, res) {
         console.log("Calling getBug");
@@ -921,6 +935,9 @@ function bugHandler (dbParent) {
 
                 let severity = "3 - Medium";
                 let priority = 2;
+                let ringBlocker;
+
+
                 if (req.body.extent == "Several") {
                     if (req.body.everWorked == "Yes") {
                         severity = "1 - Critical";
@@ -934,6 +951,7 @@ function bugHandler (dbParent) {
                     severity = "1 - Critical";
                     priority = 1;
                     tagList += " TAPAdminS1; TAPAdminP1;";
+                    ringBlocker = ringsToRingBlocker(rings);
                 }
 
                 patch.push({
@@ -949,6 +967,10 @@ function bugHandler (dbParent) {
                         path: "/fields/Microsoft.VSTS.Common.Priority",
                         value: priority
                     });
+                }
+
+                if (ringBlocker) {
+                    // TODO: Set the ringBlocker field - "MicrosoftTeamsCMMI.RingBlocker" - when more confident of the right values
                 }
 
                 function sendPatch(patch) {
@@ -1024,7 +1046,7 @@ function bugHandler (dbParent) {
 
         let comment = 'IT Admin submitted a comment through the Tenant Bugs tab:<br />"' + req.body.comment + '" - ' + req.body.submitter;
         if (req.body.attachmentFilename) {
-            comment += "<br />[Attachment]";
+            comment += `<br />[Attachment - ${req.body.attachmentFilename}]`;
         }
 
         let modify_wit_url = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/workitems/" + req.body.id + "?api-version=5.1";
@@ -1075,7 +1097,7 @@ function bugHandler (dbParent) {
                 if (req.body.attachmentFilename) {
                     // The attachment is given the filename in req.body.attachmentFilename. It is at uploads/req.body.attachmentFilename.
 
-                    let filePath = path.join(__dirname, '../../uploads', req.body.attachmentFilename);
+                    let filePath = path.join(__dirname, '../../../uploads', req.body.attachmentFilename);
                     console.log(filePath);
 
                     fs.readFile(filePath, (err, data) => {

@@ -1,0 +1,12 @@
+extends ../layout
+
+block content
+    .container
+        p.text-center Please sign in with your AAD work account to access this page.
+        br
+        .btn-container
+            button#login
+                img(src="/public/img/ms-sign-in.png")
+
+block morescripts
+    script(type="text/javascript", src="/controllers/auth/easyauth.js")

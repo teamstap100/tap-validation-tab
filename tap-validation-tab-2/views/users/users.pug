@@ -1,0 +1,47 @@
+extends ../layout
+
+block morescripts
+    script(type='text/javascript', src='/controllers/auth/authController.client.js' )
+    script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js')
+    script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap.min.js')
+    link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap.min.css')
+    script(type="text/javascript", src="/helpers/helpers.js")
+
+    script(type="text/javascript", src="/controllers/users/usersController.client.js")
+
+block content
+    .container-fluid
+        .row
+            .col-xs-1
+            .col-xs-10
+                p.heading-text View Users Provisioned in TAP
+                p These users have been provisioned in TAP in your tenant (and associated test tenants).
+                p To request changes, use the Provisioning Request Form tab in this channel.
+                .row
+                    .col-xs-6
+                        label(for="company") Company Name
+                        input.company.form-control(type='text', placeholder='Company Name' name='company' autocomplete='off' style="width: 400px" disabled)
+                    .col-xs-6
+                        label(for="tenantId") Tenant ID
+                        input.tenantId.form-control#tenantIdField(type='text', placeholder="TenantID" name="tenantId" autocomplete="off" style="width: 400px" disabled  pattern='([a-f]|[0-9]){8}-([a-f]|[0-9]){4}-([a-f]|[0-9]){4}-([a-f]|[0-9]){4}-([a-f]|[0-9]){12}')
+                br
+                p#noUsersFound(style="display: none") No TAP users found for this tenant.
+                #r1_5UsersContainer(style="display: none")
+                    h4 R1.5 Users
+                    table.table.table-striped.table-bordered#r1_5UsersTable(style="font-size: 11px")
+                        thead
+                            td(scope="col") Name
+                            td(scope="col") Email
+                            td(scope="col") OID
+                            td(scope="col") Remove
+                        tbody#r1_5Users
+                #r3UsersContainer(style="display: none")
+                    h4 R3 Users
+                    table.table.table-striped.table-bordered#r3UsersTable(style="font-size: 11px")
+                        thead
+                            td(scope="col") Name
+                            td(scope="col") Email
+                            td(scope="col") OID
+                            td(scope="col") Remove
+                        tbody#r3Users
+            .col-xs-1

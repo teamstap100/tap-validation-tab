@@ -125,7 +125,6 @@ function validationHandler(dbParent) {
 
                 let safeCases = [];
                 caseDocs.forEach(function (kase) {
-                    console.log(kase._id);
                     if (kase.description) {
                         kase.description = kase.description.replace(/background-color: rgb\(255, 255, 255\);/g, "");
                     }
@@ -136,20 +135,15 @@ function validationHandler(dbParent) {
                 feedbackQuery.public = true;
 
                 feedback.find(feedbackQuery).toArray(function (err, feedbackDocs) {
-                    //console.log(feedbackDocs);
 
                     // We can still use feedbackQuery to get feature requests, as we also need the public ones there
                     featureRequests.find(feedbackQuery).toArray(function (err, featureRequestDocs) {
-                        //console.log("Feature requests");
-                        //console.log(featureRequestDocs);
 
                         let versions = [];
 
                         if (validationDoc.tap == "Windows") {
                             windowsBuilds.findOne({}, function (err, buildDoc) {
-                                //console.log(buildDoc);
                                 versions = buildDoc.builds;
-                                //console.log(versions);
                                 // Sort in descending numerical order
 
                                 versions = versions.sort(function (a, b) { return b - a });

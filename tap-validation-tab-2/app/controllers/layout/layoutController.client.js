@@ -1,4 +1,8 @@
 $(document).ready(function () {
     microsoftTeams.initialize();
-    microsoftTeams.appInitialization.notifySuccess();
+    try {
+        microsoftTeams.appInitialization.notifySuccess();
+    } catch (e) {
+        console.log("Loading indicator not set up in this app version");
+    }
 });

@@ -29,13 +29,12 @@ var config = {};
     const WALKIE_TALKIE_VALIDATION = "767324";
     const WALKIE_TALKIE_VALIDATION_2 = "938428";
     const ARM_VALIDATION = "1101236";
+    const SHARED_DEVICES_VALIDATION = "1412420";
 
     function showScenariosIfWindowsInfoFilled() {
-        console.log("Showing scenarios if windows info filled");
         let windowsBuildVersion = $('#windowsBuildVersion').val();
         let windowsBuildType = $('#windowsBuildType').val();
         if (windowsBuildVersion && windowsBuildType) {
-            console.log("Value, so enabling buttons");
             $('.btn-upvote').attr('disabled', false);
             $('.btn-downvote').attr('disabled', false);
             $('.btn-comment').attr('disabled', false);
@@ -44,7 +43,6 @@ var config = {};
             $('.case-collapse').collapse("show");
 
         } else {
-            console.log("No value, so disabling buttons");
             $('.btn-upvote').attr('disabled', true);
             $('.btn-downvote').attr('disabled', true);
             $('.btn-comment').attr('disabled', true);
@@ -59,8 +57,6 @@ var config = {};
             var worksCount = $(this).find('.case-works:visible').length;
             var failsCount = $(this).find('.case-fails:visible').length;
             var votedCount = worksCount + failsCount;
-            //console.log("Group case count");
-            //console.log(caseCount, worksCount, failsCount, votedCount);
             $(this).find('.group-progress').text("Progress: (" + votedCount + " / " + caseCount + ")");
 
 
@@ -88,8 +84,6 @@ var config = {};
         totalCaseCount += caseCount;
 
         let percentComplete = (totalVotedCount / totalCaseCount) * 100;
-
-        //console.log("Percent complete: " + percentComplete);
 
         $('.validation-progress').text("Scenarios validated: (" + totalVotedCount + " / " + totalCaseCount + ")");
         $('#scenario-progress-bar').css("width", percentComplete + "%");
@@ -122,13 +116,11 @@ var config = {};
 
     // This gets run after the report table refreshes
     function bindEditButtons() {
-        console.log("Called bindEditButtons");
         let prop = "comment";
         $('.edit-vote-' + prop).click(function () {
             let voteId = parseInt(this.id.replace("edit-vote-" + prop + "-", ""));
             let textField = $('#vote-' + prop + '-' + voteId);
             let original = textField.html().replace(/\r?\n/g, '<br>');
-            console.log(voteId);
             textField.attr("contenteditable", "plaintext-only");
 
             textField.on('keydown', function (e) {
@@ -145,8 +137,6 @@ var config = {};
             // When navigating away from it, save the changes to the text
             textField.off();
             textField.blur(function () {
-                console.log("Blurred it");
-
                 let textInput = textField.html().replace(/\r?\n/g, '<br>');
                 textField.html(textInput);
 
@@ -233,7 +223,6 @@ var config = {};
         let configured_clients = clients;
 
         config.validationId = $('#validation-id').text();
-        console.log(config.validationId);
 
         config.tap = $('#tap').text();
         config.tag = $('#validation-tag').text();
@@ -245,21 +234,16 @@ var config = {};
                 configured_clients = old_clients;
             }
             let skipped_clients = clients.filter(e => !configured_clients.includes(e));
-            console.log(skipped_clients);
 
             // If config.clientsVector is all zeroes for a section, need to reveal the clients
             $('.group-panel').each(function (index) {
                 let thisGroupVector = config.clientsVector.substring(index * configured_clients.length, (index * configured_clients.length) + configured_clients.length);
-                console.log(thisGroupVector);
 
 
                 if (thisGroupVector != "0".repeat(configured_clients.length)) {
-                    console.log("At least one client specified");
                     $(this).find('.no-client-checkboxes').hide();
                     $(this).find('.client-checkboxes').show();
                 } else {
-                    //console.log("Hiding all client stuff");
-                    console.log($(this).find('.client-checkboxes'));
                     $(this).find('.no-client-checkboxes').show();
                     $(this).find('.client-checkboxes').hide();
                 }
@@ -276,12 +260,10 @@ var config = {};
                 let this_group = this;
 
                 skipped_clients.forEach(function (client) {
-                    //console.log("Hiding this client: " + client);
                     $(this_group).find('.' + client + '-group').hide();
                 })
             })
         } else {
-            //console.log("No clients");
             $('.no-client-checkboxes').show();
             $('.client-checkboxes').hide();
         }
@@ -295,12 +277,9 @@ var config = {};
         var commentModalButton = document.querySelector('#submitComment');
         commentModalButton.addEventListener('click', function () {
             // TODO: Get the context, to get the Team and Channel ID. Launch a modal. Clicking submit on the modal creates or contributes to a thread of that item
-            //console.log("Clicked the comment submit button");
             var cId = $('#comment-id').text();
             var caseTitle = $('#comment-caseTitle').text();
             var addCommentUrl = "../api/comments";
-            console.log(addCommentUrl);
-            console.log(cId);
 
             microsoftTeams.getContext(function (context) {
                 var params = {
@@ -330,9 +309,6 @@ var config = {};
                     } 
                 }
 
-
-                console.log(params);
-
                 ajaxRequest('POST', addCommentUrl, params, function () {
                     console.log("Submitted");
                     $('#commentField').val("");
@@ -346,11 +322,8 @@ var config = {};
         config.collectDeviceFeedback = false;
         config.collectHeadsetFeedback = false;
 
-        if (config.validationId == ARM_VALIDATION) {
-            console.log("It's the ARM validation");
+        if ((config.validationId == ARM_VALIDATION) || (config.validationId == SHARED_DEVICES_VALIDATION)) {
             config.collectDeviceFeedback = true;
-            console.log("Collect Device Feedback should be true");
-
 
             $('.panel-collapse').removeClass("in");
 
@@ -369,7 +342,6 @@ var config = {};
                 device = this.value;
 
                 if (device) {
-                    console.log("Value, so enabling buttons");
                     $('.panel-collapse').collapse("show");
 
                     $('.btn-upvote').attr('disabled', false);
@@ -378,7 +350,6 @@ var config = {};
 
                     refreshGroupVoteCounts()
                 } else {
-                    console.log("No value, so disabling buttons");
                     $('.panel-collapse').collapse("hide");
 
                     $('.btn-upvote').attr('disabled', true);
@@ -389,7 +360,6 @@ var config = {};
         } else if ((config.validationId == HID_ISLANDS_MODE_VALIDATION) || (config.validationId == WALKIE_TALKIE_VALIDATION_2)) {
             config.collectDeviceFeedback = true;
             config.collectHeadsetFeedback = true;
-            console.log("Collecting device and headset feedback");
 
             $('.panel-collapse').removeClass("in");
 
@@ -408,10 +378,8 @@ var config = {};
             deviceField.change(function (event) {
                 device = this.value;
 
-                console.log(device, headset);
 
                 if (device && headset) {
-                    console.log("Value, so enabling buttons");
                     $('.panel-collapse').collapse("show");
 
                     $('.btn-upvote').attr('disabled', false);
@@ -420,7 +388,6 @@ var config = {};
 
                     refreshGroupVoteCounts()
                 } else {
-                    console.log("No value, so disabling buttons");
                     $('.panel-collapse').collapse("hide");
 
                     $('.btn-upvote').attr('disabled', true);
@@ -432,10 +399,8 @@ var config = {};
             headsetField.change(function (event) {
                 headset = this.value;
 
-                console.log(device, headset);
 
                 if (device && headset) {
-                    console.log("Value, so enabling buttons");
                     $('.panel-collapse').collapse("show");
 
                     $('.btn-upvote').attr('disabled', false);
@@ -444,7 +409,6 @@ var config = {};
 
                     refreshGroupVoteCounts()
                 } else {
-                    console.log("No value, so disabling buttons");
                     $('.panel-collapse').collapse("hide");
 
                     $('.btn-upvote').attr('disabled', true);
@@ -535,10 +499,8 @@ var config = {};
             var tabUrl = "https://teams.microsoft.com/l/entity/{APP_ID}/{ENTITY_HASH}?context=%7B%22subEntityId%22%3Anull%2C%22canvasUrl%22%3A%22{TAB_URL_BASE}{VALIDATION_ID}%26show%3D{SHOW_VECTOR}%26clients%3D{CLIENTS_VECTOR}%22%2C%22channelId%22%3A%22{CHANNEL_ID}%22%7D&groupId={GROUP_ID}&tenantId={TENANT_ID}";
 
             var entityId = context.entityId;
-            //console.log(entityId);
 
             var channelId = context.channelId;
-            //console.log(channelId);
             // Make it url-safe
             channelId = channelId.replace(":", "%3A");
             channelId = channelId.replace("@", "%40");
@@ -558,10 +520,7 @@ var config = {};
                 showScenariosIfWindowsInfoFilled();
             }
 
-            //console.log(context);
-
             var entityHash = djb2_hash(APP_ID + ":" + entityId.replace(/\+/g, " "));
-            //console.log(entityHash);
 
             tabUrl = tabUrl.replace('{APP_ID}', APP_ID);
             tabUrl = tabUrl.replace('{ENTITY_HASH}', deeplinkDjb2Prefix + entityHash);
@@ -582,7 +541,6 @@ var config = {};
             tabUrl = tabUrl.replace('{GROUP_ID}', groupId);
             tabUrl = tabUrl.replace('{TENANT_ID}', tid);
             //tabUrl = encodeURI(tabUrl);
-            console.log(tabUrl);
 
             config.tabUrl = tabUrl;
 
@@ -730,11 +688,8 @@ var config = {};
 
                 // For client radio buttons
                 $(kase).find('input:radio').change(function () {
-                    console.log("Clicked a radio");
                     let cId = $(this)[0].id.split("-")[0];
                     let name = $(this).attr('name');
-
-                    console.log(cId);
                     
                     let upDown = $(this)[0].id.split("-")[2];
                     if (upDown == "works") {
@@ -765,8 +720,6 @@ var config = {};
 
                 // Fill in the correct case properties when launching the comment modal
                 $(kase).find('button.btn-comment').click(function () {
-                    console.log("Clicked it");
-                    console.log("cId is: " + cId);
                     $('#comment-id').text(cId);
                     $('#comment-caseTitle').text(caseTitle);
                 });
@@ -825,11 +778,9 @@ var config = {};
                                 caseHeader.html(caseHeader.html().replace("(Fails)", ""));
 
                                 json.votes.forEach(function (vote) {
-                                    //console.log(vote);
 
                                     if (vote.currentUser) {
                                         myVotes.push(["<strong>" + vote.text + "</strong>"],);
-                                        //console.log(vote, "is the current user");
                                         if (config.tap == "Teams") {
                                             if (!config.collectDeviceFeedback) {
                                                 if (upDown == "up") {
@@ -907,8 +858,6 @@ var config = {};
 
                                 votesToRender = myVotes.concat(otherVotes);
 
-                                //console.log(votesToRender);
-
                                 return votesToRender;
                             },
                             error: function (xhr, status, err) {
@@ -934,8 +883,7 @@ var config = {};
                     data.append("comment", $('#windows-report-description-field').val().replace(/\r?\n/g, '<br>'));
 
                     // disable the submit button
-                    $("#windows-report-submit").attr("disabled", true);
-                    $("#windows-report-submit").html(spinner + $('#windows-report-submit').text());
+                    disableAndSpin('#windows-report-submit');
 
                     if (config.collectDeviceFeedback) {
                         voteParams.device = deviceSelect.value;
@@ -976,15 +924,12 @@ var config = {};
                             }                            
 
                             ajaxRequest('POST', submitUrl, voteParams, function () {
-                                $("#windows-report-submit").attr("disabled", true);
-
-                                $("#windows-report-submit").text($('#windows-report-submit').html().replace(spinner, ""));
+                                enableAndRemoveSpin("#windows-report-submit");
                                 $('#windows-report-modal').modal('hide');
                                 resetWindowsReport();
 
                                 if (voteParams.upDown != "comment") {
                                     tables.each(function () {
-                                        console.log(this);
                                         $(this).dataTable().api().ajax.reload();
                                     });
                                 }
@@ -1047,7 +992,6 @@ var config = {};
                             //let reproSteps = $('#windows-report-repro-steps-field').val();
                             let description = $('#windows-report-description-field').val();
                             if (title) {
-                                console.log("All required fields filled in");
                                 $('#windows-report-submit').attr('disabled', false);
                             } else {
                                 $('#windows-report-submit').attr('disabled', true);
@@ -1064,7 +1008,6 @@ var config = {};
 
 
                     downvoteButton.click(function () {
-                        console.log("Clicked downvoteButton");
                         $('#windows-report-header').text("Report a problem for: " + voteParams.caseTitle);
 
                         $('#windows-report-title-field').attr("placeholder", "Title your problem.");
@@ -1108,8 +1051,6 @@ var config = {};
                     });
 
                     commentButton.click(function () {
-                        console.log(commentButton);
-                        console.log("Clicked comment button");
                         $('#windows-report-header').text("Submit feedback for: " + caseTitle);
                         $('#windows-report-description').html(caseDescription);
 
@@ -1170,14 +1111,10 @@ var config = {};
                                 voteParams.headset = headsetSelect.value;
                             }
 
-                            console.log(voteParams);
-
                             if (cId == "956385") {
                                 // networkScenarios = a list of the names of all checked boxes in network-scenarios
                                 voteParams.networkScenarios = $('input[type="checkbox"][name="network-scenarios"]:checked').map(function () { return this.value; }).get();
-                                console.log(voteParams);
                             } 
-                            console.log(voteParams);
 
                             //voteParams.teamsMode = teamsModeSelect.value;
                         }
@@ -1186,8 +1123,6 @@ var config = {};
                         //    voteParams.windowsBuildType = windowsBuildTypeField.val();
                         //    voteParams.windowsBuildVersion = windowsBuildVersionField.val();
                         //}
-
-                        console.log(voteParams);
 
 
                         ajaxRequest('POST', voteUrl, voteParams, function () {
@@ -1198,34 +1133,29 @@ var config = {};
                                 $(this).dataTable().api().ajax.reload();
                             });
                             upvoteButton.html(upvoteButton.html().replace(spinner, thumbsUp));
+                            downvoteButton.attr('disabled', false);
                         });
                     });
 
                     downvoteButton.click(function () {
-                        console.log("Clicked downvoteButton");
                         voteParams.upDown = "down";
                         downvoteButton.attr('disabled', true);
                         downvoteButton.html(downvoteButton.html().replace(thumbsDown, spinner));
-                        console.log(config);
                         if (config.collectDeviceFeedback) {
                             voteParams.device = deviceSelect.value;
-                            console.log(deviceSelect);
                             //voteParams.teamsMode = teamsModeSelect.value;
                         }
                         if (config.collectHeadsetFeedback) {
                             voteParams.headset = headsetSelect.value;
                         }
 
-                        console.log(voteParams);
-
                         ajaxRequest('POST', voteUrl, voteParams, function () {
                             //ajaxRequest('GET', voteUrl, {}, updateVotes);
-                            console.log("Done");
                             tables.each(function () {
-                                console.log(this);
                                 $(this).dataTable().api().ajax.reload();
                             });
                             downvoteButton.html(downvoteButton.html().replace(spinner, thumbsDown));
+                            upvoteButton.attr('disabled', false);
                             $('#report-modal').modal('show');
                         });
                     });
@@ -1237,7 +1167,7 @@ var config = {};
                 }
             });
         });
-
+        
         if (config.tap == "Windows") {
             // General Feedback and Feature Requests
             $('.otherActions').show();

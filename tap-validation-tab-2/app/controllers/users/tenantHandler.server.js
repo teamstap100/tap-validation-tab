@@ -85,6 +85,7 @@ function tenantHandler(dbParent) {
             _id: 0,
             itAdmins: 1,  // Not sure if used. Gets used in the Admin equivalent (by TIDToTenantName azure function) for sure
             itAdminIds: 1, // Used in Admin equivalent
+            users: 1,
         }
 
         console.log("Calling getTenant on " + req.body.email);
@@ -95,6 +96,12 @@ function tenantHandler(dbParent) {
         //}
 
         var email = req.body.email;
+        if (req.user) {
+            console.log("Using user in header");
+            console.log(req.user);
+            email = req.user.email; // or maybe preferred_username?
+        }
+            
         if (email == null) {
             email = req.body.backup_context.upn;
         }
@@ -120,7 +127,7 @@ function tenantHandler(dbParent) {
                     res.json(tenantDoc);
                 }
             } else {
-                res.json({ name: '?', tid: '?', itAdmins: "", itAdminIds: [] });
+                res.json({ name: '?', tid: '?', itAdmins: "", itAdminIds: [], users: []});
             }
 
         });

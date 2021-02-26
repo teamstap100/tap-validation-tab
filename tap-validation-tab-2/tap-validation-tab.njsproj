@@ -3,13 +3,12 @@
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">14.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
-    <Name>tap-validation-tab-2</Name>
+    <Name>tap-validation-tab</Name>
     <RootNamespace>tap-validation-tab-2</RootNamespace>
     <LastActiveSolutionConfig>Release|Any CPU</LastActiveSolutionConfig>
     <NameOfLastUsedPublishProfile>tap-validation-tab - Web Deploy</NameOfLastUsedPublishProfile>
-    <Environment>MONGO_STRING=mongodb+srv://node-user:QbRAiry8ZuT8RKHB@tap-validation-tab-e1ixx.azure.mongodb.net/clementine?retryWrites=true
-TEST_VAR=Local
-AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZHE=</Environment>
+    <Environment>
+    </Environment>
     <SaveNodeJsSettingsInProjectFile>True</SaveNodeJsSettingsInProjectFile>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -17,7 +16,8 @@ AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZ
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>33a9f019-e319-40df-8822-b50cb26056aa</ProjectGuid>
-    <ProjectHome>.</ProjectHome>
+    <ProjectHome>
+    </ProjectHome>
     <StartupFile>server.js</StartupFile>
     <SearchPath>
     </SearchPath>
@@ -61,8 +61,8 @@ AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZ
     <Compile Include="app\controllers\validation\caseHandler.server.js" />
     <Compile Include="app\controllers\bugs\bugHandler.server.js" />
     <Compile Include="app\controllers\validation\configController.client.js" />
-    <Compile Include="app\controllers\tenantHandler.server.js" />
-    <Compile Include="app\controllers\userHandler.server.js" />
+    <Compile Include="app\controllers\users\tenantHandler.server.js" />
+    <Compile Include="app\controllers\users\userHandler.server.js" />
     <Compile Include="app\controllers\validation\feedbackHandler.server.js" />
     <Compile Include="app\controllers\validation\validationHandler.server.js" />
     <Compile Include="app\controllers\jquery.hotkeys.js" />
@@ -71,10 +71,21 @@ AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZ
     <Compile Include="uploads\dummy.js">
       <SubType>Code</SubType>
     </Compile>
+    <Content Include="app\controllers\auth\auth-end.client.js" />
+    <Content Include="app\controllers\auth\auth-start.client.js" />
+    <Content Include="app\controllers\auth\authConfig.js" />
+    <Content Include="app\controllers\auth\authController.client.js" />
+    <Content Include="app\controllers\auth\easyauth.js" />
+    <Content Include="views\auth\end.pug" />
     <Content Include="app\controllers\bugs\tenantBugsSummaryController.client.js" />
     <Content Include="app\controllers\layout\layoutController.client.js" />
+    <Content Include="app\controllers\users\configController.client.js" />
+    <Content Include="app\controllers\users\usersController.client.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="app\controllers\validation\caseFeedbackController.client.js" />
     <Content Include="app\helpers\helpers.server.js" />
+    <Content Include="app\routes\helpers.js" />
     <Content Include="package.json" />
     <None Include="Properties\PublishProfiles\tap-validation-tab - Web Deploy.pubxml" />
     <Content Include="public\css\bootstrap.min.css" />
@@ -90,18 +101,30 @@ AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZ
     <Content Include="public\img\feature-validation.png" />
     <Content Include="public\img\ios-logo.png" />
     <Content Include="public\img\mac-logo.png" />
+    <Content Include="public\img\ms-sign-in.png" />
     <Content Include="public\img\TAP100 factory.PNG" />
     <Content Include="public\img\teams-logo-200.png" />
     <Content Include="public\img\teams-logo.png" />
     <Content Include="public\img\windows-logo.png" />
     <Content Include="README.md" />
     <None Include="tap-validation-tab - Web Deploy.pubxml" />
+    <Content Include="test-pages.js" />
+    <Content Include="test\test-pages.js" />
+    <Content Include="views\auth\config.pug" />
+    <Content Include="views\auth\login.pug" />
+    <Content Include="views\auth\silent-auth-end.pug" />
+    <Content Include="views\auth\silent-auth.pug" />
+    <Content Include="views\auth\start.pug" />
     <Content Include="views\features\features_config.pug" />
     <Content Include="views\tap100-app\info.pug" />
     <Content Include="views\features\features.pug" />
     <Content Include="views\bugs\summary.pug" />
     <Content Include="views\performance\performance.pug" />
     <Content Include="views\performance\performanceConfig.pug" />
+    <Content Include="views\users\config.pug" />
+    <Content Include="views\users\users.pug">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="views\validation\config.pug" />
     <Content Include="views\bugs\bugs.pug" />
     <Content Include="views\bugs\config.pug" />
@@ -113,9 +136,11 @@ AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZ
   <ItemGroup>
     <Folder Include="app\" />
     <Folder Include="app\controllers\" />
+    <Folder Include="app\controllers\auth\" />
     <Folder Include="app\controllers\bugs\" />
     <Folder Include="app\controllers\knownIssues\" />
     <Folder Include="app\controllers\features\" />
+    <Folder Include="app\controllers\users\" />
     <Folder Include="app\controllers\performance\" />
     <Folder Include="app\controllers\tap100-app\" />
     <Folder Include="app\controllers\validation\" />
@@ -128,11 +153,14 @@ AUTH=Basic Omk2cHVraW54aXZhNzJqdHZoYWhxYWNyajZzcmF4YXJjenBweDVnNnp6NmVhdjdoN3kzZ
     <Folder Include="public\css\" />
     <Folder Include="public\img\" />
     <Folder Include="public\fonts\" />
+    <Folder Include="test\" />
     <Folder Include="uploads\" />
     <Folder Include="views\" />
+    <Folder Include="views\auth\" />
     <Folder Include="views\bugs\" />
     <Folder Include="views\features\" />
     <Folder Include="views\knownIssues\" />
+    <Folder Include="views\users\" />
     <Folder Include="views\validation\" />
     <Folder Include="views\tap100-app\" />
     <Folder Include="views\performance\" />

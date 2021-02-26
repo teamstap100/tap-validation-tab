@@ -4,6 +4,61 @@ var ObjectID = require('mongodb').ObjectID;
 var request = require('request');
 const { safeOid, patToAuth, ADO_API_BASE } = require(process.cwd() + "/app/helpers/helpers.server.js");
 
+function getWindowsReproSteps(body) {
+    let tableStyle = "border: solid black 1px; padding: 4px 4px 4px 4px;";
+
+    // Take a bug and create Windows repro steps for it.
+    let reproSteps = `<br /><table style='${tableStyle}'><tbody>`;
+
+    // Original description
+    reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Details </td> <td style='${tableStyle}'>${body.description} </td></tr>`;
+
+    // Submitter
+    let userEmail;
+    if (body.email) {
+        userEmail = body.email;
+    } else if (body.userEmail) {
+        userEmail = body.userEmail;
+    } else if (body.submitterEmail) {
+        userEmail = body.submitterEmail;
+    }
+
+    reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Submitter </td> <td id='userEmail' style='${tableStyle}'>${userEmail} </td></tr>`;
+
+    // Windows build info
+    if (body.windowsBuildType) {
+        reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Build Type </td> <td style='${tableStyle}'>${body.windowsBuildType} </td></tr>`;
+    }
+
+    if (body.windowsBuildVersion) {
+        reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Build Version </td> <td style='${tableStyle}'>${body.windowsBuildVersion} </td></tr>`;
+    }
+
+    // Upvotes
+    let upvotesCount = 0;
+    if (body.upvotes) {
+        upvotesCount = body.upvotes.length;
+    }
+
+    reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Upvotes </td> <td style='${tableStyle}'>${upvotesCount} </td></tr>`;
+
+    // Comments
+    let commentsTable = `<table style='${tableStyle} width: 100%'><tbody>`;
+    if (body.comments) {
+        body.comments.forEach(function (comment) {
+            commentsTable += `<tr style='${tableStyle}'> <td style='${tableStyle}'> "${comment.comment}" - ${comment.email}</td></tr>`
+        });
+    }
+    commentsTable += "</tbody></table>";
+
+    reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Comments </td> <td style='${tableStyle}'>${commentsTable} </td></tr>`;
+
+    reproSteps += "</tbody></table>";
+    reproSteps += "</br>";
+
+    return reproSteps;
+}
+
 function featureRequestHandler(dbParent) {
     var db = dbParent.db("clementine");
     var validations = db.collection('validations');
@@ -49,16 +104,20 @@ function featureRequestHandler(dbParent) {
     }
 
     this.getFeatureRequestsByUser = function (req, res) {
-        console.log(req.body);
+        console.log("Called getFeatureRequestsByUser");
+        console.log(req.query);
         //let validationId = parseInt(req.body.validationId);
-        let validationId = req.body.validationId;
-        let userEmail = req.body.userEmail;
+        let validationId = safeOid(req.query.validationId);
+        let userEmail = req.query.userEmail;
 
         // Get all featureRequest submitted by this user, or others' public featureRequest
         let featureRequestQuery = {
             validationId: safeOid(validationId),
             submitterEmail: userEmail,
         };
+
+        console.log("Feature request query is:");
+        console.log(featureRequestQuery);
 
         var freqs = [];
         var freqsDone = 0;
@@ -67,7 +126,6 @@ function featureRequestHandler(dbParent) {
         function checkIfDone() {
             if (freqsDone == freqCount) {
                 return res.json({ featureRequest: freqs });
-
             }
         }
 
@@ -79,7 +137,7 @@ function featureRequestHandler(dbParent) {
 
             featureRequestDocs.forEach(function (freq) {
 
-                getAuthForCase(req.body.validationId, function (err, project) {
+                getAuthForCase(validationId, function (err, project) {
                     if (err) { throw err; }
                     let ado_endpoint = ADO_WORKITEM_GET_ENDPOINT
                         .replace("{org}", project.org)
@@ -100,7 +158,7 @@ function featureRequestHandler(dbParent) {
                             console.log(body.fields["System.Reason"]);
 
                             freq.state = body.fields["System.State"];
-                            freq.reason = body.fields["System.Reason"];
+                            freq.reason = body.fields["Microsoft.VSTS.Common.ResolvedReason"] || body.fields["System.Reason"];
                         } catch (e) {
                             console.log(e);
                             console.log("Falling back on default");
@@ -119,10 +177,9 @@ function featureRequestHandler(dbParent) {
 
     this.getPublicFeatureRequests = function (req, res) {
         // Get the public featureRequest not by this user.
-        console.log(req.body);
-        let validationId = req.body.validationId;
+        let validationId = safeOid(req.query.validationId);
         //let validationId = parseInt(req.body.validationId);
-        let userEmail = req.body.userEmail;
+        let userEmail = req.query.userEmail;
 
         // Get all featureRequest submitted by this user, or others' public featureRequest
         let featureRequestQuery = {
@@ -150,8 +207,7 @@ function featureRequestHandler(dbParent) {
         // Temp
         //req.body.submitterEmail = "someone@gmail.com";
 
-        //let validationId = parseInt(req.body.validationId);
-        let validationId = req.body.validationId;
+        let validationId = safeOid(req.body.validationId);
 
         let featureRequestObj = {
             title: req.body.title,
@@ -163,6 +219,8 @@ function featureRequestHandler(dbParent) {
             upvotes: [req.body.submitterEmail],
             downvotes: [],
         };
+
+        console.log(featureRequestObj);
 
         let valQuery = {
             _id: safeOid(req.body.validationId)
@@ -183,7 +241,9 @@ function featureRequestHandler(dbParent) {
 
             let userEmail = cleanEmail(req.body.submitterEmail);
 
-            let description = '"' + req.body.description + '"<br /><strong>Submitter</strong>: ' + userEmail + " (" + req.body.submitterEmail + ")";
+            let description = getWindowsReproSteps(req.body);
+
+            //let description = '"' + req.body.description + '"<br /><strong>Submitter</strong>: ' + userEmail + " (" + req.body.submitterEmail + ")";
 
             var reqBody = [
                 {
@@ -238,6 +298,14 @@ function featureRequestHandler(dbParent) {
                         });
                     }
 
+                    if (req.body.windowsBuildVersion) {
+                        reqBody.push({
+                            "op": "add",
+                            "path": "/fields/Microsoft.VSTS.Build.FoundIn",
+                            "value": req.body.windowsBuildVersion
+                        });
+                    }
+
                     reqBody.push({
                         "op": "add",
                         "path": "/fields/Microsoft.VSTS.Common.Release",
@@ -266,7 +334,11 @@ function featureRequestHandler(dbParent) {
                     featureRequestObj._id = vstsResponse.id;
                     featureRequestObj.publicId = new ObjectID();
 
+                    console.log(featureRequestObj);
+
                     featureRequests.insertOne(featureRequestObj, function (err, featureRequestDoc) {
+                        if (err) { console.log(err); throw err; }
+                        console.log("Created it");
                         res.status(200).send();
                     });
                 });
@@ -277,17 +349,25 @@ function featureRequestHandler(dbParent) {
     this.modifyFeatureRequest = function (req, res) {
         console.log(req.params);
         console.log(req.body);
-        console.log(req.body.public)
 
-        let op = {};
+        let op = {
+            $set: {
+                title: req.body.title,
+                description: req.body.description,
+                public: req.body.public
+            }
+        };
+
+        /*
         if ('title' in req.body) {
             op = { $set: { title: req.body.title } };
-        } else if ('description' in req.body) {
+        } if ('description' in req.body) {
             op = { $set: { description: req.body.description } };
 
-        } else if ('public' in req.body) {
+        }  if ('public' in req.body) {
             op = { $set: { public: req.body.public } };
         }
+        */
 
         console.log(op);
 
@@ -296,13 +376,13 @@ function featureRequestHandler(dbParent) {
         featureRequests.findOneAndUpdate(query, op, { returnOriginal: false }, function (err, featureRequestDoc) {
             if (err) { throw err; }
             let updatedDoc = featureRequestDoc.value;
-            console.log(featureRequestDoc);
             // Write changes to ADO
             let safeTitle = "FeatureRequest - " + updatedDoc.title;
             if (safeTitle.length > 120) {
                 safeTitle = safeTitle.substring(0, 117) + "...";
             }
-            let description = '"' + updatedDoc.description + '"<br /><strong>Submitter</strong>: ' + updatedDoc.submitterEmail;
+            let description = getWindowsReproSteps(updatedDoc);
+            //let description = '"' + updatedDoc.description + '"<br /><strong>Submitter</strong>: ' + updatedDoc.submitterEmail;
 
             var reqBody = [
                 {
@@ -316,7 +396,7 @@ function featureRequestHandler(dbParent) {
                     "value": description,
                 }
             ];
-            getAuthForCase(featureRequestDoc.validationId, function (err, project) {
+            getAuthForCase(updatedDoc.validationId, function (err, project) {
                 let ado_edit_endpoint = ADO_WORKITEM_EDIT_ENDPOINT
                     .replace("{org}", project.org)
                     .replace("{project}", project.project)
@@ -361,11 +441,12 @@ function featureRequestHandler(dbParent) {
     }
 
     this.getUserSupports = function (req, res) {
-
+        console.log("Called getUserSupports");
+        console.log(req.query);
         //let validationId = parseInt(req.body.validationId);
-        let validationId = req.body.validationId;
+        let validationId = safeOid(req.query.validationId);
 
-        let query = { upvotes: req.body.email, validationId: validationId };
+        let query = { upvotes: req.query.email, validationId: validationId };
 
         console.log(query);
 

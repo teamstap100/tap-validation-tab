@@ -5,7 +5,7 @@ var request = require('request');
 var atob = require('atob');
 const fs = require('fs');
 const path = require('path');
-const { safeOid, patToAuth, ADO_API_BASE } = require('../../helpers/helpers.server');
+const { safeOid, patToAuth, ADO_API_BASE, uploadAttachments } = require('../../helpers/helpers.server');
 
 function caseHandler(dbParent) {
 
@@ -20,7 +20,6 @@ function caseHandler(dbParent) {
     const ENV = process.env.ENV;
 
     const ADO_WORKITEM_ADD_ENDPOINT = ADO_API_BASE + "workitems/${{WORKITEM_TYPE}}?api-version=4.11";
-    const ADO_ATTACHMENT_CREATE_ENDPOINT = ADO_API_BASE + "attachments?fileName={fileName}&api-version=4.1";
     const ADO_WORKITEM_UPDATE_ENDPOINT = ADO_API_BASE + "workitems/{id}?api-version=4.1";
     const ADO_WORKITEM_GET_ENDPOINT = ADO_API_BASE + "workitems/{id}?api-version=4.1";
 
@@ -163,7 +162,7 @@ function caseHandler(dbParent) {
 
 
         // Take a bug and create Windows repro steps for it.
-        let reproSteps = `<table style='${tableStyle}'><thead style='${tableStyle}'><tr style='${tableStyle}'><td style='${tableStyle}'>Key</td><td style='${tableStyle}'>Value</td></thead><tbody>`;
+        let reproSteps = `<br /><table style='${tableStyle}'><tbody>`;
 
         // Original description
         reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Details </td> <td style='${tableStyle}'>${body.comment} </td></tr>`;
@@ -178,8 +177,10 @@ function caseHandler(dbParent) {
             userEmail = body.submitterEmail;
         }
 
+        userEmail = cleanEmail(userEmail);
 
-        reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Submitter </td> <td style='${tableStyle}'>${userEmail} </td></tr>`;
+
+        reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Submitter </td> <td id='userEmail' style='${tableStyle}'>${userEmail} </td></tr>`;
 
         // Windows build info
         if (body.windowsBuildType) {
@@ -209,34 +210,8 @@ function caseHandler(dbParent) {
 
         reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Comments </td> <td style='${tableStyle}'>${commentsTable} </td></tr>`;
 
-
-        /*
-        let systemInfo = "<br /><br />";
-        if (body.windowsBuildType) {
-            systemInfo += "<strong>Build Type</strong>: " + body.windowsBuildType + "<br />";
-        }
-        if (body.windowsBuildVersion) {
-            systemInfo += "<strong>Build Version</strong>: " + body.windowsBuildVersion + "<br />";
-        }
-
-        let userEmail;
-        if (body.email) {
-            userEmail = body.email;
-        } else if (body.userEmail) {
-            userEmail = body.userEmail;
-        } else if (body.submitterEmail) {
-            userEmail = body.submitterEmail;
-        }
-
-        systemInfo += "<strong>Submitter</strong>: " + cleanEmail(userEmail) + " (" + userEmail + ")<br />";
-
-        let safeComment = body.comment.replace(/\r?\n/g, '<br />');
-
-        let reproSteps = safeComment + systemInfo;
-
-        */
-
         reproSteps += "</tbody></table>";
+        reproSteps += "</br>";
 
         return reproSteps;
     }
@@ -353,7 +328,7 @@ function caseHandler(dbParent) {
                         }
 
                         if (vote.comment) {
-                            console.log(vote);
+                            //console.log(vote);
                             //console.log(vote.email, email);
                             // TODO: Currently the client logic checks for this user's email in the string when deciding what to do with buttons and such.
                             // It'd be better to include a boolean for "it's this user" and do that stuff in the ajaxRefresh function.
@@ -399,8 +374,10 @@ function caseHandler(dbParent) {
         console.log(req.body);
         var cId = req.body.cId;
         var tap = req.body.tap;
+        var title = req.body.title;
         const comment = req.body.comment;
         const userEmail = req.body.userEmail;
+        const commentIsPublic = req.body.public;
 
         let specialFields = ['device', 'headset', 'networkScenarios'];
 
@@ -440,7 +417,15 @@ function caseHandler(dbParent) {
                 comment: comment,
                 userEmail: clientVoteString,
                 userTenantId: realTenantId,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+            }
+
+            if (commentIsPublic != null) {
+                commentDoc.public = commentIsPublic;
+            }
+
+            if (title != null) {
+                commentDoc.title = title;
             }
 
             specialFields.forEach(function (field) {
@@ -448,10 +433,6 @@ function caseHandler(dbParent) {
                     commentDoc[field] = req.body[field];
                 }
             });
-
-            console.log(commentDoc);
-
-            
 
             if (tap == "Teams") {
                 //console.log("Now putting this in VSTS");
@@ -497,7 +478,7 @@ function caseHandler(dbParent) {
                     valQuery._id = parseInt(req.body.validationId);
                 }
 
-                console.log(valQuery);
+                //console.log(valQuery);
 
                 validations.findOne(valQuery, function (err, valDoc) {
                     if (valDoc) {
@@ -520,6 +501,21 @@ function caseHandler(dbParent) {
                         return res.status(200).send();
                     }
                 });
+            } else if (tap == "ACS") {
+                console.log("Comment for ACS TAP");
+
+                specialFields.forEach(function (field) {
+                    if (req.body[field]) {
+                        commentDoc[field] = req.body[field];
+                    }
+                });
+                
+
+                cases.updateOne({ _id: cId }, { $push: { comments: commentDoc } }, function (err, result) {
+                    if (err) { console.log(err); }
+                    return res.status(200).send();
+                });
+
             } else {
                 console.log("Tap wasn't teams or windows; not yet implemented");
                 return res.status(200).send();
@@ -605,136 +601,33 @@ function caseHandler(dbParent) {
         });
     }
 
-    function uploadAttachments(files, bugId, project, callback) {
-        console.log("Called uploadAttachments");
-        console.log(files);
-
-        var attachmentBodies = [];
-
-        function uploadAndLink(fileIndex, files) {
-            console.log("Called uploadAndLink on", fileIndex);
-            let file = files[fileIndex];
-            //console.log(file);
-            let filename = file.filename;
-            let filePath = path.join(process.cwd(), "uploads", filename);
-            console.log(filePath);
-
-            fs.readFile(filePath, (err, data) => {
-                if (err) throw err;
-                //console.log(data);
-
-                let cleanContents = data;
-                //console.log(cleanContents);
-
-                let attachment_endpoint = ADO_ATTACHMENT_CREATE_ENDPOINT
-                    .replace("{org}", project.org)
-                    .replace("{project}", project.project)
-                    .replace("{fileName}", filename);
-
-                let attachmentOptions = {
-                    url: attachment_endpoint,
-                    headers: {
-                        'Authorization': project.auth,
-                        'Content-Type': 'application/octet-stream'
-                    },
-                    body: cleanContents,
-                    encoding: null,
-                }
-
-                console.log(attachmentOptions);
-
-                request.post(attachmentOptions, function (adoErr, adoResp, adoBody) {
-                    if (adoErr) { throw adoErr; }
-
-                    console.log(adoBody);
-
-                    adoBody = JSON.parse(adoBody);
-                    let attachmentUrl = adoBody.url;
-
-                    let linkPatch = [
-                        {
-                            "op": "add",
-                            "path": "/relations/-",
-                            "value": {
-                                "rel": "AttachedFile",
-                                "url": attachmentUrl,
-                                "attributes": {
-                                    "comment": ""
-                                }
-                            },
-                        }
-                    ];
-
-                    let updateEndpoint = ADO_WORKITEM_UPDATE_ENDPOINT
-                        .replace("{org}", project.org)
-                        .replace("{project}", project.project)
-                        .replace('{id}', bugId);
-
-                    let linkOptions = {
-                        url: updateEndpoint,
-                        headers: {
-                            'Authorization': project.auth,
-                            'Content-Type': 'application/json-patch+json',
-                        },
-                        body: JSON.stringify(linkPatch),
-                    }
-
-                    request.patch(linkOptions, function (attachmentErr, attachmentResp, attachmentBody) {
-                        if (attachmentErr) { throw attachmentErr; }
-
-                        console.log(attachmentResp.statusCode);
-                        console.log(attachmentBody);
-
-                        attachmentBodies.push(attachmentBody);
-                        console.log("File done uploading");
-
-                        fileIndex++;
-                        if (files.length > fileIndex) {
-                            return uploadAndLink(fileIndex, files);
-                        } else {
-                            return callback(attachmentBodies);
-                        }
-                    });
-                });
-            });
-        }
-
-        uploadAndLink(0, files);
-    }
-
     function createWindowsBug(body, callback) {
         // Add the new bug to VSTS
 
         console.log(body);
 
-        let bugTitle = body.caseTitle;
+        let bugTitle = `[${body.caseTitle}] `;
         let tags = body.tag + ";" + "WCCP;" + body.caseTitle;
 
         // TODO: This is just Bug all the time
         let workitemType = "Bug";
 
         if (body.upDown == "up") {
-            //bugTitle = "Works - " + bugTitle;
-            bugTitle = "";
             tags += "; WCCP-Works";
 
             // TODO: Pick a better workitem type for this
             workitemType = "Bug";
 
         } else if (body.upDown == "down") {
-            //bugTitle = "Fails - " + bugTitle;
-            bugTitle = "";
             tags += "; WCCP-Fails";
         } else if (body.upDown == "comment") {
-           // bugTitle = "Feedback - " + bugTitle;
-            bugTitle = "";
             tags += "; WCCP-Feedback";
 
             workitemType = "Bug";
         }
 
-        let safeComment = body.comment.replace(/\r?\n/g, '<br />');
-        bugTitle = safeComment;
+        let safeComment = body.title.replace(/\r?\n/g, '<br />');
+        bugTitle += safeComment;
 
         if (bugTitle.length > 200) {
             bugTitle = bugTitle.slice(0, 197) + "...";
@@ -746,7 +639,7 @@ function caseHandler(dbParent) {
             {
                 "op": "add",
                 "path": "/fields/System.Title",
-                "value": body.title
+                "value": safeComment
             },
             {
                 "op": "add",
@@ -792,6 +685,14 @@ function caseHandler(dbParent) {
                         "op": "add",
                         "path": "/fields/OSG.Partner.PartnerPOC",
                         "value": body.cleanEmail
+                    });
+                }
+
+                if (body.windowsBuildVersion) {
+                    reqBody.push({
+                        "op": "add",
+                        "path": "/fields/Microsoft.VSTS.Build.FoundIn",
+                        "value": body.windowsBuildVersion
                     });
                 }
 
@@ -900,10 +801,10 @@ function caseHandler(dbParent) {
         //console.log("cid was " + req.body.cId);
         var cId = req.body.cId;
         const url = req.body.url;
-        const userId = req.body.userId;
         const userEmail = req.body.userEmail;
-        const clientType = req.body.clientType;
         const upDown = req.body.upDown;
+
+        var specialFields = ['client', 'device', 'headset', 'networkScenarios', 'teamsMode', 'windowsBuildType', 'windowsBuildVersion'];
 
         const client = req.body.client;
         const device = req.body.device;
@@ -929,11 +830,6 @@ function caseHandler(dbParent) {
             cId = ObjectID(cId);
         } else {
             cId = parseInt(cId);
-        }
-
-        var verboseUpDown = "Pass";
-        if (upDown == "down") {
-            verboseUpDown = "Fail";
         }
 
         var tenantString = "?";
@@ -975,12 +871,15 @@ function caseHandler(dbParent) {
                 email: clientVoteString,
                 tenantId: realTenantId,
                 tenantName: tenantName,
-                comment: comment,
+                //comment: comment,
                 //client: client,
                 //device: device,
                 //teamsMode: teamsMode,
-                url: url,
+                //url: url,
                 timestamp: new Date()
+            }
+            if (comment) {
+                voteObj.comment = comment;
             }
 
             if (tap == "Windows") {
@@ -1033,7 +932,7 @@ function caseHandler(dbParent) {
             }
 
             function composeDataOps() {
-                let specialFields = ['client', 'device', 'headset', 'networkScenarios', 'teamsMode', 'windowsBuildType', 'windowsBuildVersion'];
+               
 
                 if (upDown == "up") {
                     // The pull op needs to just look for email address, in case the tenant name has changed in our database.
@@ -1069,91 +968,101 @@ function caseHandler(dbParent) {
                         }
                     })
                 }
+                //console.log(voteObj);
+                //console.log(updateOp);
+                //console.log(updateOp2);
 
-                addToCaseObject();
+                executeDataOps();
             }
 
-            function addToCaseObject() {
-                //console.log("Update Op 1:");
-                //console.log(updateOp);
-
-                let opsDone = 0;
-                var ops = [];
-
+            function executeDataOps() {
                 if (tap == "Windows") {
-                    // For Windows, we don't want to replace the old vote. 
+                    // For Windows, we don't want to replace the old vote. Just add the new vote (updateOp2)
                     delete updateOp2["$pull"];
-                    ops = [updateOp2];
+                    cases.findOneAndUpdate(query, updateOp2, { returnOriginal: false }, function (err, result) {
+                        console.log("Executed updateOp2 (the only one)");
+                        addCaseToObject(err, result);
+                    });
                 } else {
-                    ops = [updateOp, updateOp2];
+                    // For all other TAPs, replace the user's old vote (using updateOp), then add the new vote (updateOp2)
+                    cases.findOneAndUpdate(query, updateOp, { returnOriginal: false }, function (err, result) {
+                        if (err) { console.log(err); }
+                        console.log("Executed updateOp");
+                        cases.findOneAndUpdate(query, updateOp2, { returnOriginal: false }, function (err2, result2) {
+                            console.log("Executed updateOp2");
+                            addCaseToObject(err2, result2);
+                        });
+                    })
+                }
+            }
+
+            function addCaseToObject(err, result) {
+                if (err) { throw err; }
+                var kase = result.value;
+
+                // newVoteDoc is the complete vote object, stored in the votes db.
+                // It has more fields than the "voteObj" thing that got added to the case object.
+                var newVoteDoc = {
+                    id: voteObj.id,
+                    upDown: upDown,
+                    //comment: comment,
+                    userTenantId: realTenantId,
+                    userEmail: userEmail,
+                    validationId: req.body.validationId,
+                    caseId: cId,
+                    //client: client,
+                    //device: device,
+                    //headset: headset,
+                    //teamsMode: teamsMode,
+                    tap: tap,
+                    url: url,
+                    public: votePublic,
+                    timestamp: new Date(),
                 }
 
-                //console.log(ops);
+                specialFields.forEach(function (field) {
+                    if (req.body[field]) {
+                        newVoteDoc[field] = req.body[field];
+                    }
+                })
 
-                ops.forEach(function (op) {
-                    cases.findOneAndUpdate(query, op, { returnOriginal: false }, function (err, result) {
-                        opsDone++;
-                        console.log(opsDone + " / " + ops.length);
-                        if (opsDone == ops.length) {
-                            if (err) { throw err; }
-                            var kase = result.value;
+                if (comment) {
+                    newVoteDoc.comment = comment;
+                }
 
-                            // newVoteDoc is the complete vote object, stored in the votes db.
-                            // It has more fields than the "voteObj" thing that got added to the case object.
-                            var newVoteDoc = {
-                                id: voteObj.id,
-                                upDown: upDown,
-                                comment: comment,
-                                userTenantId: realTenantId,
-                                userEmail: userEmail,
-                                validationId: req.body.validationId,
-                                caseId: cId,
-                                client: client,
-                                device: device,
-                                headset: headset,
-                                teamsMode: teamsMode,
-                                tap: tap,
-                                url: url,
-                                public: votePublic,
-                                timestamp: new Date(),
-                            }
+                if (tap == "Teams") {
+                    // Teams TAP has test cases in Azure DevOps that need updating
+                    console.log("Going the Teams route");
 
-                            if (tap == "Teams") {
-                                // Teams TAP has test cases in Azure DevOps that need updating
-                                console.log("Going the Teams route");
-
-                                votes.insertOne(newVoteDoc, function (err, voteDoc) {
-                                    if (err) { throw err; }
-                                    return writeVoteToADO(kase);
-                                });
-
-                            } else if (tap == "Windows") {
-                                // Windows TAP - doesn't have case workitems, but we should create a feedback workitem
-                                console.log("Going the Windows TAP route");
-                                newVoteDoc.comment = req.body.comment;
-
-                                newVoteDoc.windowsBuildType = windowsBuildType;
-                                newVoteDoc.windowsBuildVersion = windowsBuildVersion;
-
-                                votes.insertOne(newVoteDoc, function (err, voteDoc) {
-                                    if (err) { throw err; }
-
-                                    return res.json(voteDoc.value);
-                                });
-
-                            } else {
-                                // Some other TAP
-                                console.log("Some other tap has been selected");
-
-                                votes.insertOne(newVoteDoc, function (err, voteDoc) {
-                                    if (err) { throw err; }
-                                    return res.json(voteDoc.value);
-                                });
-
-                            }
-                        }
+                    votes.insertOne(newVoteDoc, function (err, voteDoc) {
+                        if (err) { throw err; }
+                        return writeVoteToADO(kase);
                     });
-                });
+
+                } else if (tap == "Windows") {
+                    // Windows TAP - doesn't have case workitems, but we should create a feedback workitem
+                    console.log("Going the Windows TAP route");
+                    newVoteDoc.comment = req.body.comment;
+
+                    newVoteDoc.windowsBuildType = windowsBuildType;
+                    newVoteDoc.windowsBuildVersion = windowsBuildVersion;
+
+                    votes.insertOne(newVoteDoc, function (err, voteDoc) {
+                        if (err) { throw err; }
+
+                        return res.json(voteDoc.value);
+                    });
+
+                } else {
+                    // Some other TAP
+                    console.log("Some other tap has been selected");
+
+                    votes.insertOne(newVoteDoc, function (err, voteDoc) {
+                        if (err) { throw err; }
+                        return res.json(voteDoc.value);
+                    });
+
+                }
             }
 
             function writeVoteToADO(kase) {
@@ -1243,13 +1152,50 @@ function caseHandler(dbParent) {
                     return res.status(200).send();
                 });
             }
-
-
         });
     };
 
-    this.getCaseFeedbackByUser = function(req, res) {
-        //console.log(req.body);
+    function getStateAndReason(validationId, feedback, callback) {
+        console.log(validationId, feedback);
+        // Set the ADO fields for a given piece of feedback
+        getAuthForCase(validationId, function (err, project) {
+            if (err) { throw err; }
+            let ado_endpoint = ADO_WORKITEM_GET_ENDPOINT
+                .replace("{org}", project.org)
+                .replace("{project}", project.project)
+                .replace("{id}", feedback.id);
+
+            const options = {
+                url: ado_endpoint,
+                headers: {
+                    'Authorization': project.auth
+                }
+            };
+            request.get(options, function (err, resp, body) {
+                try {
+                    //console.log(body);
+                    body = JSON.parse(body);
+                    console.log(body.fields["System.State"]);
+                    console.log(body.fields["System.Reason"]);
+
+                    feedback.state = body.fields["System.State"];
+                    feedback.reason = body.fields["Microsoft.VSTS.Common.ResolvedReason"] || body.fields["System.Reason"];
+                } catch (e) {
+                    console.log("Falling back on default");
+                    feedback.state = "New";
+                    feedback.reason = "New";
+                }
+
+                if (!(feedback.title)) {
+                    feedback.title = feedback.comment;
+                }
+
+                callback(feedback);
+            });
+        });
+    }
+
+    this.getCaseFeedbackByUser = function (req, res) {
 
         let votesChecked = 0;
         let votesTotal = 0;
@@ -1263,8 +1209,6 @@ function caseHandler(dbParent) {
         }
 
         cases.findOne({ _id: ObjectID(req.body.caseId) }, function (err, caseDoc) {
-            //console.log(caseDoc);
-
             caseDoc.upvotes_v2.forEach(function (vote) {
                 vote.type = "Works";
             });
@@ -1277,10 +1221,11 @@ function caseHandler(dbParent) {
                 vote.type = "Fails";
             });
 
-            let currentUserComments = caseDoc.comments.filter(x => x.email == req.body.userEmail);
+            let currentUserComments = caseDoc.comments.filter(x => x.userEmail == req.body.userEmail);
+            console.log(currentUserComments);
 
             let allFeedback = caseDoc.upvotes_v2.concat(caseDoc.downvotes_v2).filter(x => x.email == req.body.userEmail).concat(currentUserComments);
-            //console.log(allFeedback);
+            console.log(allFeedback);
 
             if (allFeedback.length == 0) {
                 return res.json({ feedback: [] });
@@ -1292,39 +1237,8 @@ function caseHandler(dbParent) {
 
                 allFeedback.forEach(function (vote) {
                     if (vote.id) {
-                        let ado_endpoint = ADO_WORKITEM_GET_ENDPOINT
-                            .replace("{org}", project.org)
-                            .replace("{project}", project.project)
-                            .replace("{id}", vote.id);
-
-                        const options = {
-                            url: ado_endpoint,
-                            headers: {
-                                'Authorization': project.auth
-                            }
-                        };
-                        request.get(options, function (err, resp, body) {
-                            try {
-                                body = JSON.parse(body);
-                                //console.log(body.fields["System.State"]);
-                                //console.log(body.fields["System.Reason"]);
-
-                                vote.state = body.fields["System.State"];
-                                vote.reason = body.fields["System.Reason"];
-                            } catch (e) {
-                                console.log(e);
-                                console.log("Falling back on default");
-                                vote.state = "New";
-                                vote.reason = "New";
-                            }
-
-                            // Placeholder for no title (older feedback)
-
-                            if (!vote.title) {
-                                vote.title = vote.comment;
-                            }
-
-                            feedback.push(vote);
+                        getStateAndReason(caseDoc.validationId, vote, function (updatedCase) {
+                            feedback.push(updatedCase);
                             votesChecked++;
                             checkIfDone();
                         });
@@ -1344,41 +1258,50 @@ function caseHandler(dbParent) {
                         checkIfDone();
                     }
                 });
+                checkIfDone();
             });
         })
     }
 
     this.getCaseFeedbackPublic = function (req, res) {
-        console.log(req.body);
+        let votesChecked = 0;
+        let votesTotal = 0;
+
+        let feedback = [];
+        function checkIfDone() {
+            //console.log(votesChecked + " / " + votesTotal);
+            if (votesChecked == votesTotal) {
+                return res.json({ feedback: feedback });
+            }
+        }
 
         cases.findOne({ _id: ObjectID(req.body.caseId) }, function (err, caseDoc) {
-            console.log(caseDoc);
-
             // Can't just concat comments, as upvotes/downvotes use "email" field where comments use "userEmail"
             let nonCurrentUserComments = caseDoc.comments.filter(x => x.userEmail != req.body.userEmail).filter(x => x.public);
 
             let allFeedback = caseDoc.upvotes_v2.concat(caseDoc.downvotes_v2).filter(x => x.email != req.body.userEmail).filter(x => x.public).concat(nonCurrentUserComments);
-            console.log(allFeedback);
+            //console.log(allFeedback);
+
+            votesTotal = allFeedback.length;
 
             allFeedback.forEach(function (fb) {
                 // Legacy feedback doesn't have titles
-                if (!fb.title) {
-                    fb.title = fb.comment;
-                }
+                getStateAndReason(caseDoc.validationId, fb, function (updatedCase) {
+                    if (fb.upvotes) {
+                        fb.userUpvoted = fb.upvotes.includes(req.body.userEmail);
+                    }
 
-                if (fb.upvotes) {
-                    fb.userUpvoted = fb.upvotes.includes(req.body.userEmail);
-                }
+                    feedback.push(updatedCase);
 
-            })
-
-            return res.json({ feedback: allFeedback });
+                    votesChecked++;
+                    checkIfDone();
+                });
+            });
+            checkIfDone();
         });
     }
 
     this.upvoteCaseFeedback = function (req, res) {
-        console.log(req.body);
-        console.log(req.params.id);
 
         let feedbackId = parseInt(req.params.id);
 
@@ -1450,7 +1373,7 @@ function caseHandler(dbParent) {
 
                                 request.patch(options, function (vstsErr, vstsResp, vstsBody) {
                                     console.log(vstsResp.statusCode);
-                                    console.log(vstsBody);
+                                    //console.log(vstsBody);
 
                                     return res.status(200).send();
 
@@ -1594,32 +1517,30 @@ function caseHandler(dbParent) {
             ]
         };
 
-        let modifyUpvotesQuery = {
-            $set: {
-                "upvotes_v2.$.title": req.body.title,
-                "upvotes_v2.$.comment": req.body.comment,
-                "upvotes_v2.$.public": req.body.public,
-            }
+        let modifyUpvotesQuery = { $set: {} }
+        let modifyDownvotesQuery = { $set: {} }
+        let modifyCommentsQuery = { $set: {} }
+
+        if (req.body.title) {
+            console.log("Setting title");
+            modifyUpvotesQuery["$set"]["upvotes_v2.$.title"] = req.body.title;
+            modifyDownvotesQuery["$set"]["downvotes_v2.$.title"] = req.body.title;
+            modifyCommentsQuery["$set"]["comments.$.title"] = req.body.title;
         }
 
-        let modifyDownvotesQuery = {
-            $set: {
-                "downvotes_v2.$.title": req.body.title,
-                "downvotes_v2.$.comment": req.body.comment,
-                "downvotes_v2.$.public": req.body.public,
-            }
+        if (req.body.comment) {
+            console.log("Setting comment");
+            modifyUpvotesQuery["$set"]["upvotes_v2.$.comment"] = req.body.comment;
+            modifyDownvotesQuery["$set"]["downvotes_v2.$.comment"] = req.body.comment;
+            modifyCommentsQuery["$set"]["comments.$.comment"] = req.body.comment;
         }
 
-        let modifyCommentsQuery = {
-            $set: {
-                "comments.$.title": req.body.title,
-                "comments.$.comment": req.body.comment,
-                "comments.$.public": req.body.public,
-            }
+        if (req.body.public != null) {
+            console.log("Setting public");
+            modifyUpvotesQuery["$set"]["upvotes_v2.$.public"] = req.body.public;
+            modifyDownvotesQuery["$set"]["downvotes_v2.$.public"] = req.body.public;
+            modifyCommentsQuery["$set"]["comments.$.public"] = req.body.public;
         }
-
-        console.log(any_feedback_query);
-        console.log(modifyCommentsQuery);
 
         let feedbackDoc;
         let feedbackField;
@@ -1653,9 +1574,15 @@ function caseHandler(dbParent) {
 
                             let feedbackItem = caseDoc[feedbackField].find(x => x.id == feedbackId);
                             console.log(feedbackItem);
-                            feedbackItem.title = req.body.title;
-                            feedbackItem.comment = req.body.comment;
-                            feedbackItem.public = req.body.public;
+                            if (req.body.title) {
+                                feedbackItem.title = req.body.title;
+                            }
+                            if (req.body.comment) {
+                                feedbackItem.comment = req.body.comment;
+                            }
+                            if (req.body.public) {
+                                feedbackItem.public = req.body.public;
+                            }
 
                             let reproSteps = getWindowsReproSteps(feedbackItem);
 
@@ -1665,7 +1592,7 @@ function caseHandler(dbParent) {
                                 {
                                     op: "add",
                                     path: "/fields/System.Title",
-                                    value: req.body.title
+                                    value: feedbackItem.title,
                                 },
                                 {
                                     op: "add",
@@ -1695,12 +1622,16 @@ function caseHandler(dbParent) {
                                     console.log(vstsBody);
 
                                     // Handle attachments
-                                    if (req.body.attachments.length > 0) {
-                                        console.log("Handling attachments");
-                                        uploadAttachments(req.body.attachments, feedbackId, project, function (attachmentBodies) {
-                                            console.log(attachmentBodies);
+                                    if (req.body.attachments) {
+                                        if (req.body.attachments.length > 0) {
+                                            console.log("Handling attachments");
+                                            uploadAttachments(req.body.attachments, feedbackId, project, function (attachmentBodies) {
+                                                console.log(attachmentBodies);
+                                                return res.status(200).send();
+                                            });
+                                        } else {
                                             return res.status(200).send();
-                                        });
+                                        }
                                     } else {
                                         return res.status(200).send();
                                     }

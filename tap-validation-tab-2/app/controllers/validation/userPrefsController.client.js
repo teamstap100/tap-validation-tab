@@ -11,10 +11,7 @@
             let userPrefsUrl = userPrefsUrlBase + oid;
             ajaxRequest('GET', userPrefsUrl, {}, function (data) {
                 console.log("Done");
-                console.log(data);
                 data = JSON.parse(data);
-
-                console.log(data);
 
                 if (data.windowsBuildVersion) {
                     $('#windowsBuildVersion').val(data.windowsBuildVersion).trigger('change');
@@ -56,17 +53,17 @@
             let prefs = {};
 
             if ($('#windowsBuildType').val()) {
-                console.log("Setting windowsBuildType");
+                //console.log("Setting windowsBuildType");
                 prefs['windowsBuildType'] = $('#windowsBuildType').val();
             }
 
             if ($('#windowsBuildVersion').val()) {
-                console.log("Setting windowsBuildVersion");
+                //console.log("Setting windowsBuildVersion");
                 prefs['windowsBuildVersion'] = $('#windowsBuildVersion').val();
             }
 
             if ($('#deviceSelect').val()) {
-                console.log("Setting device");
+                //console.log("Setting device");
                 prefs["device"] = $('#deviceSelect').val();
             }
 
@@ -89,7 +86,7 @@
     }
 
     $(document).ready(function () {
-        console.log("Userprefs ready");
+        //console.log("Userprefs ready");
         microsoftTeams.initialize();
 
         getUserPrefs();

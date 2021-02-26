@@ -1,10 +1,23 @@
 /*
  * Useful bits of HTML
  */
-const spinner = '<i class="fa fa-spinner fa-spin"></i>  ';
+
+    const spinner = '<i class="fa fa-spinner fa-spin"></i>  ';
+
+
 const clientSpinner = '<i class="fa fa-spinner fa-spin client-spin"></i>  ';
 const thumbsUp = '<i class="fa fa-thumbs-up"> </i>';
 const thumbsDown = '<i class="fa fa-thumbs-down"> </i>';
+
+function disableAndSpin(id) {
+    $(id).attr("disabled", true);
+    $(id).html(spinner + $(id).text());
+}
+
+function enableAndRemoveSpin(id) {
+    $(id).attr("disabled", false);
+    $(id).html($(id).html().replace(spinner, ""));
+}
 
 function getUrlVars() {
     var vars = {};
@@ -37,6 +50,64 @@ function cleanEmail(email) {
 
     return email;
 }
+
+function getIdToken(callback) {
+    $.ajax({
+        url: "/.auth/me",
+        type: "GET",
+        success: function (data) {
+            let id_token = data[0].id_token;
+            return callback(null, id_token);
+        },
+        error: function (xhr, textStatus, errorThrown) {
+            console.log("Erorr getting /me endpoint - user probably needs to login again");
+            // TODO: Silently log the user in again?
+            return callback(errorThrown, null);
+        }
+    });
+}
+
+function ajaxRequestWithToken(method, url, params, callback) {
+    function finalRequest(err, auth) {
+        if (err) {
+            console.log(err);
+        }
+        $.ajax({
+            url: url,
+            type: method,
+            dataType: "json",
+            data: params,
+            beforeSend: function (request) {
+                request.setRequestHeader("xsrf-token", csrf);
+
+                // TODO: Placeholder obviously
+                request.setRequestHeader("Authorization", "Bearer " + auth);
+
+            },
+            success: function (data) {
+                // TODO: Most of the old code still consumes this as a string - remove this line when all data = JSON.parse(data) type lines are removed
+                //data = JSON.stringify(data);
+
+                callback(data);
+            },
+            error: function (xhr, textStatus, errorThrown) {
+                callback(errorThrown);
+            }
+        });
+    }
+
+    // Include csrf in request
+    let csrf = $('#_csrf').val();
+
+    console.log(params);
+
+    getIdToken(finalRequest);
+}
+
+var csrf;
+$().ready(function () {
+    csrf = $('#_csrf').val();
+});
 
 function ajaxRequest(method, url, params, callback) {
     var xmlhttp = new XMLHttpRequest();

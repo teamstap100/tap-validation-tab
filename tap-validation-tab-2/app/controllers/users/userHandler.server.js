@@ -9,8 +9,11 @@ function userHandler(dbParent) {
     // "db.collection is not a function"
     var db = dbParent.db("clementine");
     var users = db.collection('users');
+    var tenants = db.collection("tenants");
     var pms = db.collection('pms');
     var validations = db.collection('validations');
+
+    var provisioningRequestFlowUrl = "https://prod-28.westcentralus.logic.azure.com:443/workflows/b2c3172f32f44fb0bd8c0aa4d088074f/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=7NG895qipyLxhThbWOS8eZDioXpv_0UEZbc1s4xJNrI";
 
     const PREF_NAMES = [
         // Windows prefs
@@ -129,6 +132,60 @@ function userHandler(dbParent) {
 
 
         })
+    }
+
+    this.renderUsers = function (req, res) {
+        return res.render('users/users', {});
+    };
+
+    this.renderUsersConfig = function (req, res) {
+        return res.render('users/config', {});
+    };
+
+    this.deprovisionUser = function (req, res) {
+        console.log("Requesting deprovisioning");
+        console.log(req.body);
+
+        console.log(req.user);
+
+        let provRequests = [
+            {
+                "UserOrTenant": "User",
+                "Ring": req.body.ring,
+                "Name": req.body.name,
+                "Company": "",
+                "Email": req.body.email,
+                "ObjectID": req.body.oid,
+                "TenantID": req.body.tid,
+                "AddRemove": "Remove",
+                "UserCategory": "",
+                "UserEmail": req.user.email, // "SubmitterEmail"
+                "Reject": "",
+                "RejectReason": "",
+            }
+        ];
+
+        var options = {
+            url: provisioningRequestFlowUrl,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(provRequests)
+        };
+
+        request.post(options, function (err, status, response) {
+            if (err) { throw err; }
+            console.log("Posted");
+
+            // TODO: Update the tenant object so the user shows as "remove requested"
+            tenants.updateOne({ tid: req.body.tid, "users.oid": req.body.oid }, { $set: { "users.$.removalRequested": true } }, function (err, tenantDoc) {
+                if (err) { console.log(err); }
+                console.log("Tenant updated");
+                return res.status(200).send();
+
+            });
+
+        });
     }
 
     /*

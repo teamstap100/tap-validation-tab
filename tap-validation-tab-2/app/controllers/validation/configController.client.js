@@ -22,6 +22,7 @@
 
         microsoftTeams.getContext(function (context) {
             let email = context['userPrincipalName'];
+            //let email = "someone@nowhere.com";
             let apiEndpoint = '/api/pms/' + email + "/taps";
             ajaxRequest('GET', apiEndpoint, {}, function (data) {
                 data = JSON.parse(data);
@@ -35,9 +36,16 @@
                         $('#tapList').append(tapButton);
                     });
                 } else {
-                    //$('#tapList').text("You are not assigned to any TAPs.");
-                    $('#validationContainer').text(NO_TAP_ERROR_MESSAGE);
-                    $('#validationContainer').show();
+                    // TEMPORARY: We want customers to set up validations in their own tenants. So assume the user has access to Teams TAP.
+                    taps = ["Teams"]
+                    taps.forEach(function (tap) {
+                        //button.btn.tapSelect#windows(style="float: right") WCCP
+                        let tapButton = "<button class='btn tapSelect' id=" + tap + ">" + tap + "</button>";
+                        $('#tapList').append(tapButton);
+                    });
+
+                    //$('#validationContainer').text(NO_TAP_ERROR_MESSAGE);
+                    //$('#validationContainer').show();
                     $('#loading').hide();
                 }
 
@@ -183,7 +191,8 @@
           var radio = $(this).find('[name="validation"]');
           //console.log(radio);
           if (radio.is(':checked')) {
-              contentUrl += radio[0].id;
+              let safeId = radio[0].id.replace("other-", "").replace("mine-", "")
+              contentUrl += safeId;
 
               var groups = $(this).find('[name="group"]');
               var showVector = "";

@@ -33,9 +33,10 @@ block content
             each validation in validations
                 tr(class="val tap-" + validation.tap + " owner-" + validation.owner.split("@")[0] style="display: none")
                     td
-                        input(type='radio', name='validation', id=validation._id, value= validation.name)
+                        input(type='radio', name='validation', id='mine-' + validation._id, value= validation.name)
                     td
-                        label(for=validation._id) #{validation.name}
+                        - var safeName = validation.name.length > 60 ? validation.name.slice(0, 60) + "..." : validation.name;
+                        label(for='mine-' + validation._id, title=validation.name) #{safeName}
                     td.sectionCell
                         if validation.groups.length > 0
                             p.sections-directions(style="font-size: 9px; display: none") Select the sections to collect sign-offs for.
@@ -93,9 +94,10 @@ block content
             each validation in validations
                 tr(class="val tap-" + validation.tap + " owner-" + validation.owner.split("@")[0])
                     td
-                        input(type='radio', name='validation', id=validation._id, value= validation.name)
+                        input(type='radio', name='validation', id='other-' + validation._id, value= validation.name)
                     td
-                        label(for=validation._id) #{validation.name}
+                        - var safeName = validation.name.length > 60 ? validation.name.slice(0, 60) + "..." : validation.name;
+                        label(for='other-' + validation._id, title=validation.name) #{safeName}
                     td.sectionCell
                         if validation.groups.length > 0
                             p.sections-directions(style="font-size: 11px; display: none") Select the sections to collect sign-offs for.
