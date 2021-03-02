@@ -21,15 +21,15 @@ var setupFeatureRequests = function(context) {
 
         $('.btn-feedback-upvote').click(function () {
             let id = this.id.replace("feature-request-btn-", "");
-            console.log(id);
+            //console.log(id);
             let url = `/api/featureRequests/upvote/${id}`;
             let params = { userEmail: context['userPrincipalName'] };
 
             ajaxRequest('POST', url, params, function (resp) {
-                console.log(resp);
+                //console.log(resp);
                 let score = parseInt($('#feature-request-score-' + id).text());
                 score++;
-                console.log(score);
+                //console.log(score);
                 $('#feature-request-score-' + id).text(score);
                 $('#feature-request-btn-' + id).attr('disabled', true);
             
@@ -39,14 +39,17 @@ var setupFeatureRequests = function(context) {
         // Get all the feature requests this user has already supported
         function showExisitngFeatureRequestSupports() {
             let url = `/api/featureRequests/supports?email=${context['userPrincipalName']}&validationId=${config.validationId}`;
-            console.log(url);
+            //console.log(url);
             ajaxRequest('GET', url, {}, function (resp) {
-                resp = JSON.parse(resp);
-                console.log(resp);
-                resp.featureRequests.forEach(function (freq) {
-                    console.log(freq._id);
-                    $('#feature-request-btn-' + freq._id).attr('disabled', true);
-                });
+                //console.log(resp);
+                if (resp) {
+                    resp = JSON.parse(resp);
+                    //console.log(resp);
+                    resp.featureRequests.forEach(function (freq) {
+                        //console.log(freq._id);
+                        $('#feature-request-btn-' + freq._id).attr('disabled', true);
+                    });
+                }
             });
         }
 

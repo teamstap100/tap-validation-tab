@@ -937,6 +937,8 @@ function bugHandler (dbParent) {
                 let priority = 2;
                 let ringBlocker;
 
+                // Only set S1 if CFL = yes.
+
 
                 if (req.body.extent == "Several") {
                     if (req.body.everWorked == "Yes") {

@@ -71,6 +71,18 @@ module.exports = {
                 request.post(attachmentOptions, function (adoErr, adoResp, adoBody) {
                     if (adoErr) { throw adoErr; }
                     console.log(adoResp.statusCode);
+
+                    // TODO: Also check in /api/upload/multiple too.
+                    if (adoResp.statusCode == 413) {
+                        console.log("This attachment is too large");
+                        fileIndex++;
+                        if (files.length > fileIndex) {
+                            return uploadAndLink(fileIndex, files);
+                        } else {
+                            return callback(attachmentBodies);
+                        }
+                    }
+
                     console.log(adoBody);
 
                     adoBody = JSON.parse(adoBody);

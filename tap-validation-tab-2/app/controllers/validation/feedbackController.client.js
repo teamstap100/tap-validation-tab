@@ -134,6 +134,8 @@ $(document).ready(function () {
             // disable the submit button
             disableAndSpin('#edit-report-submit');
 
+            $('#edit-report-submit-status').text("Uploading...");
+
             $.ajax({
                 type: "POST",
                 enctype: 'multipart/form-data',
@@ -147,6 +149,9 @@ $(document).ready(function () {
                     $("#result").text(data);
                     console.log("SUCCESS : ", data);
 
+                    $('#edit-report-submit-status').text("Submitting...");
+
+
                     voteParams.attachments = data.files;
 
                     voteParams.title = $('#edit-report-title-field').val();
@@ -157,18 +162,22 @@ $(document).ready(function () {
 
                     ajaxRequest('PUT', submitUrl, voteParams, function () {
                         enableAndRemoveSpin('#edit-report-submit');
+                        $('#edit-report-submit-status').text("Done");
+                        $('#edit-report-submit-status').text("");
+
                         $('#edit-report-modal').modal('hide');
 
                         myFeedbackTable.ajax.reload(bindEditButtons);
                     });
 
-                    $("#edit-report-submit").attr("disabled", false);
+                    //$("#edit-report-submit").attr("disabled", false);
                 },
                 error: function (e) {
                     // TODO: Do more helpful stuff, probably still submit the text feedback
                     $("#result").text(e.responseText);
+                    $('#feedback-submit-stauts').text("Error: " + e.responseText);
                     console.log("ERROR : ", e);
-                    $("#edit-report-submit").attr("disabled", false);
+                    enableAndRemoveSpin('#edit-report-submit');
                 }
             });
         }
@@ -335,6 +344,8 @@ $(document).ready(function () {
 
             feedbackParams.attachmentFilenames = [];
 
+            $('#feedback-submit-status').text("Uploading...");
+
             $.ajax({
                 type: "POST",
                 enctype: 'multipart/form-data',
@@ -348,6 +359,8 @@ $(document).ready(function () {
                     $("#result").text(data);
                     console.log("SUCCESS : ", data);
 
+                    $('#feedback-submit-status').text("Submitting...");
+
                     feedbackParams.attachments = data.files;
 
                     let submitUrl = FEEDBACK_API_URL;
@@ -358,6 +371,10 @@ $(document).ready(function () {
                         enableAndRemoveSpin("#submitFeedback");
                         $('#feedback-modal').modal('hide');
 
+                        $('#feedback-submit-status').text("Success");
+                        $('#feedback-submit-status').text("");
+
+
                         // TODO: Reset form
 
                     });
@@ -366,7 +383,8 @@ $(document).ready(function () {
                     // TODO: Do more helpful stuff, probably still submit the text feedback
                     $("#result").text(e.responseText);
                     console.log("ERROR : ", e);
-                    $("#windows-report-submit").attr("disabled", false);
+                    $('#feedback-submit-status').text("Error: " + e.responseText);
+                    enableAndRemoveSpin('#submitFeedback');
                 }
             });
         });

@@ -21,6 +21,10 @@ $(document).ready(function () {
         // disable the submit button
         disableAndSpin('#edit-report-submit');
 
+        if (data.files) {
+            $('#edit-report-submit-status').text("Uploading...");
+        }
+
         $.ajax({
             type: "POST",
             enctype: 'multipart/form-data',
@@ -34,6 +38,8 @@ $(document).ready(function () {
                 $("#result").text(data);
                 console.log("SUCCESS : ", data);
 
+                $('edit-report-submit-status').text("Submiting changes...");
+
                 voteParams.attachments = data.files;
 
                 voteParams.title = $('#edit-report-title-field').val();
@@ -44,6 +50,9 @@ $(document).ready(function () {
 
                 ajaxRequest('PUT', submitUrl, voteParams, function () {
                     enableAndRemoveSpin('#edit-report-submit');
+
+                    $('edit-report-submit-status').text("Complete.");
+                    $('edit-report-submit-status').text("");
 
                     $('#edit-report-modal').modal('hide');
                 });

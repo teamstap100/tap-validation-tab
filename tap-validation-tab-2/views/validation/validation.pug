@@ -335,6 +335,7 @@ block content
       br
       br
 
+    // Modal shown when clicking "Fails"
     #report-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='modalLabel', aria-hidden='true')
       .modal-dialog(role='document')
         .modal-content
@@ -353,7 +354,8 @@ block content
                 | Your feedback has been recorded. Please submit more details on #[a(href="https://github.com/Azure/communication-preview", target="_blank")  GitHub].
           .modal-footer
             button.btn.btn-primary(type='button', data-dismiss="modal") OK
-
+            
+    // Modal sohwn when clicking "Comment"
     #comment-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='commentLabel', aria-hidden='true')
       #comment-id(style="display: none") Test
       #comment-caseTitle(style="display: none") Test
@@ -372,6 +374,7 @@ block content
             button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
             button.btn.btn-primary#submitComment(type='button', data-dismiss="modal") Submit
 
+    // Modal sohwn when clicking "Works/Fails/Feedback" on Windows
     #windows-report-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='windowsReportLabel', aria-hidden='true')
       #windows-report-id(style="display: none") Test
       #windows-report-name(style="display: none") Name
@@ -408,9 +411,10 @@ block content
             p(style="font-size: 12px") Bugs and feedback submitted through the Validation Tool (this form) in Teams will make the your email address visible to Microsoft customer support and engineering to enable further investigation when needed.  When you click the "Submit" button, your email address is attached to the work item in Microsoft Azure DevOps (ADO) and may persist even if you leave the engagement or program to which you have opted in.
                 
           .modal-footer
-            button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
+            p#windows-report-submit-status
             button.btn.btn-primary#windows-report-submit(title="Submit" name="submit") Submit
 
+    // Modal shown when clicking "View All Feedback"
     #view-feedback-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='viewFeedbackLabel', aria-hidden='true')
       .modal-dialog.modal-lg(role='document', style="width: 90%")
         .modal-content
@@ -452,6 +456,7 @@ block content
                 
           .modal-footer
 
+    // Modal shown when viewing or submitting general feedback
     #feedback-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='feedbackLabel', aria-hidden='true')
       .modal-dialog(role='document' style="width: 90%")
         .modal-content
@@ -511,8 +516,10 @@ block content
             p(style="font-size: 12px") Bugs and feedback submitted through the Validation Tool (this form) in Teams will make the your email address visible to Microsoft customer support and engineering to enable further investigation when needed.  When you click the "Submit" button, your email address is attached to the work item in Microsoft Azure DevOps (ADO) and may persist even if you leave the engagement or program to which you have opted in.
                 
           .modal-footer
+              p#feedback-submit-status
               button.btn.btn-primary#submitFeedback(type='button', style="float: right", disabled) Submit
 
+    // Modal shown when submitting a new feature request
     #feature-request-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='featureRequestLabel', aria-hidden='true')
       .modal-dialog(role='document' style="width: 90%")
         .modal-content
@@ -554,6 +561,7 @@ block content
           .modal-footer
               button.btn.btn-primary#submitFeatureRequest(type='button', style="float: right", disabled) Submit
 
+    // Modal shown when editing a Works/Fails/Feedback entry
     #edit-report-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='windowsReportLabel', aria-hidden='true')
       #edit-report-id(style="display: none") Test
       #edit-report-name(style="display: none") Name
@@ -586,9 +594,10 @@ block content
                         p(style="font-size: 12px;") If checked, your anonymous comment will be visible to others. Don't provide personally identificable information in your comment if this is checked.
                 
           .modal-footer
-            button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
-            button.btn.btn-primary#edit-report-submit(type='submit', title="Submit" name="submit") Save changes
+            p#edit-report-submit-status
+            button.btn.btn-primary#edit-report-submit(type='submit', title="Save changes" name="submit") Save changes
 
+    // Modal shown when submitting a comment on scenario feedback
     #feedback-comment-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='feedback-commentlabel', aria-hidden='true')
       #feedback-comment-id(style="display: none") Test
       #feedback-comment-name(style="display: none") Name
@@ -607,14 +616,13 @@ block content
                         input.form-control#feedback-comment-field.feedback-comment-field(type="text" placeholder="Submit a comment.")
                 
           .modal-footer
-            button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
             button.btn.btn-primary#feedback-comment-submit(title="Submit" name="submit") Submit
               
 
     script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js')
     script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap.min.js')
     link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap.min.css')
-    script(type="text/javascript", src="/helpers/helpers.js")
+    //script(type="text/javascript", src="/helpers/helpers.js") // ALready defined in layout.pug
     script(type="text/javascript", src="/controllers/validation/featureRequestController.client.js")
     script(type="text/javascript", src="/controllers/validation/feedbackController.client.js")
     script(type="text/javascript", src="/controllers/validation/caseFeedbackController.client.js")

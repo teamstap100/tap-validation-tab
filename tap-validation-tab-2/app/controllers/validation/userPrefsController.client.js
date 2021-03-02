@@ -11,35 +11,40 @@
             let userPrefsUrl = userPrefsUrlBase + oid;
             ajaxRequest('GET', userPrefsUrl, {}, function (data) {
                 console.log("Done");
-                data = JSON.parse(data);
+                if (data) {
+                    data = JSON.parse(data);
 
-                if (data.windowsBuildVersion) {
-                    $('#windowsBuildVersion').val(data.windowsBuildVersion).trigger('change');
+                    if (data.windowsBuildVersion) {
+                        $('#windowsBuildVersion').val(data.windowsBuildVersion).trigger('change');
+                    }
+
+                    if (data.windowsBuildType) {
+                        $('#windowsBuildType').val(data.windowsBuildType).trigger('change');
+                    }
+                    if (data.votesPublic) {
+                        $('#votesPublicField').prop('checked', true);
+                    }
+
+                    if (data.feedbackPublic) {
+                        $('#feedbackPublicField').prop('checked', true);
+                    }
+
+                    if (data.featureRequestsPublic) {
+                        $('#featureRequestsPublicField').prop('checked', true);
+                    }
+
+                    if (data.device) {
+                        console.log("Setting device");
+                        $('#deviceSelect').val(data.device).trigger('change');
+                    }
+
+                    //userPrefs = data;
+
+                    return data;
+                } else {
+                    return {};
                 }
 
-                if (data.windowsBuildType) {
-                    $('#windowsBuildType').val(data.windowsBuildType).trigger('change');
-                }
-                if (data.votesPublic) {
-                    $('#votesPublicField').prop('checked', true);
-                }
-
-                if (data.feedbackPublic) {
-                    $('#feedbackPublicField').prop('checked', true);
-                }
-
-                if (data.featureRequestsPublic) {
-                    $('#featureRequestsPublicField').prop('checked', true);
-                }
-
-                if (data.device) {
-                    console.log("Setting device");
-                    $('#deviceSelect').val(data.device).trigger('change');
-                }
-
-                //userPrefs = data;
-
-                return data;
             });
         });
     }
@@ -80,7 +85,7 @@
             let userPrefsUrl = userPrefsUrlBase + oid;
             ajaxRequest('POST', userPrefsUrl, params, function (data) {
                 //let userPrefs = prefs;
-                console.log("Set preferences");
+                //console.log("Set preferences");
             });
         });
     }

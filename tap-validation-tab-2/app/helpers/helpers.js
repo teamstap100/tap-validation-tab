@@ -2,7 +2,8 @@
  * Useful bits of HTML
  */
 
-    const spinner = '<i class="fa fa-spinner fa-spin"></i>  ';
+const spinner = '<i class="fa fa-spinner fa-spin"></i>  ';
+
 
 
 const clientSpinner = '<i class="fa fa-spinner fa-spin client-spin"></i>  ';
@@ -114,6 +115,9 @@ function ajaxRequest(method, url, params, callback) {
 
     xmlhttp.onreadystatechange = function () {
         if (xmlhttp.readyState === 4 && xmlhttp.status === 200) {
+            callback(xmlhttp.response);
+        } else {
+            console.log(xmlhttp.status);
             callback(xmlhttp.response);
         }
     };

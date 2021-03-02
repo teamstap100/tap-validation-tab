@@ -885,6 +885,12 @@ var config = {};
                     // disable the submit button
                     disableAndSpin('#windows-report-submit');
 
+                    for (var pair in data.entries()) {
+                        console.log(pair);
+                    }
+
+                    $('#windows-report-submit-status').text("Uploading...");
+
                     if (config.collectDeviceFeedback) {
                         voteParams.device = deviceSelect.value;
                     }
@@ -911,6 +917,8 @@ var config = {};
                             $("#result").text(data);
                             console.log("SUCCESS : ", data);
 
+                            $('#windows-report-submit-status').text("Submitting feedback...");
+
                             voteParams.attachments = data.files;
 
                             voteParams.title = $('#windows-report-title-field').val();
@@ -925,6 +933,10 @@ var config = {};
 
                             ajaxRequest('POST', submitUrl, voteParams, function () {
                                 enableAndRemoveSpin("#windows-report-submit");
+
+                                $('#windows-report-submit-status').text("Complete");
+                                $('#windows-report-submit-status').text("");
+
                                 $('#windows-report-modal').modal('hide');
                                 resetWindowsReport();
 
@@ -935,13 +947,14 @@ var config = {};
                                 }
                             });
 
-                            $("#windows-report-submit").attr("disabled", false);
+                            //$("#windows-report-submit").attr("disabled", false);
                         },
                         error: function (e) {
                             // TODO: Do more helpful stuff, probably still submit the text feedback
                             $("#result").text(e.responseText);
+                            $('#windows-report-submit-status').text("Error: " + e.responseText);
                             console.log("ERROR : ", e);
-                            $("#windows-report-submit").attr("disabled", false);
+                            enableAndRemoveSpin('#windows-report-submit');
                         }
                     });
                 }
