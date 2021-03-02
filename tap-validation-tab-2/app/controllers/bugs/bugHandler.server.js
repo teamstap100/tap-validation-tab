@@ -62,7 +62,9 @@ function bugHandler (dbParent) {
         return comment;
     }
 
+    /*
     function ringsToRingBlocker(rings) {
+
         // Takes a string like "R1.5,R3,R4" and returns the string to use for the Ring Blocker field.
         // The next ring up is the one that is blocked.
         if (rings.includes("R4")) {
@@ -75,6 +77,7 @@ function bugHandler (dbParent) {
             return null;
         }
     }
+    */
 
 
       this.getBug = function(req, res) {
@@ -876,6 +879,7 @@ function bugHandler (dbParent) {
         let meetingsPerf = req.body.meetingsPerf;
         let submitter = req.body.submitter;
         let validationName = req.body.validationName;
+        let cfl = req.body.cfl;
 
         //let tabUrl = req.body.tabUrl;
 
@@ -906,7 +910,14 @@ function bugHandler (dbParent) {
                 tagList += " MeetingsPerf;";
             }
 
-            let comment = submitter + " provided this triage info through the Tenant Bugs tab:<br />Users affected: " + extent + "<br />Rings this repros in: " + rings + "<br />Has this ever worked? " + everWorked + "<br />Related to meetings perf? " + meetingsPerf;
+            //let comment = submitter + " provided this triage info through the Tenant Bugs tab:<br />Users affected: " + extent + "<br />Rings this repros in: " + rings + "<br />Has this ever worked? " + everWorked + "<br />Related to meetings perf? " + meetingsPerf;
+            let comment = `${submitter} provided this triage info through the Tenant Bugs tab:
+                Users affected: ${extent}
+                Is this impacting critical business needs? ${cfl}
+                Rings this repros in: ${rings}
+                Has this ever worked? ${everWorked}
+                Related to meetings perf? ${meetingsPerf}`
+
 
             if (validationName) {
                 comment += "<br />Validation: " + validationName;
@@ -935,26 +946,40 @@ function bugHandler (dbParent) {
 
                 let severity = "3 - Medium";
                 let priority = 2;
-                let ringBlocker;
 
                 // Only set S1 if CFL = yes.
+                // 1 - Critical, 2 - High, 3 - Medium
 
+                // See this page for a nice table of the business logic.
+                // https://microsoft.sharepoint.com/teams/CustomerValidationProgramCVP/_layouts/15/Doc.aspx?sourcedoc={d92a62b8-1700-40ed-9cc6-815e7c2a8b34}&action=edit&wd=target%28TAP%20Specs.one%7Cb1078b94-a090-4271-a677-c9f9db3a0439%2FTAP%20IT%20admin%20self-triage%20v2%20spec%7Cc2256616-8572-4fc5-b980-a9b94955b577%2F%29
 
-                if (req.body.extent == "Several") {
-                    if (req.body.everWorked == "Yes") {
+                if (cfl == "Yes") {
+                    if ((extent == "Several") || (extent == "All")) {
                         severity = "1 - Critical";
                         priority = 1;
                         tagList += " TAPAdminS1; TAPAdminP1;";
                     } else {
                         severity = "2 - High";
-                        tagList += " TAPAdminS2;";
+                        priority = 1;
+                        tagList += " TAPAdminS2; TAPAdminP1;";
                     }
-                } else if (req.body.extent == "All") {
-                    severity = "1 - Critical";
-                    priority = 1;
-                    tagList += " TAPAdminS1; TAPAdminP1;";
-                    ringBlocker = ringsToRingBlocker(rings);
+                } else {
+                    if (req.body.extent == "Several") {
+                        if (req.body.everWorked == "Yes") {
+                            severity = "2 - High";
+                            priority = 1;
+                            tagList += " TAPAdminS2; TAPAdminP1;";
+                        } else {
+                            severity = "2 - High";
+                            tagList += " TAPAdminS2;";
+                        }
+                    } else if (req.body.extent == "All") {
+                        severity = "2 - High";
+                        priority = 1;
+                        tagList += " TAPAdminS2; TAPAdminP1;";
+                    }
                 }
+
 
                 patch.push({
                     op: "add",
@@ -962,7 +987,6 @@ function bugHandler (dbParent) {
                     value: severity
                 });
 
-                // Only need to set priority if extent is All
                 if (priority != 2) {
                     patch.push({
                         op: "add",
@@ -971,9 +995,6 @@ function bugHandler (dbParent) {
                     });
                 }
 
-                if (ringBlocker) {
-                    // TODO: Set the ringBlocker field - "MicrosoftTeamsCMMI.RingBlocker" - when more confident of the right values
-                }
 
                 function sendPatch(patch) {
                     console.log(patch);

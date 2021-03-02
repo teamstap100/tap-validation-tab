@@ -142,6 +142,16 @@ block content
                           input(type='checkbox', name='ringsField', value='R4')
                           | R4
                     .form-group
+                        label(for="cflField") Does this bug impact critical business needs? 
+                            span(style="color: red") (*)
+                        br
+                        label.radio-inline
+                          input(type='radio', name='cflField', value='Yes')
+                          | Yes
+                        label.radio-inline
+                          input(type='radio', name='cflField', value='No')
+                          | No
+                    .form-group
                         label(for="everWorkedField") Has this ever worked? 
                             span(style="color: red") (*)
                         br
@@ -263,7 +273,6 @@ block content
     script(type='text/javascript', src='https://cdn.datatables.net/v/bs/jszip-2.5.0/dt-1.10.20/b-1.6.1/b-html5-1.6.1/datatables.min.js')
     script(type="text/javascript", src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.8.4/moment.min.js")
     script(type="text/javascript", src="https://cdn.datatables.net/plug-ins/1.10.20/sorting/datetime-moment.js")
-    script(type="text/javascript", src="/helpers/helpers.js")
     script(type="text/javascript", src="/controllers/bugs/tenantBugsController.client.js")
 
   

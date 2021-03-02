@@ -2,7 +2,6 @@
 
 (function () {
     const MICROSOFT_TID = "72f988bf-86f1-41af-91ab-2d7cd011db47";
-    const spinner = '<i class="fa fa-spinner fa-spin"></i>  ';
     const centerSpinner = '<div style="text-align: center;"><i class="fa fa-spinner fa-spin"></i></div>';
     const check = "<i class='fa fa-check' style='color: green;'></i>";
 
@@ -29,6 +28,7 @@
         $("input:checkbox[name ='ringsField']").prop("checked", false);
         $("input:radio[name ='everWorkedField']").prop("checked", false);
         $("input:radio[name ='meetingsPerfField']").prop("checked", false);
+        $("input:radio[name ='cflField']").prop("checked", false);
     }
 
     microsoftTeams.initialize();
@@ -58,14 +58,17 @@
                 $('#loading').show();
                 initEverything();
             } else {
+                console.log("Getting tid");
                 ajaxRequest('POST', tenantUrl, params, function (data) {
-                    data = JSON.parse(data);
+                    //console.log(data);
+                    //console.log(data == null);
                     //console.log(data);
 
-                    if (data == null) {
+                    if (data == "") {
                         //console.log("Not visible");
                         showWrongTenantBanner();
                     } else {
+                        data = JSON.parse(data);
                         if ((data.tid == tid) || (data.tid == MICROSOFT_TID)) {
                             //console.log("Make stuff visible");
                             $('#loading').show();
@@ -494,6 +497,8 @@
 
                     let validationName = $('#validationField').val();
 
+                    let cfl = $("input:radio[name ='cflField']:checked").val();
+
                     $("#triageSubmit").attr("disabled", true);
                     $("#triageSubmit").html(spinner + $('#triageSubmit').text());
 
@@ -501,6 +506,7 @@
                         let params = {
                             submitter: cleanEmail(context["userPrincipalName"]),
                             extent: extent,
+                            cfl: cfl,
                             rings: rings,
                             everWorked: everWorked,
                             meetingsPerf: meetingsPerf,
