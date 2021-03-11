@@ -6,10 +6,13 @@ block morescripts
   link(rel='stylesheet', type='text/css', href='/public/css/sticky-footer.css')
   script(type='text/javascript', src='https://cdn.datatables.net/v/bs/dt-1.10.18/datatables.min.js')
   //script(type='text/javascript', src='https://unpkg.com/analytics/dist/analytics.min.js')
-  script(type="text/javascript", src="/controllers/infoController.client.js")
+  script(type="text/javascript", src="/controllers/tap100-app/infoController.client.js")
   script(type="text/javascript", src="/controllers/analytics.client.js")
 
 block content
+  .container
+    br
+    alert.alert.alert-warning Please go to #[a(href="https://aka.ms/TAP100App", target="_blank") Microsoft Teams QCO Portal] via the web to learn about Microsoft Teams TAP. This app is no longer supported.
   br
   .container
     #role-select-form(style="display: none")

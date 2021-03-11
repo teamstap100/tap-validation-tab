@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 //const jsdom = require('jsdom');
 const cheerio = require('cheerio');
+const { ADO_API_BASE, uploadAttachments } = require('../../helpers/helpers.server');
 
 function bugHandler (dbParent) {
 
@@ -18,7 +19,9 @@ function bugHandler (dbParent) {
     var triageBugs = db.collection('triageBugs');
 
     const TEAMS_ADO_API_BASE = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/";
+
     const TEAMS_ADO_BUGS_ENDPOINT = TEAMS_ADO_API_BASE + "workitems/$bug?api-version=4.1";
+    const TEAMS_ADO_WORKITEM_ADD_ENDPOINT = TEAMS_ADO_API_BASE + "workitems/$Bug?api-version=4.11";
     const TEAMS_ADO_WORKITEM_UPDATE_ENDPOINT = TEAMS_ADO_API_BASE + "workitems/{id}?api-version=4.1";
     const TEAMS_ADO_WORKITEM_COMMENTS_ENDPOINT = TEAMS_ADO_API_BASE + "workitems/{id}/comments?order=asc";
 
@@ -31,6 +34,13 @@ function bugHandler (dbParent) {
     // This one's for production
     // Used to run queries and write comments to workitems
     var AUTH = process.env.AUTH;
+
+    // Hardcoding this Teams project instead of putting it in the DB
+    var TEAMS_PROJECT = {
+        org: "domoreexp",
+        project: "MSTeams",
+        auth: AUTH
+    };
 
     function fixHtml(html) {
         const domObj = cheerio.load(html, { xmlMode: true });
@@ -114,228 +124,6 @@ function bugHandler (dbParent) {
           console.log(doc);
         })
       }
-
-    /*
-    this.getOneBug = function (req, res) {
-        // Not yet implemented
-        return res.status(200).send();
-    }
-
-      this.addBug = function(req, res) {
-        console.log("addbug got called");
-        //console.log(req.body);
-        //console.log(req.headers.referer.split('/'))
-
-        //console.log(req);
-
-        //var refUrlParts = req.headers.referer.split('/')
-        //var validationId = refUrlParts.pop();
-        var validationId = req.body.validationId;
-          var bugSubmitter = req.body.submitter;
-          var submitterTenantId = req.body.submitterTenantId;
-
-          console.log("bugSubmitter is " + bugSubmitter);
-
-          console.log("Creating new bug with validaitonId " + validationId);
-
-        validations.findOne(ObjectID(validationId), {}, function(err, valDoc) {
-          if (err) { throw err; }
-
-          var newBug = {
-            name: req.body.bugDescription,
-            validationId: ObjectID(validationId),
-            validationTag: valDoc.tag,
-            submitter: bugSubmitter,
-            submitterTenantId: submitterTenantId,
-            vstsState: "New",
-            clientType: req.body.clientType,
-            upvotes: [bugSubmitter,],
-            downvotes: [],
-              timestamp: new Date(),
-            };
-
-            var validationName = valDoc["name"];
-
-      
-            if (req.body.hasOwnProperty("vstsId")) {
-                console.log("vstsId was detected in the request");
-                newBug._id = req.body.vstsId;
-            } else {
-                console.log("No vstsId in that request");
-            }
-
-            if (req.body.hasOwnProperty("vstsState")) {
-                newBug.vstsState = req.body.vststState;
-            }
-
-            // Set the timestamp if it's there. Useful for importing older bugs
-            if (req.body.hasOwnProperty("timestamp")) {
-                newBug.timestamp = req.body.timestamp;
-            }
-
-            // TODO: Code smellz
-            if (newBug.hasOwnProperty("_id")) {
-                bugs.insertOne(newBug, function (err, doc) {
-                    console.log("Calling insertOne");
-                    if (err) {
-                        if (err.name === 'MongoError' && err.code === 11000) {
-                            return res.status(500).send({ success: false, message: 'Bug is already in the DB' });
-                        }
-                        throw err;
-                    }
-
-                    console.log("New bug created:" + JSON.stringify(doc.ops[0]));
-
-                    res.json(doc.ops[0]);
-                });
-            } else {
-                var bugProjection = {};
-
-                console.log("No vstsId, so adding this to vsts");
-
-                // Add the new bug to VSTS
-                var reqBody = [
-                    {
-                        "op": "add",
-                        "path": "/fields/System.Title",
-                        "value": newBug.name
-                    },
-                    {
-                        "op": "add",
-                        "path": "/fields/System.AreaPath",
-                        "value": "MSTeams\\Customer Feedback"
-                    },
-                    {
-                        "op": "add",
-                        "path": "/fields/Microsoft.VSTS.TCM.SystemInfo",
-                        "value": "Submitted by " + bugSubmitter + " through the TAP Validation Tab for '" + validationName + "'"
-                    },
-                    {
-                        "op": "add",
-                        "path": "/fields/MicrosoftTeamsCMMI.CustomerName",
-                        "value": submitterTenantId
-                    },
-                    {
-                        "op": "add",
-                        "path": "/fields/MicrosoftTeamsCMMI.CustomerEmail",
-                        "value": bugSubmitter
-                    },
-                    // TODO: Add other ops here
-                ];
-                const options = {
-                    url: TEAMS_ADO_BUGS_ENDPOINT,
-                    headers: {
-                        'Authorization': AUTH,
-                        'Content-Type': 'application/json-patch+json'
-                    },
-                    body: JSON.stringify(reqBody)
-                };
-
-                request.post(options, function (vstsErr, vstsResponse, vstsBody) {
-                    if (vstsErr) { throw vstsErr; }
-                    var vstsJson = JSON.parse(vstsBody);
-                    console.log(vstsResponse);
-                    console.log(vstsBody);
-                    console.log(vstsJson);
-                    const vstsId = parseInt(vstsJson.id);
-                    console.log("the vstsID is", vstsId);
-                    newBug._id = vstsId;
-                    // TODO: What to do if something is submitted with the same VSTSID?
-                    bugs.insertOne(newBug, function (err, doc) {
-                        console.log("Calling insertOne");
-                        if (err) {
-                            throw err;
-                        }
-
-                        console.log("New bug created:" + JSON.stringify(doc.ops[0]));
-
-                        res.json(doc.ops[0]);
-                    });
-                });
-            }
-          })
-      };
-      */
-
-    //* TODO: does this get used at all? */
-    /*
-      this.addVote = function(req, res) {
-        console.log("addVote got called");
-
-        console.log(req.body);
-
-        //var refUrlParts = req.url.split('/');
-          console.log("bid was " + req.body.bId);
-          const bId = parseInt(req.body.bId);
-        const userId = req.body.userId;
-          const userEmail = req.body.userEmail;
-          const userTenantId = req.body.userTenantId;
-        const clientType = req.body.clientType;
-        const upDown = req.body.upDown;
-        var verboseUpDown = "I can repro";
-        if (upDown == "down") {
-          verboseUpDown = "Cannot repro";
-        }
-
-          var query = { "_id": bId };
-        var updateOp;
-        console.log("upDown is " + upDown);
-        console.log("bId is " + bId);
-        if (upDown == "up") {
-          updateOp = { $addToSet: { "upvotes": userEmail}, $pull: { "downvotes": userEmail} }
-        } else {
-          updateOp = { $addToSet: { "downvotes": userEmail }, $pull: { "upvotes": userEmail} }
-        }
-
-          bugs.findAndModify(
-              query,
-              {},
-              updateOp,
-              function (err, result) {
-                  if (err) { throw err; }
-
-                  console.log(result);
-                  console.log(result[0]);
-                  // Now put the vote in VSTS
-                  var reqBody = [
-                      {
-                          op: "add",
-                          path: "/fields/System.History",
-                          value: userEmail + " (on " + clientType + ") voted: " + verboseUpDown
-                      }
-                  ];
-
-                  var update_endpoint = TEAMS_ADO_WORKITEM_UPDATE_ENDPOINT.replace("{id}", bId);
-                  //console.log(update_endpoint);
-                  //console.log(result.value._id);
-                  const options = {
-                      url: update_endpoint,
-                      headers: {
-                          'Authorization': AUTH,
-                          'Content-Type': 'application/json-patch+json'
-                      },
-                      body: JSON.stringify(reqBody)
-                  };
-
-                  request.patch(options, function (vstsErr, vstsResponse, vstsBody) {
-                      if (vstsErr) { throw vstsErr; }
-                      //console.log("Vsts response was: " + vstsBody);
-                      res.json(result.value);
-                  });
-              });
-
-          //var userQuery = { "email": userEmail };
-          //var userData = {
-          //    "email": userEmail,
-          //    "tenantId": userTenantId,
-          //};
-
-          //users.update(userQuery, userData, {
-          //    upsert: true
-          // }
-          //);
-        };
-        */
 
     this.getBugsConfig = function (req, res) {
 
@@ -512,18 +300,18 @@ function bugHandler (dbParent) {
 
             //console.log(options);
 
-            request.post(options, function (vstsErr, vstsResponse, vstsBody) {
-                if (vstsErr) {
-                    console.log(vstsErr);
-                    throw vstsErr;
+            request.post(options, function (adoErr, adoResponse, adoBody) {
+                if (adoErr) {
+                    console.log(adoErr);
+                    throw adoErr;
                 }
-                //console.log(vstsResponse.statusCode);
-                //console.log(vstsBody);
+                //console.log(adoResponse.statusCode);
+                //console.log(adoBody);
 
-                vstsBody = JSON.parse(vstsBody);
-                //console.log(vstsBody);
-                var workitems = vstsBody.workItems;
-                witsCount = vstsBody.workItems.length;
+                adoBody = JSON.parse(adoBody);
+                //console.log(adoBody);
+                var workitems = adoBody.workItems;
+                witsCount = adoBody.workItems.length;
 
                 workitems.forEach(function (wit) {
 
@@ -536,15 +324,17 @@ function bugHandler (dbParent) {
 
                     //console.log(wit.url);
 
-                    request.get(witOptions, function (vstsErr, vstsResponse, vstsBody) {
-                        //console.log(vstsResponse.statusCode);
-                        if (vstsResponse.statusCode.toString()[0] == "5") {
+                    request.get(witOptions, function (adoErr, adoResponse, adoBody) {
+                        //console.log(adoResponse.statusCode);
+                        if (adoErr) { console.log(adoErr); }
+                        console.log(adoBody);
+                        if (adoResponse.statusCode.toString()[0] == "5") {
                             console.log("Server error");
                             return res.status(500).send();
                         }
 
                         // TDOO: Handle JSON parsing error here when it hits a limit
-                        let workitem = JSON.parse(vstsBody);
+                        let workitem = JSON.parse(adoBody);
 
                         //console.log(workitem);  
 
@@ -558,6 +348,11 @@ function bugHandler (dbParent) {
                         //console.log(commentOptions);
 
                         request.get(commentOptions, function (commentErr, commentStatus, commentResponse) {
+                            if (commentErr) {
+                                console.log(commentErr);
+                                throw commentErr;
+                            }
+                            console.log(commentResponse);
                             if (commentStatus.statusCode.toString()[0] == "5") {
                                 console.log("Server error");
                                 return res.status(500).send();
@@ -893,8 +688,9 @@ function bugHandler (dbParent) {
             },
         };
 
-        request.get(getWitOptions, function (vstsErr, vstsResponse, vstsBody) {
-            let resp = JSON.parse(vstsBody);
+        request.get(getWitOptions, function (adoErr, adoResponse, adoBody) {
+            if (adoErr) { throw adoErr; }
+            let resp = JSON.parse(adoBody);
             console.log(resp);
 
             let existingTags = resp.fields["System.Tags"];
@@ -938,9 +734,9 @@ function bugHandler (dbParent) {
                 body: JSON.stringify(reqBody)
             };
 
-            request.post(options, function (vstsErr, vstsResponse, vstsBody) {
-                if (vstsErr) { throw vstsErr; }
-                console.log(vstsBody);
+            request.post(options, function (adoErr, adoResponse, adoBody) {
+                if (adoErr) { throw adoErr; }
+                console.log(adoBody);
 
                 let patch = [];
 
@@ -1007,9 +803,9 @@ function bugHandler (dbParent) {
                         body: JSON.stringify(patch)
                     }
 
-                    request.patch(patchOptions, function (vstsErr, vstsResponse, vstsBody) {
-                        if (vstsErr) { console.log(vstsErr); }
-                        console.log(vstsBody);
+                    request.patch(patchOptions, function (adoErr, adoResponse, adoBody) {
+                        if (adoErr) { console.log(adoErr); }
+                        console.log(adoBody);
 
                         let safeId = parseInt(req.body.id);
 
@@ -1081,8 +877,8 @@ function bugHandler (dbParent) {
             },
         };
 
-        request.get(getWitOptions, function (vstsErr, vstsResponse, vstsBody) {
-            let resp = JSON.parse(vstsBody);
+        request.get(getWitOptions, function (adoErr, adoResponse, adoBody) {
+            let resp = JSON.parse(adoBody);
             console.log(resp);
 
             let existingTags = resp.fields["System.Tags"];
@@ -1113,8 +909,8 @@ function bugHandler (dbParent) {
                 body: JSON.stringify(patch)
             }
 
-            request.patch(patchOptions, function (vstsErr, vstsResponse, vstsBody) {
-                console.log(vstsBody);
+            request.patch(patchOptions, function (adoErr, adoResponse, adoBody) {
+                console.log(adoBody);
 
                 // Handle attachments if necessary
                 if (req.body.attachmentFilename) {
@@ -1219,8 +1015,8 @@ function bugHandler (dbParent) {
             },
         };
 
-        request.get(getWitOptions, function (vstsErr, vstsResponse, vstsBody) {
-            let resp = JSON.parse(vstsBody);
+        request.get(getWitOptions, function (adoErr, adoResponse, adoBody) {
+            let resp = JSON.parse(adoBody);
             console.log(resp);
 
             let existingTags = resp.fields["System.Tags"];
@@ -1264,7 +1060,7 @@ function bugHandler (dbParent) {
                 body: JSON.stringify(patch)
             }
 
-            request.patch(patchOptions, function (vstsErr, vstsResponse, vstsBody) {
+            request.patch(patchOptions, function (adoErr, adoResponse, adoBody) {
                 let safeId = parseInt(req.body.id);
                 let updateQuery = {
                     $set: {
@@ -1319,6 +1115,124 @@ function bugHandler (dbParent) {
             });
         })
 
+    }
+
+    this.renderBugReportConfig = function (req, res) {
+        return res.render('bugs/bugReportConfig', {});
+    }
+
+    this.renderBugReport = function (req, res) {
+        return res.render('bugs/bugReport');
+    }
+
+    function createTeamsBug(body, callback) {
+        console.log(body);
+        let bugTitle = "MTR Bug Report: "
+        let tags = "TAPMTRBugReport; TAP; Ring1_5;";
+
+        let safeComment = body.comment.replace(/\r?\n/g, '<br />');
+        bugTitle += '"' + safeComment + '"';
+
+        let annotatedComment = `"${safeComment}"<br /><br />Submitted by ${body.user.name} (${body.user.email}) through the MTR Bug Report Form in Teams.`;
+
+        if (bugTitle.length > 200) {
+            bugTitle = bugTitle.slice(0, 197) + "...";
+        }
+
+        let domain = body.user.email.split("@")[1];
+
+        tenants.findOne({ domains: domain }, function (err, tenantDoc) {
+            var reqBody = [
+                {
+                    "op": "add",
+                    "path": "/fields/System.Title",
+                    "value": bugTitle
+                },
+                {
+                    "op": "add",
+                    "path": "/fields/System.Tags",
+                    "value": tags,
+                },
+                {
+                    "op": "add",
+                    "path": "/fields/Microsoft.VSTS.TCM.ReproSteps",
+                    "value": annotatedComment,
+                },
+                {
+                    "op": "add",
+                    "path": "/fields/System.AreaPath",
+                    "value": "MSTeams\\Customer Feedback\\TAP"
+                },
+                {
+                    "op": "add",
+                    "path": "/fields/MicrosoftTeamsCMMI.CustomerName",
+                    "value": tenantDoc.tid
+                },
+                {
+                    "op": "add",
+                    "path": "/fields/MicrosoftTeamsCMMI.CustomerEmail",
+                    "value": body.user.email
+                },
+                {
+                    "op": "add",
+                    "path": "/fields/MicrosoftTeamsCMMI.CustomerTenantName",
+                    "value": tenantDoc.name
+                }
+            ];
+
+            let apiUrl = TEAMS_ADO_WORKITEM_ADD_ENDPOINT;
+
+            const options = {
+                url: apiUrl,
+                headers: {
+                    'Authorization': AUTH,
+                    'Content-Type': 'application/json-patch+json'
+                },
+                body: JSON.stringify(reqBody)
+            };
+
+            console.log("Create workitem options:");
+            console.log(options);
+
+            request.post(options, function (adoErr, adoResp, adoBody) {
+                if (adoErr) { throw adoErr; }
+
+                console.log(adoBody);
+                return callback(adoBody);
+
+            });
+        });
+    }
+
+    this.submitBugReport = function (req, res) {
+        console.log(req.body);
+        console.log(req.user);
+
+        req.body.user = req.user;
+
+        var bugId;
+
+        // TODO: Create ADO bug, assign the response's ID to bugId
+        createTeamsBug(req.body, function (adoBody) {
+            console.log(adoBody);
+            adoBody = JSON.parse(adoBody);
+            bugId = adoBody.id;
+            console.log("bugId is", bugId);
+            // Handle attachments
+            if (req.body.attachments) {
+                if (req.body.attachments.length > 0) {
+                    console.log("Handling attachments");
+                    uploadAttachments(req.body.attachments, bugId, TEAMS_PROJECT, function (attachmentBodies) {
+                        console.log(attachmentBodies);
+                        return res.status(200).send();
+                    });
+                } else {
+                    return res.status(200).send();
+                }
+            } else {
+                return res.status(200).send();
+            }
+        });
     }
 }
 

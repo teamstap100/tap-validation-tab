@@ -6,6 +6,26 @@ const csurf = require('csurf');
 const jwt = require('jsonwebtoken');
 const request = require('request');
 
+const TEST_USER = {
+    aud: '5b17716e-e0a6-4604-868f-9c781998021f',
+    iss: 'https://login.microsoftonline.com/72f988bf-86f1-41af-91ab-2d7cd011db47/v2.0',
+    iat: 1615480461,
+    nbf: 1615480461,
+    exp: 1615484361,
+    acct: 0,
+    aio: 'AXQAi/8TAAAAxpQjy4ZTbYYWgPT0PYBGWf9+ZiFdZawVw0fBTvQxbfDhbLFFl8J2QvXEzS13g9I+l28GPsRuhiimuFBRsabeXteCMVQkigu+Q5qzuIw+XzZAoXEvMXrEwr3j004RctFvv3DtCHJt4HbO0vFmYv5E7Q==',
+    email: 'v-maxsil@microsoft.com',
+    name: 'Max Silbiger (MINDTREE LIMITED)',
+    nonce: '2c1fdc960a844857b892f7f8deb1f4e3_20210311164418',
+    oid: '512d26c9-aeed-4dbd-a16f-398bcf0ec3fe',
+    preferred_username: 'v-maxsil@microsoft.com',
+    rh: '0.ARoAv4j5cvGGr0GRqy180BHbR25xF1um4ARGho-ceBmYAh8aANM.',
+    sub: 'XIFycJoRnMLyXldtNUF-yf6fZXT5EwWpt_h1BpKgNDg',
+    tid: '72f988bf-86f1-41af-91ab-2d7cd011db47',
+    uti: 'pKAbpYOqgku-yWcgpwEvAA',
+    ver: '2.0'
+}
+
 const checkCsrf = csurf({
     cookie: true
 });
@@ -102,6 +122,8 @@ module.exports = {
         if (process.env.ENV == "PROD") {
             return enforceLogin(req, res, next, "/login?redirect=");
         } else {
+            console.log("Using TEST_USER");
+            req.user = TEST_USER;
             next();
         }
     },

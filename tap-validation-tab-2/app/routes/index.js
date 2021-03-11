@@ -21,7 +21,7 @@ const cron = require('node-cron');
 
 const { enforceLoginTeams, enforceIdToken, } = require(process.cwd() + "/app/routes/helpers.js");
 
-const LOCAL_TEST_TOKEN = [{ "id_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Im5PbzNaRHJPRFhFSzFqS1doWHNsSFJfS1hFZyJ9.eyJhdWQiOiJiOGQwMTQ2NC1jM2ZjLTQ1NzMtYTJjMy01NWVkOTExMzYyMGMiLCJpc3MiOiJodHRwczovL2xvZ2luLm1pY3Jvc29mdG9ubGluZS5jb20vNzJmOTg4YmYtODZmMS00MWFmLTkxYWItMmQ3Y2QwMTFkYjQ3L3YyLjAiLCJpYXQiOjE2MTQyMDU5MjQsIm5iZiI6MTYxNDIwNTkyNCwiZXhwIjoxNjE0MjA5ODI0LCJhY2N0IjowLCJhaW8iOiJBV1FBbS84VEFBQUFWUThOOTBrOUkyYWp5NU9SV01wMjV2cE5SVFIzL3lIZjh0OGtoSExPOUlqa284Z3A0dlp3SVRlbXJkS1MxclpteGlocjMreUo0aWtDeVROdHRlOExlem9yM2hpb0Y2UW8wU01PNmdEcTBJK0EwOGROTk5NeUE0YTNpSzRNajNXeCIsImVtYWlsIjoidi1tYXhzaWxAbWljcm9zb2Z0LmNvbSIsIm5hbWUiOiJNYXggU2lsYmlnZXIgKE1JTkRUUkVFIExJTUlURUQpIiwibm9uY2UiOiIwZGZiYzYxMzljOTc0YTViYjNlOWI3NjBhOTNiNzhkYV8yMDIxMDIyNDIyNDIwMyIsIm9pZCI6IjUxMmQyNmM5LWFlZWQtNGRiZC1hMTZmLTM5OGJjZjBlYzNmZSIsInByZWZlcnJlZF91c2VybmFtZSI6InYtbWF4c2lsQG1pY3Jvc29mdC5jb20iLCJyaCI6IjAuQVJvQXY0ajVjdkdHcjBHUnF5MTgwQkhiUjJRVTBMajh3M05Gb3NOVjdaRVRZZ3dhQU5NLiIsInN1YiI6IjRlNVhFek5naFN4bm1TVWlZLTVFOUhrLWhnTXN3TnJwX3k5b3pTaHk3aGciLCJ0aWQiOiI3MmY5ODhiZi04NmYxLTQxYWYtOTFhYi0yZDdjZDAxMWRiNDciLCJ1dGkiOiJ4SWx2Ul9hZjZVLVVBR3FFemhJMUFBIiwidmVyIjoiMi4wIn0.XXKB6_s06jrWzHyrH-cwgxuDNIvt2Jp_UnjnZWxMTLhO1jAyW5NGp-PR_e-DucuLaMlVlhofhnLqhgIRwvfdsta5Bt3Dbo6k2nt5f-c72KJcxgIVox0-n2Mug3iX27ih_8cQUxV6PHAiBztCpeK5s4oOgieZcSeRf2GbOm79G46hhiaL4WzDWZ5BieChLtCYlzhAdlj1yNNeQ0fGUeC2CTziPommzGimLBQljS4U0O-czdC6iFc3yvZNAcaY6dSVM3hOc-aiAqJgL-E0fqjA-QrHi5AXYkWi2TIT5ZnzQOAUjKRWbwD0fBlxMCiSsB3wG3FtM_34B-G3B09jfvJYOg", "provider_name": "aad", "user_claims": [{ "typ": "aud", "val": "b8d01464-c3fc-4573-a2c3-55ed9113620c" }, { "typ": "iss", "val": "https:\/\/login.microsoftonline.com\/72f988bf-86f1-41af-91ab-2d7cd011db47\/v2.0" }, { "typ": "iat", "val": "1614205924" }, { "typ": "nbf", "val": "1614205924" }, { "typ": "exp", "val": "1614209824" }, { "typ": "acct", "val": "0" }, { "typ": "aio", "val": "AWQAm\/8TAAAAVQ8N90k9I2ajy5ORWMp25vpNRTR3\/yHf8t8khHLO9Ijko8gp4vZwITemrdKS1rZmxihr3+yJ4ikCyTNtte8Lezor3hioF6Qo0SMO6gDq0I+A08dNNNMyA4a3iK4Mj3Wx" }, { "typ": "http:\/\/schemas.xmlsoap.org\/ws\/2005\/05\/identity\/claims\/emailaddress", "val": "v-maxsil@microsoft.com" }, { "typ": "name", "val": "Max Silbiger (MINDTREE LIMITED)" }, { "typ": "nonce", "val": "0dfbc6139c974a5bb3e9b760a93b78da_20210224224203" }, { "typ": "http:\/\/schemas.microsoft.com\/identity\/claims\/objectidentifier", "val": "512d26c9-aeed-4dbd-a16f-398bcf0ec3fe" }, { "typ": "preferred_username", "val": "v-maxsil@microsoft.com" }, { "typ": "rh", "val": "0.ARoAv4j5cvGGr0GRqy180BHbR2QU0Lj8w3NFosNV7ZETYgwaANM." }, { "typ": "http:\/\/schemas.xmlsoap.org\/ws\/2005\/05\/identity\/claims\/nameidentifier", "val": "4e5XEzNghSxnmSUiY-5E9Hk-hgMswNrp_y9ozShy7hg" }, { "typ": "http:\/\/schemas.microsoft.com\/identity\/claims\/tenantid", "val": "72f988bf-86f1-41af-91ab-2d7cd011db47" }, { "typ": "uti", "val": "xIlvR_af6U-UAGqEzhI1AA" }, { "typ": "ver", "val": "2.0" }], "user_id": "v-maxsil@microsoft.com" }]
+const LOCAL_TEST_TOKEN = [{ "id_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Im5PbzNaRHJPRFhFSzFqS1doWHNsSFJfS1hFZyJ9.eyJhdWQiOiJiOGQwMTQ2NC1jM2ZjLTQ1NzMtYTJjMy01NWVkOTExMzYyMGMiLCJpc3MiOiJodHRwczovL2xvZ2luLm1pY3Jvc29mdG9ubGluZS5jb20vNzJmOTg4YmYtODZmMS00MWFmLTkxYWItMmQ3Y2QwMTFkYjQ3L3YyLjAiLCJpYXQiOjE2MTU0ODM1MDIsIm5iZiI6MTYxNTQ4MzUwMiwiZXhwIjoxNjE1NDg3NDAyLCJhY2N0IjowLCJhaW8iOiJBWFFBaS84VEFBQUE0dllNcWJNeUU3bGhhU3RRUTlrbGlsa3JaS0FjYUtWTEdIVEVFSnR6YzJUa1UwS3U2K0FxeXRHWnpJakdnWnF0b25hM2Y2ejFIOEhmQ2VOVWpGS3VORjhiOE9rNTFhWFFxT1BYV1E1MjdEc0pScGhYS3RSTG1ZNU5IbDZxZUFyMEpaY0VxWUtkTk8wdzU3ZXN2cDRaU0E9PSIsImVtYWlsIjoidi1tYXhzaWxAbWljcm9zb2Z0LmNvbSIsIm5hbWUiOiJNYXggU2lsYmlnZXIgKE1JTkRUUkVFIExJTUlURUQpIiwibm9uY2UiOiI2ZDFiYjRkNmI0NGU0Mjk3YjY2YWViYTc4NzA3YzQxOV8yMDIxMDMxMTE3MzUwMSIsIm9pZCI6IjUxMmQyNmM5LWFlZWQtNGRiZC1hMTZmLTM5OGJjZjBlYzNmZSIsInByZWZlcnJlZF91c2VybmFtZSI6InYtbWF4c2lsQG1pY3Jvc29mdC5jb20iLCJyaCI6IjAuQVJvQXY0ajVjdkdHcjBHUnF5MTgwQkhiUjJRVTBMajh3M05Gb3NOVjdaRVRZZ3dhQU5NLiIsInN1YiI6IjRlNVhFek5naFN4bm1TVWlZLTVFOUhrLWhnTXN3TnJwX3k5b3pTaHk3aGciLCJ0aWQiOiI3MmY5ODhiZi04NmYxLTQxYWYtOTFhYi0yZDdjZDAxMWRiNDciLCJ1dGkiOiJxM3k3ZGZBeXIwNmdvMDE3N2hrdUFBIiwidmVyIjoiMi4wIn0.IS7hnu9Re0DOwN7B9PkDF0kvTKOTgwQcCyTHraC3IfIBynt0gel0558caQ5UULkj91NhheLdqK1Al0CAOXzgr0_Twbfr-_uCoM4jziBy3PlrKWk9uiGQECqGMHXd5wiWdnnq6u1hpOTMdoZP8y001DvH5bcySVzN4ULCCId4x-BkHln_wlWAN5PpLnLBwEhV_IMEVkI8_AckPHMRaYznUhvgJ_LfBYPVwnNIubcdToQY9R5fygHXy8YgMUveT55Ju0rqPSXeHb2OD1TY7qXWLB5G7RjzSB1oUuvf4Euvz51DiHBtzENWnL8hjgTQAVZrURG2aeeA-nW0XBcwA9n4tw", "provider_name": "aad", "user_claims": [{ "typ": "aud", "val": "b8d01464-c3fc-4573-a2c3-55ed9113620c" }, { "typ": "iss", "val": "https:\/\/login.microsoftonline.com\/72f988bf-86f1-41af-91ab-2d7cd011db47\/v2.0" }, { "typ": "iat", "val": "1615483502" }, { "typ": "nbf", "val": "1615483502" }, { "typ": "exp", "val": "1615487402" }, { "typ": "acct", "val": "0" }, { "typ": "aio", "val": "AXQAi\/8TAAAA4vYMqbMyE7lhaStQQ9klilkrZKAcaKVLGHTEEJtzc2TkU0Ku6+AqytGZzIjGgZqtona3f6z1H8HfCeNUjFKuNF8b8Ok51aXQqOPXWQ527DsJRphXKtRLmY5NHl6qeAr0JZcEqYKdNO0w57esvp4ZSA==" }, { "typ": "http:\/\/schemas.xmlsoap.org\/ws\/2005\/05\/identity\/claims\/emailaddress", "val": "v-maxsil@microsoft.com" }, { "typ": "name", "val": "Max Silbiger (MINDTREE LIMITED)" }, { "typ": "nonce", "val": "6d1bb4d6b44e4297b66aeba78707c419_20210311173501" }, { "typ": "http:\/\/schemas.microsoft.com\/identity\/claims\/objectidentifier", "val": "512d26c9-aeed-4dbd-a16f-398bcf0ec3fe" }, { "typ": "preferred_username", "val": "v-maxsil@microsoft.com" }, { "typ": "rh", "val": "0.ARoAv4j5cvGGr0GRqy180BHbR2QU0Lj8w3NFosNV7ZETYgwaANM." }, { "typ": "http:\/\/schemas.xmlsoap.org\/ws\/2005\/05\/identity\/claims\/nameidentifier", "val": "4e5XEzNghSxnmSUiY-5E9Hk-hgMswNrp_y9ozShy7hg" }, { "typ": "http:\/\/schemas.microsoft.com\/identity\/claims\/tenantid", "val": "72f988bf-86f1-41af-91ab-2d7cd011db47" }, { "typ": "uti", "val": "q3y7dfAyr06go0177hkuAA" }, { "typ": "ver", "val": "2.0" }], "user_id": "v-maxsil@microsoft.com" }]
 
 
 var storage = multer.diskStorage({
@@ -248,6 +248,9 @@ module.exports = function (app, db) {
     app.route("/users-config")
         .get(userHandler.renderUsersConfig);
 
+    app.route("/bug-report-config")
+        .get(bugHandler.renderBugReportConfig);
+
     // Legacy
     app.route('/bugs/summary')
         .get(bugHandler.renderBugsSummary);
@@ -273,6 +276,9 @@ module.exports = function (app, db) {
     app.route('/users')
         .get(enforceLoginTeams, userHandler.renderUsers);
 
+    app.route('/bug-report')
+        .get(enforceLoginTeams, bugHandler.renderBugReport);
+
     app.route('/api/tenantBugs/:tid')
         .get(bugHandler.getTenantBugs);
 
@@ -284,6 +290,9 @@ module.exports = function (app, db) {
 
     app.route("/api/pms/:email/taps")
         .get(userHandler.getPmTaps);
+
+    app.route('/api/bugs/report')
+        .post(enforceIdToken, bugHandler.submitBugReport);
 
     // Auth testing
     /*

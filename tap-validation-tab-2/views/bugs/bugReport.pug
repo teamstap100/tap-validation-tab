@@ -1,0 +1,38 @@
+extends ../layout.pug
+
+block content
+  .container
+    br
+    p.heading-text Report a Problem - MTR
+    p.validation-progress.centered
+
+    .alert.alert-success#success(style="display: none") Thank you! Your bug report has been submitted.
+
+    .container
+        .row
+            .col-xs-2
+            .col-xs-8
+                p Please use this form to submit a bug.
+                form#report-form(enctype="multipart/form-data" method="post")
+                    .form-group
+                        .form-group
+                            label(for="report-title-field") Title:  
+                                span#report-title-required(style="color: red") (*)
+                            input.form-control#report-title-field.report-field(type="text" placeholder="Title your feedback.")
+                        .form-group
+                            label(for="report-description-field") Description:  
+                                span#report-description-required(style="color: red") (*)
+                            textarea.form-control#report-description-field.report-field(rows=4, placeholder="Please describe the problem.")
+                        .form-group
+                            label(for="windws-report-file") File Upload:
+                            p You can upload up to 10 files of any type, up to 60MB each.
+                            //p For files larger than 60 MB, please contact this program's owner to arrange a secure file transfer.
+                            input#report-file(type="file" name="userFile" multiple)
+                
+                div(style="float: right")
+                    p#report-submit-status
+                    button.btn.btn-primary#report-submit(title="Submit" name="submit" disabled) Submit
+            .col-xs-2
+
+                
+    script(type="text/javascript", src="/controllers/bugs/bugReportController.client.js")

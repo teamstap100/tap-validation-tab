@@ -26,7 +26,7 @@ function infoHandler (dbParent) {
                 })
             });
 
-            res.render('info', {
+            res.render('tap100-app/info', {
                 roles: roleDocs,
                 phases: phaseDocs,
             });
