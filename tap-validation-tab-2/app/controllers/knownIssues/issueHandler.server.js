@@ -68,6 +68,8 @@ function issueHandler (dbParent) {
                 console.log(vstsErr);
                 throw vstsErr;
             }
+            console.log(vstsStatus.statusCode);
+            console.log(vstsResponse);
             vstsResponse = JSON.parse(vstsResponse);
             var workitems = vstsResponse.workItems;
             witsCount = vstsResponse.workItems.length;

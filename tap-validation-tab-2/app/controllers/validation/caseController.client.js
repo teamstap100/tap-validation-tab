@@ -613,6 +613,8 @@ var config = {};
         */
 
         // Setup Known Issues table
+        // (Deprecated)
+        /*
         var knownIssuesTable = $('#knownIssuesTable').DataTable({
             paging: false,
             info: false,
@@ -634,6 +636,7 @@ var config = {};
                 }
             },
         });
+        */
 
 
         cases.forEach(function (kase) {
