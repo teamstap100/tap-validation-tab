@@ -209,6 +209,18 @@ $(document).ready(function () {
             columnDefs: [
                 {
                     render: function (data, type, row) {
+                        //console.log(row);
+                        if (row.publicId) {
+                            return `<span style="font-size: 9px;">${row.publicId}</span>`;
+                        } else {
+                            return `<span style="font-size: 9px;">${row.id}</span>`;
+                        }
+
+                    },
+                    targets: 0,
+                },
+                {
+                    render: function (data, type, row) {
                         let id = row._id || row.id;
 
                         let cell;
@@ -264,6 +276,18 @@ $(document).ready(function () {
                 { "data": "reason" },
             ],
             columnDefs: [
+                {
+                    render: function (data, type, row) {
+                        //console.log(row);
+                        if (row.publicId) {
+                            return `<span style="font-size: 9px;">${row.publicId}</span>`;
+                        } else {
+                            return `<span style="font-size: 9px;">${row.id}</span>`;
+                        }
+
+                    },
+                    targets: 0,
+                },
                 {
                     render: function (data, type, row) {
                         let id = row.id || row._id;

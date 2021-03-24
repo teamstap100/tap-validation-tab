@@ -294,6 +294,10 @@ module.exports = function (app, db) {
     app.route('/api/bugs/report')
         .post(enforceIdToken, bugHandler.submitBugReport);
 
+    // TODO: Don't publish this route
+    //app.route('/api/assignPublicIds')
+    //    .get(validationHandler.assignPublicIds);
+
     // Auth testing
     /*
     app.route("/silent-auth")
@@ -332,11 +336,11 @@ module.exports = function (app, db) {
 
     // Cron jobs
     // Every hour at x:15 - update Teams builds
-    cron.schedule("15 * * * *", function () {
-        console.log("Running cron - updating tenant bugs");
-        // Not yet implemented
-        //tenantHandler.updateTenantBugs();
-    });
+    //cron.schedule("15 * * * *", function () {
+    //    console.log("Running cron - updating tenant bugs");
+    //    // Not yet implemented
+    //    //tenantHandler.updateTenantBugs();
+    //});
 
     app.use(function (req, res) {
         res.status(404).render('error', {

@@ -43,6 +43,11 @@ function feedbackHandler(dbParent) {
 
         reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Submitter </td> <td id='userEmail' style='${tableStyle}'>${userEmail} </td></tr>`;
 
+        // Public ID
+        if (body.publicId) {
+            reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Public ID </td> <td style='${tableStyle}'>${body.publicId} </td></tr>`;
+        }
+
         // Windows build info
         if (body.windowsBuildType) {
             reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Build Type </td> <td style='${tableStyle}'>${body.windowsBuildType} </td></tr>`;

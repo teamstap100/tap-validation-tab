@@ -304,7 +304,8 @@ block content
                     a.toggle-collapse(data-toggle="collapse" data-target="#collapse-" + freq._id, style="color: black")
                         p.case-text 
                         i.fa.fa-lightbulb  
-                        |    #{freq._id} - #{freq.title}
+                        |    #{freq.title}  &nbsp;
+                        span(style="font-size: 10px;") (#{freq.publicId})
                 .panel-collapse.case-collapse.collapse.in(id="collapse-" + freq._id)
                     .panel-body
                         .col-sm-3.hidden-xs.centered
@@ -618,10 +619,6 @@ block content
           .modal-footer
             button.btn.btn-primary#feedback-comment-submit(title="Submit" name="submit") Submit
               
-
-    script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js')
-    script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap.min.js')
-    link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap.min.css')
     //script(type="text/javascript", src="/helpers/helpers.js") // ALready defined in layout.pug
     script(type="text/javascript", src="/controllers/validation/featureRequestController.client.js")
     script(type="text/javascript", src="/controllers/validation/feedbackController.client.js")

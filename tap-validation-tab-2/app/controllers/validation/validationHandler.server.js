@@ -181,6 +181,13 @@ function validationHandler(dbParent) {
             res.send();
         });
     }
+
+    this.assignPublicIds = function (req, res) {
+        cases.updateOne({ tap: "Windows", "upvotes_v2": { $ne: [] }, "upvotes_v2.publicId": { $exists: false } }, { $set: { "upvotes_v2.$.publicId": new ObjectID() } }, function (err, caseDoc) {
+            if (err) { throw err; }
+            console.log("Done");
+        });
+    }
 };
 
 module.exports = validationHandler;

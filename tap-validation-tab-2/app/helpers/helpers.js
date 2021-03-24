@@ -4,11 +4,24 @@
 
 const spinner = '<i class="fa fa-spinner fa-spin"></i>  ';
 
-
-
 const clientSpinner = '<i class="fa fa-spinner fa-spin client-spin"></i>  ';
 const thumbsUp = '<i class="fa fa-thumbs-up"> </i>';
 const thumbsDown = '<i class="fa fa-thumbs-down"> </i>';
+
+// Datatables defaults
+$.fn.dataTable.ext.errMode = 'throw';
+$.extend(true, $.fn.dataTable.defaults, {
+    processing: true,
+    language: {
+        'processing': "<i class='fa fa-spin fa-spinner'></i> Loading...",
+        emptyTable: "No data available in table."
+    }
+});
+
+//$.fn.dataTable.moment('M/D/YYYY');
+//$.fn.dataTable.moment('YYYY-M-D');
+
+console.log("Set datatables default properies");
 
 function disableAndSpin(id) {
     $(id).attr("disabled", true);

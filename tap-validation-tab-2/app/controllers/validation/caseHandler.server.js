@@ -22,7 +22,7 @@ function caseHandler(dbParent) {
     const ADO_WORKITEM_ADD_ENDPOINT = ADO_API_BASE + "workitems/${{WORKITEM_TYPE}}?api-version=4.11";
     const ADO_WORKITEM_UPDATE_ENDPOINT = ADO_API_BASE + "workitems/{id}?api-version=4.1";
     const ADO_WORKITEM_GET_ENDPOINT = ADO_API_BASE + "workitems/{id}?api-version=4.1";
-
+    
     const TEAMS_ADO_API_BASE = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/";
     const TEAMS_ADO_WORKITEM_ADD_ENDPOINT = TEAMS_ADO_API_BASE + "workitems/$Bug?api-version=4.11";
     const TEAMS_ADO_WORKITEM_UPDATE_ENDPOINT = TEAMS_ADO_API_BASE + "workitems/{id}?api-version=4.1";
@@ -182,6 +182,11 @@ function caseHandler(dbParent) {
 
         reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Submitter </td> <td id='userEmail' style='${tableStyle}'>${userEmail} </td></tr>`;
 
+        // Public ID
+        if (body.publicId) {
+            reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Public ID </td> <td style='${tableStyle}'>${body.publicId} </td></tr>`;
+        }
+
         // Windows build info
         if (body.windowsBuildType) {
             reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Build Type </td> <td style='${tableStyle}'>${body.windowsBuildType} </td></tr>`;
@@ -338,7 +343,9 @@ function caseHandler(dbParent) {
                             //} else {
                             //    voteString = '"' + vote.comment + '"';
                             // }
-                            if (vote.id) {
+                            if (vote.publicId) {
+                                voteString = '(' + vote.publicId + ') "' + vote.title + '"';
+                            } else if (vote.id) {
                                 voteString = '(' + vote.id + ') "' + vote.comment + '"';
                             } else {
                                 voteString = '"' + vote.comment + '"';
@@ -417,7 +424,7 @@ function caseHandler(dbParent) {
                 comment: comment,
                 userEmail: clientVoteString,
                 userTenantId: realTenantId,
-                timestamp: Date.now(),
+                timestamp: new Date(),
             }
 
             if (commentIsPublic != null) {
@@ -1257,6 +1264,10 @@ function caseHandler(dbParent) {
                         votesChecked++;
                         checkIfDone();
                     }
+
+                    //if (vote.publicId) {
+                    //    vote.id = vote.publicId;
+                    //}
                 });
                 checkIfDone();
             });

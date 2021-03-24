@@ -53,34 +53,31 @@ block content
                                                         input.group-toggle(type="checkbox", name="group", value=safeGroup, id=safeGroup, checked title="Collect feedback for this section")  
                                                         label.safe-label(for=safeGroup)     #[strong #{group}]
                                                 .row.client-config
-                                                    .col-xs-1
-                                                    .col-xs-5
+                                                    .col-xs-6
                                                         input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-windows", id=validation._id + "-" + groupCount + "-windows" title="Collect Windows feedback")  
-                                                        label.safe-label(for=validation._id + "-" + groupCount + "-windows")   Windows  
-                                                    .col-xs-5
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-windows") Windows
+                                                    .col-xs-6
                                                         input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-mac", id=validation._id + "-" + groupCount + "-mac" title="Collect Mac feedback")  
-                                                        label.safe-label(for=validation._id + "-" + groupCount + "-mac")   Mac  
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-mac") Mac
                                                 .row.client-config
-                                                    .col-xs-1
-                                                    .col-xs-5
+                                                    .col-xs-6
                                                         input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-android", id=validation._id + "-" + groupCount + "-android" title="Collect Android feedback")  
-                                                        label.safe-label(for=validation._id + "-" + groupCount + "-android")   Android  
-                                                    .col-xs-5
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-android") Android
+                                                    .col-xs-6
                                                         input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-ios", id=validation._id + "-" + groupCount + "-ios" title="Collect iOS feedback")  
-                                                        label.safe-label(for=validation._id + "-" + groupCount + "-")   iOS  
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-") iOS
                                                 .row.client-config
-                                                    .col-xs-1
-                                                    .col-xs-5
+                                                    .col-xs-6
                                                         input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-web", id=validation._id + "-" + groupCount + "-web" title="Collect Web feedback")  
-                                                        label.safe-label(for=validation._id + "-" + groupCount + "-")   Web  
-                                                    .col-xs-5
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-") Web
+                                                    .col-xs-6
                                                         input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-linux", id=validation._id + "-" + groupCount + "-linux" title="Collect Linux feedback")  
-                                                        label.safe-label(for=validation._id + "-" + groupCount + "-")   Linux  
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-") Linux
                                                 .row.client-config
                                                     .col-xs-3
                                                     .col-xs-9
                                                         input.toggle-all(type="checkbox", name="toggleAll", value=validation._id + "-" + groupCount + "-all", id=validation._id + "-" + groupCount + "-all" title="Collect feedback for all clients")
-                                                        label.safe-label(for=validation._id + "-" + groupCount + "-all")   (Toggle All Clients) 
+                                                        label.safe-label(for=validation._id + "-" + groupCount + "-all")   (Toggle All) 
 
                                                 - groupCount += 1;
                             p.zero-section-warning(style="font-size: 12px; color: red; display: none") Please select at least one section.

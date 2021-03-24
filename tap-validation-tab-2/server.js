@@ -30,9 +30,8 @@ app.set('views', './views');
 app.use(methodOverride());
 app.use(cookieParser());
 
-app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.json({ limit: '80mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
-
 
 app.use(require('express-log-url'));
 
