@@ -30,8 +30,9 @@
     "morgan": "^1.9.1",
     "multer": "^1.4.2",
     "node-cron": "^2.0.3",
+    "nodemon": "^2.0.7",
     "passport": "^0.4.1",
-    "pug": "^2.0.0-beta6",
+    "pug": "^3.0.2",
     "request": "^2.88.0",
     "serve-favicon": "^2.3.0"
   },
