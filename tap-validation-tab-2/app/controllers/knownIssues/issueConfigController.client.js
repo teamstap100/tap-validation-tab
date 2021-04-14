@@ -13,7 +13,7 @@
 
     $(function () {
         microsoftTeams.getContext(function (context) {
-            var alias = context["userPrincipalName"].split("@")[0];
+            var alias = context["loginHint"].split("@")[0];
             console.log($('#your-validations').find(".owner-" + alias));
             $('#your-validations').find('.owner-' + alias).css('display', '');
             $('#other-validations').find('.owner-' + alias).css('display', 'none');

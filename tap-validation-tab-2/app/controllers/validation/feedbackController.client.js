@@ -32,7 +32,7 @@ $(document).ready(function () {
                 let updateUrl = EDIT_FEEDBACK_API_URL.replace("{id}", feedbackId);
                 let params = {
                     public: this.checked,
-                    submitterEmail: context['userPrincipalName'],
+                    submitterEmail: context['loginHint'],
                 };
 
                 ajaxRequest('PUT', updateUrl, params, function () {
@@ -50,7 +50,7 @@ $(document).ready(function () {
 
                 let voteUrl = UPVOTE_API_URL.replace("{id}", id);
                 let voteParams = {
-                    email: context['userPrincipalName']
+                    email: context['loginHint']
                 };
 
                 ajaxRequest('POST', voteUrl, voteParams, function () {
@@ -75,7 +75,7 @@ $(document).ready(function () {
 
                     let commentUrl = COMMENT_API_URL.replace("{id}", id);
                     let commentParams = {
-                        email: context['userPrincipalName'],
+                        email: context['loginHint'],
                         comment: $('#feedback-comment-field').val()
                     }
                     console.log(commentUrl);
@@ -111,7 +111,7 @@ $(document).ready(function () {
 
                 microsoftTeams.getContext(function (context) {
                     let voteParams = {
-                        userEmail: context['userPrincipalName'],
+                        userEmail: context['loginHint'],
                         id: feedback._id,
                         title: $('#edit-report-title-field').val(),
                         text: $('#edit-report-description-field').val(),
@@ -194,7 +194,7 @@ $(document).ready(function () {
                 contentType: "application/json",
                 data: {
                     validationId: config.validationId,
-                    userEmail: context["userPrincipalName"]
+                    userEmail: context["loginHint"]
                 },
                 dataSrc: "feedback",
             },
@@ -261,7 +261,7 @@ $(document).ready(function () {
                 contentType: "application/json",
                 data: {
                         validationId: config.validationId,
-                        userEmail: context["userPrincipalName"],
+                        userEmail: context["loginHint"],
                 },
 
                 dataSrc: "feedback",
@@ -356,7 +356,7 @@ $(document).ready(function () {
                 validationId: config.validationId,
                 title: safeTitle,
                 text: safeDescription,
-                submitterEmail: context['userPrincipalName'],
+                submitterEmail: context['loginHint'],
                 public: feedbackPublicField.is(':checked'),
             };
 
@@ -425,7 +425,7 @@ $(document).ready(function () {
                 validationId: config.validationId,
                 title: safeTitle,
                 text: safeDescription,
-                submitterEmail: context['userPrincipalName'],
+                submitterEmail: context['loginHint'],
                 public: feedbackPublicField.is(':checked'),
             };
 

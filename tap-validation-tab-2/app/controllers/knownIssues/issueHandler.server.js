@@ -11,7 +11,7 @@ function issueHandler (dbParent) {
 
     const QUERY_BY_WIQL_ENDPOINT = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/wiql?api-version=5.0";
 
-    var AUTH = process.env.AUTH;
+    var AUTH = process.env["TEAMS-ADO-PAT"];
 
     function cleanBugTitle(title) {
         // Remove the client and submitter name from a bug title so it can be displayed.

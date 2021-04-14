@@ -38,6 +38,7 @@ function getUrlVars() {
     var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function (m, key, value) {
         vars[key] = value;
     });
+    console.log(parts);
     return vars;
 }
 
@@ -49,7 +50,6 @@ function cleanEmail(email) {
             return email;
 
         } else if (email.includes("_")) {
-            console.log("Going the underscore route");
             var underscoreParts = email.split("_");
             var domain = underscoreParts.pop();
             var tenantString = domain.split(".")[0];
@@ -188,7 +188,7 @@ function scrollToSubEntity() {
     microsoftTeams.getContext(function (context) {
         var subEntity = context['subEntityId'];
         //console.log("subentity: " + subEntity);
-        if (subEntity != '') {
+        if (subEntity) {
             var highlightedCase = document.getElementById(subEntity);
             highlightedCase.scrollIntoView({ behavior: 'smooth' });
         }

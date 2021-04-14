@@ -86,7 +86,7 @@ $(document).ready(function () {
 
             microsoftTeams.getContext(function (context) {
                 let voteParams = {
-                    userEmail: context['userPrincipalName'],
+                    userEmail: context['loginHint'],
                     id: feedback.id,
                     title: $('#edit-report-title-field').val(),
                     comment: $('#edit-report-description-field').val(),
@@ -98,6 +98,8 @@ $(document).ready(function () {
 
     // Initialize table
     microsoftTeams.getContext(function (context) {
+        let email = context["loginHint"];
+        //let email = 
 
         var myFeedbackTable, otherFeedbackTable;
 
@@ -118,7 +120,7 @@ $(document).ready(function () {
                     let updateUrl = EDIT_FEEDBACK_API_URL.replace("{id}", feedbackId);
                     let params = {
                         public: this.checked,
-                        submitterEmail: context['userPrincipalName'],
+                        submitterEmail: email,
                     };
 
                     ajaxRequest('PUT', updateUrl, params, function () {
@@ -135,7 +137,7 @@ $(document).ready(function () {
 
                     let voteUrl = UPVOTE_API_URL.replace("{id}", id);
                     let voteParams = {
-                        email: context['userPrincipalName']
+                        email: email,
                     };
 
                     ajaxRequest('POST', voteUrl, voteParams, function () {
@@ -160,7 +162,7 @@ $(document).ready(function () {
 
                         let commentUrl = COMMENT_API_URL.replace("{id}", id);
                         let commentParams = {
-                            email: context['userPrincipalName'],
+                            email: email,
                             comment: $('#feedback-comment-field').val()
                         }
                         console.log(commentUrl);
@@ -191,7 +193,7 @@ $(document).ready(function () {
                         let caseId = $('#caseId').text();
                         return JSON.stringify({
                             caseId: caseId,
-                            userEmail: context["userPrincipalName"],
+                            userEmail: email,
                         });
                     },
                     dataSrc: "feedback",
@@ -262,7 +264,7 @@ $(document).ready(function () {
                         let caseId = $('#caseId').text();
                         return JSON.stringify({
                             caseId: caseId,
-                            userEmail: context["userPrincipalName"],
+                            userEmail: email,
                         });
                     },
                     dataSrc: "feedback",
@@ -274,12 +276,14 @@ $(document).ready(function () {
                     { "data": "title" },
                     { "data": "state" },
                     { "data": "reason" },
+                    {},
                 ],
                 columnDefs: [
                     {
                         render: function (data, type, row) {
-                            console.log(row);
-                            if (row.publicId) {
+                            if ((row.publicId) && (row.id)) {
+                                return `<span style="font-size: 9px;">${row.publicId} - ${row.id}</span>`;
+                            } else if (row.publicId) {
                                 return `<span style="font-size: 9px;">${row.publicId}</span>`;
                             } else {
                                 return `<span style="font-size: 9px;">${row.id}</span>`;
@@ -291,31 +295,59 @@ $(document).ready(function () {
 
                     {
                         render: function (data, type, row) {
-                            let id = row.id;
+                            if (row.public) {
+                                let id = row.id;
 
-                            let upvoteCount = row.upvotes ? row.upvotes.length : 0;
+                                let upvoteCount = row.upvotes ? row.upvotes.length : 0;
 
-                            let statusClass = "";
-                            let disabled = "";
-                            if (row.userUpvoted) {
-                                statusClass = "active";
-                                disabled = "disabled";
+                                let statusClass = "";
+                                let disabled = "";
+                                if (row.userUpvoted) {
+                                    statusClass = "active";
+                                    disabled = "disabled";
+                                }
+
+                                let cell = "<button class='btn btn-minor upvote-feedback " + statusClass + "'" + disabled + " id='upvote-feedback-" + id + "'><i class='fa fa-thumbs-up' title='Upvote'></i> " + upvoteCount + "</button>"
+                                return cell;
+                            } else {
+                                return "";
                             }
 
-                            let cell = "<button class='btn btn-minor upvote-feedback " + statusClass + "'" + disabled + " id='upvote-feedback-" + id + "'><i class='fa fa-thumbs-up' title='Upvote'></i> " + upvoteCount + "</button>"
-                            return cell;
                         },
                         targets: 1
                     },
                     
                     {
                         render: function (data, type, row) {
-                            let id = row.id;
+                            if (row.public) {
+                                let id = row.id;
 
-                            let cell = "<button class='btn btn-minor comment-feedback' id='comment-feedback-" + id+ "'><i class='fa fa-comment' title='Comment'></i></button>"
-                            return cell;
+                                let cell = "<button class='btn btn-minor comment-feedback' id='comment-feedback-" + id + "'><i class='fa fa-comment' title='Comment'></i></button>"
+                                return cell;
+                            } else {
+                                return "";
+                            }
+
                         },
                         targets: 2
+                    },
+                    {
+                        render: function (data, type, row) {
+                            if (row.userEmail) {
+                                console.log("Showing submitter column");
+                                $('.submitterColumn').show();
+                                return row.userEmail;
+                            } else if (row.email) {
+                                console.log("Showing submitter column");
+
+                                $('.submitterColumn').show();
+                                return row.email;
+                            } else {
+
+                                return "";
+                            }
+                        },
+                        targets: 6
                     }
                     
                 ],

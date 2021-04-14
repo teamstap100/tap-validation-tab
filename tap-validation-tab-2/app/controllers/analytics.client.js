@@ -8,7 +8,7 @@
 
         console.log("Tracking");
         microsoftTeams.getContext(function (context) {
-            email = context['userPrincipalName']
+            email = context['loginHint']
             console.log(email);
 
             let data = {

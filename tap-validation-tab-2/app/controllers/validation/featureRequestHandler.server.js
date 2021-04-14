@@ -2,7 +2,7 @@
 
 var ObjectID = require('mongodb').ObjectID;
 var request = require('request');
-const { safeOid, patToAuth, ADO_API_BASE } = require(process.cwd() + "/app/helpers/helpers.server.js");
+const { safeOid, patToAuth, ADO_API_BASE, cleanEmail } = require(process.cwd() + "/app/helpers/helpers.server.js");
 
 function getWindowsReproSteps(body) {
     let tableStyle = "border: solid black 1px; padding: 4px 4px 4px 4px;";
@@ -23,7 +23,8 @@ function getWindowsReproSteps(body) {
         userEmail = body.submitterEmail;
     }
 
-    reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Submitter </td> <td id='userEmail' style='${tableStyle}'>${userEmail} </td></tr>`;
+    //  User email
+    //reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Submitter </td> <td id='userEmail' style='${tableStyle}'>${userEmail} </td></tr>`;
 
     // Windows build info
     if (body.windowsBuildType) {
@@ -82,30 +83,7 @@ function featureRequestHandler(dbParent) {
         });
     }
 
-    function cleanEmail(email) {
-        email = email.toLowerCase();
-        email = email.replace("#ext#@microsoft.onmicrosoft.com", "");
-        if (email.includes("@")) {
-            return email;
-
-        } else if (email.includes("_")) {
-            console.log("Going the underscore route");
-            var underscoreParts = email.split("_");
-            var domain = underscoreParts.pop();
-            var tenantString = domain.split(".")[0];
-
-            if (underscoreParts.length > 1) {
-                email = underscoreParts.join("_") + "@" + domain;
-            } else {
-                email = underscoreParts[0] + "@" + domain;
-            }
-        }
-        return email;
-    }
-
     this.getFeatureRequestsByUser = function (req, res) {
-        console.log("Called getFeatureRequestsByUser");
-        console.log(req.query);
         //let validationId = parseInt(req.body.validationId);
         let validationId = safeOid(req.query.validationId);
         let userEmail = req.query.userEmail;
@@ -115,9 +93,6 @@ function featureRequestHandler(dbParent) {
             validationId: safeOid(validationId),
             submitterEmail: userEmail,
         };
-
-        console.log("Feature request query is:");
-        console.log(featureRequestQuery);
 
         var freqs = [];
         var freqsDone = 0;
@@ -154,14 +129,10 @@ function featureRequestHandler(dbParent) {
                     request.get(options, function (err, resp, body) {
                         try {
                             body = JSON.parse(body);
-                            console.log(body.fields["System.State"]);
-                            console.log(body.fields["System.Reason"]);
 
                             freq.state = body.fields["System.State"];
                             freq.reason = body.fields["Microsoft.VSTS.Common.ResolvedReason"] || body.fields["System.Reason"];
                         } catch (e) {
-                            console.log(e);
-                            console.log("Falling back on default");
                             freq.state = "New";
                             freq.reason = "New";
                         }
@@ -202,6 +173,7 @@ function featureRequestHandler(dbParent) {
     }
 
     this.addFeatureRequest = function (req, res) {
+        console.log("addFeatureRequest got called");
         console.log(req.body);
 
         // Temp
@@ -210,6 +182,7 @@ function featureRequestHandler(dbParent) {
         let validationId = safeOid(req.body.validationId);
 
         let featureRequestObj = {
+            tap: "Windows",
             title: req.body.title,
             description: req.body.description,
             submitterEmail: req.body.submitterEmail,
@@ -220,13 +193,9 @@ function featureRequestHandler(dbParent) {
             downvotes: [],
         };
 
-        console.log(featureRequestObj);
-
         let valQuery = {
             _id: safeOid(req.body.validationId)
         };
-
-        console.log(valQuery);
 
         validations.findOne(valQuery, {projection: { tag: 1, areaPath: 1 }}, function (err, valDoc) {
             let tags = "WCCP; WCCP-FeatureRequest; " + valDoc.tag;
@@ -290,6 +259,7 @@ function featureRequestHandler(dbParent) {
                 }
 
                 if (project.project == "OS") {
+                    /*
                     if (userEmail) {
                         reqBody.push({
                             "op": "add",
@@ -297,6 +267,7 @@ function featureRequestHandler(dbParent) {
                             "value": userEmail
                         });
                     }
+                    */
 
                     if (req.body.windowsBuildVersion) {
                         reqBody.push({
@@ -311,6 +282,50 @@ function featureRequestHandler(dbParent) {
                         "path": "/fields/Microsoft.VSTS.Common.Release",
                         "value": "Cobalt"
                     });
+                    /*
+
+                    // ProductFamily
+                    if (valDoc.productFamily) {
+                        reqBody.push({
+                            "op": "add",
+                            "path": "/fields/OSG.ProductFamily",
+                            "value": valDoc.productFamily
+                        });
+                    }
+
+                    // Product
+                    if (valDoc.product) {
+                        reqBody.push({
+                            "op": "add",
+                            "path": "/fields/OSG.Product",
+                            "value": valDoc.product
+                        });
+                    }
+
+                    // Release
+                    if (valDoc.release) {
+                        reqBody.push({
+                            "op": "add",
+                            "path": "/fields/Microsoft.VSTS.Common.Release",
+                            "value": valDoc.release,
+                        });
+                    } else {
+                        reqBody.push({
+                            "op": "add",
+                            "path": "/fields/Microsoft.VSTS.Common.Release",
+                            "value": "Cobalt"
+                        });
+                    }
+
+                    // Found in Env
+                    if (valDoc.foundInEnv) {
+                        reqBody.push({
+                            "op": "add",
+                            "path": "/fields/Microsoft.VSTS.CMMI.FoundInEnvironment",
+                            "value": valDoc.foundInEnv
+                        });
+                    }
+                    */
                 }
 
                 let ado_add_endpoint = ADO_WORKITEM_ADD_ENDPOINT
@@ -368,8 +383,6 @@ function featureRequestHandler(dbParent) {
             op = { $set: { public: req.body.public } };
         }
         */
-
-        console.log(op);
 
         let query = { _id: parseInt(req.params.id) };
 
@@ -441,8 +454,6 @@ function featureRequestHandler(dbParent) {
     }
 
     this.getUserSupports = function (req, res) {
-        console.log("Called getUserSupports");
-        console.log(req.query);
         //let validationId = parseInt(req.body.validationId);
         let validationId = safeOid(req.query.validationId);
 
@@ -451,8 +462,6 @@ function featureRequestHandler(dbParent) {
         console.log(query);
 
         featureRequests.find(query).toArray(function (err, freqDocs) {
-            console.log("Found these feature requests");
-            console.log(freqDocs);
             res.json({ featureRequests: freqDocs });
         });
     }

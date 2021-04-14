@@ -2,7 +2,7 @@
 
 var ObjectID = require('mongodb').ObjectID;
 var request = require('request');
-const { safeOid, patToAuth, ADO_API_BASE, uploadAttachments } = require(process.cwd() + "/app/helpers/helpers.server.js");
+const { safeOid, patToAuth, ADO_API_BASE, uploadAttachments, cleanEmail } = require(process.cwd() + "/app/helpers/helpers.server.js");
 
 function feedbackHandler(dbParent) {
     var db = dbParent.db("clementine");
@@ -39,9 +39,9 @@ function feedbackHandler(dbParent) {
             userEmail = body.submitterEmail;
         }
 
-        userEmail = cleanEmail(userEmail);
+        //userEmail = cleanEmail(userEmail);
 
-        reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Submitter </td> <td id='userEmail' style='${tableStyle}'>${userEmail} </td></tr>`;
+        // reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Submitter </td> <td id='userEmail' style='${tableStyle}'>${userEmail} </td></tr>`;
 
         // Public ID
         if (body.publicId) {
@@ -90,27 +90,6 @@ function feedbackHandler(dbParent) {
                 return callback(err, projectDoc);
             });
         });
-    }
-
-    function cleanEmail(email) {
-        email = email.toLowerCase();
-        email = email.replace("#ext#@microsoft.onmicrosoft.com", "");
-        if (email.includes("@")) {
-            return email;
-
-        } else if (email.includes("_")) {
-            console.log("Going the underscore route");
-            var underscoreParts = email.split("_");
-            var domain = underscoreParts.pop();
-            var tenantString = domain.split(".")[0];
-
-            if (underscoreParts.length > 1) {
-                email = underscoreParts.join("_") + "@" + domain;
-            } else {
-                email = underscoreParts[0] + "@" + domain;
-            }
-        }
-        return email;
     }
 
     function getStateAndReason(validationId, feedback, callback) {
@@ -193,7 +172,7 @@ function feedbackHandler(dbParent) {
 
     this.getPublicFeedback = function (req, res) {
         // Get the public feedback not by this user.
-        console.log(req.body);
+        //console.log(req.body);
         let validationId = req.query.validationId;
         //let validationId = parseInt(req.body.validationId);
         let userEmail = req.query.userEmail;
@@ -238,6 +217,7 @@ function feedbackHandler(dbParent) {
     }
 
     this.addFeedback = function (req, res) {
+        console.log("addFeedback got called");
         console.log(req.body);
 
         let validationId = safeOid(req.body.validationId);
@@ -249,6 +229,7 @@ function feedbackHandler(dbParent) {
         };
 
         let feedbackObj = {
+            tap: "Windows",
             title: req.body.title,
             text: req.body.text,
             submitterEmail: req.body.submitterEmail,
@@ -326,6 +307,7 @@ function feedbackHandler(dbParent) {
                 }
 
                 if (project.project == "OS") {
+                    /*
                     if (userEmail) {
                         reqBody.push({
                             "op": "add",
@@ -333,6 +315,7 @@ function feedbackHandler(dbParent) {
                             "value": userEmail
                         });
                     }
+                    */
 
                     if (windowsBuildVersion) {
                         reqBody.push({
@@ -347,6 +330,51 @@ function feedbackHandler(dbParent) {
                         "path": "/fields/Microsoft.VSTS.Common.Release",
                         "value": "Cobalt"
                     });
+                    /*
+
+                    // ProductFamily
+                    if (valDoc.productFamily) {
+                        reqBody.push({
+                            "op": "add",
+                            "path": "/fields/OSG.ProductFamily",
+                            "value": valDoc.productFamily
+                        });
+                    }
+
+                    // Product
+                    if (valDoc.product) {
+                        reqBody.push({
+                            "op": "add",
+                            "path": "/fields/OSG.Product",
+                            "value": valDoc.product,
+                        });
+                    }
+
+                    // Release
+                    if (valDoc.release) {
+                        reqBody.push({
+                            "op": "add",
+                            "path": "/fields/Microsoft.VSTS.Common.Release",
+                            "value": valDoc.release,
+                        });
+                    } else {
+                        reqBody.push({
+                            "op": "add",
+                            "path": "/fields/Microsoft.VSTS.Common.Release",
+                            "value": "Cobalt"
+                        });
+                    }
+
+                    // Found in Env
+                    if (valDoc.foundInEnv) {
+                        reqBody.push({
+                            "op": "add",
+                            "path": "/fields/Microsoft.VSTS.CMMI.FoundInEnvironment",
+                            "value": valDoc.foundInEnv,
+                        });
+                    }
+                    */
+
                 }
 
                 if (err) { throw err; }

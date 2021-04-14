@@ -5,7 +5,7 @@ var request = require('request');
 var atob = require('atob');
 const fs = require('fs');
 const path = require('path');
-const { safeOid, patToAuth, ADO_API_BASE, uploadAttachments } = require('../../helpers/helpers.server');
+const { safeOid, patToAuth, ADO_API_BASE, uploadAttachments, isMicrosoft, cleanEmail } = require('../../helpers/helpers.server');
 
 function caseHandler(dbParent) {
 
@@ -28,28 +28,7 @@ function caseHandler(dbParent) {
     const TEAMS_ADO_WORKITEM_UPDATE_ENDPOINT = TEAMS_ADO_API_BASE + "workitems/{id}?api-version=4.1";
 
     // This one's for production
-    const AUTH = process.env.AUTH;
-
-    function cleanEmail(email) {
-        email = email.toLowerCase();
-        email = email.replace("#ext#@microsoft.onmicrosoft.com", "");
-        if (email.includes("@")) {
-            return email;
-
-        } else if (email.includes("_")) {
-            console.log("Going the underscore route");
-            var underscoreParts = email.split("_");
-            var domain = underscoreParts.pop();
-            var tenantString = domain.split(".")[0];
-
-            if (underscoreParts.length > 1) {
-                email = underscoreParts.join("_") + "@" + domain;
-            } else {
-                email = underscoreParts[0] + "@" + domain;
-            }
-        }
-        return email;
-    }
+    const AUTH = process.env["TEAMS-ADO-PAT"];
 
     function getDomain(email) {
         var domain = "?";
@@ -83,80 +62,6 @@ function caseHandler(dbParent) {
         return domain.toLowerCase();
     }
 
-    function getTenantString(email) {
-        var domain = "?";
-        if (email.includes("@")) {
-            var atParts = email.split("@");
-            domain = atParts.pop();
-            var tenantString = domain.split(".")[0];
-
-        } else if (email.includes("_")) {
-            console.log("Going the underscore route");
-            var underscoreParts = email.split("_");
-            domain = underscoreParts.pop();
-            var tenantString = domain.split(".")[0];
-
-            if (underscoreParts.length > 1) {
-                email = underscoreParts.join("_") + "@" + domain;
-            } else {
-                email = underscoreParts[0] + "@" + domain;
-            }
-        }
-        return tenantString;
-    }
-
-    function base64ArrayBuffer(arrayBuffer) {
-        var base64 = ''
-        var encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-
-        var bytes = new Uint8Array(arrayBuffer)
-        var byteLength = bytes.byteLength
-        var byteRemainder = byteLength % 3
-        var mainLength = byteLength - byteRemainder
-
-        var a, b, c, d
-        var chunk
-
-        // Main loop deals with bytes in chunks of 3
-        for (var i = 0; i < mainLength; i = i + 3) {
-            // Combine the three bytes into a single integer
-            chunk = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2]
-
-            // Use bitmasks to extract 6-bit segments from the triplet
-            a = (chunk & 16515072) >> 18 // 16515072 = (2^6 - 1) << 18
-            b = (chunk & 258048) >> 12 // 258048   = (2^6 - 1) << 12
-            c = (chunk & 4032) >> 6 // 4032     = (2^6 - 1) << 6
-            d = chunk & 63               // 63       = 2^6 - 1
-
-            // Convert the raw binary segments to the appropriate ASCII encoding
-            base64 += encodings[a] + encodings[b] + encodings[c] + encodings[d]
-        }
-
-        // Deal with the remaining bytes and padding
-        if (byteRemainder == 1) {
-            chunk = bytes[mainLength]
-
-            a = (chunk & 252) >> 2 // 252 = (2^6 - 1) << 2
-
-            // Set the 4 least significant bits to zero
-            b = (chunk & 3) << 4 // 3   = 2^2 - 1
-
-            base64 += encodings[a] + encodings[b] + '=='
-        } else if (byteRemainder == 2) {
-            chunk = (bytes[mainLength] << 8) | bytes[mainLength + 1]
-
-            a = (chunk & 64512) >> 10 // 64512 = (2^6 - 1) << 10
-            b = (chunk & 1008) >> 4 // 1008  = (2^6 - 1) << 4
-
-            // Set the 2 least significant bits to zero
-            c = (chunk & 15) << 2 // 15    = 2^4 - 1
-
-            base64 += encodings[a] + encodings[b] + encodings[c] + '='
-        }
-
-        return base64
-    }
-
     function getWindowsReproSteps(body) {
         let tableStyle = "border: solid black 1px; padding: 4px 4px 4px 4px;";
 
@@ -180,7 +85,8 @@ function caseHandler(dbParent) {
         userEmail = cleanEmail(userEmail);
 
 
-        reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Submitter </td> <td id='userEmail' style='${tableStyle}'>${userEmail} </td></tr>`;
+        // User email
+        //reproSteps += `<tr style='${tableStyle}'> <td style='${tableStyle}'> Submitter </td> <td id='userEmail' style='${tableStyle}'>${userEmail} </td></tr>`;
 
         // Public ID
         if (body.publicId) {
@@ -256,9 +162,9 @@ function caseHandler(dbParent) {
 
         //console.log("Calling getCaseVotesByCustomer with body:");
         //console.log(req.body);
-        const email = req.body.email;
-        var cId = req.body.cId;
-        const upDown = req.body.upDown;
+        const email = req.query.email;
+        var cId = req.query.cId;
+        const upDown = req.query.upDown;
 
         var query = {};
 
@@ -436,7 +342,7 @@ function caseHandler(dbParent) {
             }
 
             specialFields.forEach(function (field) {
-                if (req.body[field]) {
+                if (req.body[field]) {c
                     commentDoc[field] = req.body[field];
                 }
             });
@@ -661,11 +567,13 @@ function caseHandler(dbParent) {
         ];
 
         getAuthForCase(body.validation._id, function (err, project) {
-            if (body.validation.areaPath) {
+            let valDoc = body.validation;
+
+            if (valDoc.areaPath) {
                 reqBody.push({
                     "op": "add",
                     "path": "/fields/System.AreaPath",
-                    "value": body.validation.areaPath
+                    "value": valDoc.areaPath
                 });
 
             } else if (project.areaPath) {
@@ -685,14 +593,16 @@ function caseHandler(dbParent) {
             }
 
             if (project.project == "OS") {
-                // This area path only works in production
+                // This area path only works in production, in the microsoft/OS project
 
                 if (body.cleanEmail) {
+                    /*
                     reqBody.push({
                         "op": "add",
                         "path": "/fields/OSG.Partner.PartnerPOC",
                         "value": body.cleanEmail
                     });
+                    */
                 }
 
                 if (body.windowsBuildVersion) {
@@ -709,12 +619,6 @@ function caseHandler(dbParent) {
                     "value": "Cobalt"
                 });
 
-                // TODO: This is not ready yet, as it requires another field to be set
-                //reqBody.push({
-                //    "op": "add",
-                //    "path": "/fields/OSG.Partner.PartnerProgram",
-                //    "value": "Windows 10 TAP"
-                //})
             }
 
         
@@ -732,6 +636,8 @@ function caseHandler(dbParent) {
                 body: JSON.stringify(reqBody)
             };
 
+            console.log(JSON.stringify(reqBody, null, 2));
+
             console.log("Create workitem options:");
             console.log(options);
 
@@ -741,7 +647,7 @@ function caseHandler(dbParent) {
                 console.log(vstsResp.statusCode);
 
                 vstsBody = JSON.parse(vstsBody);
-                console.log(vstsBody);
+                console.log(JSON.stringify(vstsBody, null, 2));
 
                 let bugId = vstsBody.id;
 
@@ -800,9 +706,9 @@ function caseHandler(dbParent) {
     }
 
     this.addVote = function (req, res) {
-        //console.log("addVote got called");
+        console.log("addVote got called");
 
-        //console.log(req.body);
+        console.log(req.body);
 
         //var refUrlParts = req.url.split('/');
         //console.log("cid was " + req.body.cId);
@@ -851,8 +757,6 @@ function caseHandler(dbParent) {
             clientVoteString = originalClientVoteString;
             tenantString = clientVoteString.split("@")[1].split(".")[0];
         }
-
-        console.log("clientVoteString is: " + clientVoteString + " tenantString is: " + tenantString + " domain is: " + domain);
 
         req.body.cleanEmail = clientVoteString;
 
@@ -918,7 +822,7 @@ function caseHandler(dbParent) {
                     }
 
                     createWindowsBug(req.body, function (workitemBody, attachmentBodies) {
-                        //console.log(workitemBody);
+                        console.log(workitemBody);
                         let id = workitemBody.id;
                         voteObj.id = id;
                         voteObj.publicId = new ObjectID();
@@ -975,9 +879,6 @@ function caseHandler(dbParent) {
                         }
                     })
                 }
-                //console.log(voteObj);
-                //console.log(updateOp);
-                //console.log(updateOp2);
 
                 executeDataOps();
             }
@@ -1163,7 +1064,6 @@ function caseHandler(dbParent) {
     };
 
     function getStateAndReason(validationId, feedback, callback) {
-        console.log(validationId, feedback);
         // Set the ADO fields for a given piece of feedback
         getAuthForCase(validationId, function (err, project) {
             if (err) { throw err; }
@@ -1182,13 +1082,10 @@ function caseHandler(dbParent) {
                 try {
                     //console.log(body);
                     body = JSON.parse(body);
-                    console.log(body.fields["System.State"]);
-                    console.log(body.fields["System.Reason"]);
 
                     feedback.state = body.fields["System.State"];
                     feedback.reason = body.fields["Microsoft.VSTS.Common.ResolvedReason"] || body.fields["System.Reason"];
                 } catch (e) {
-                    console.log("Falling back on default");
                     feedback.state = "New";
                     feedback.reason = "New";
                 }
@@ -1229,10 +1126,8 @@ function caseHandler(dbParent) {
             });
 
             let currentUserComments = caseDoc.comments.filter(x => x.userEmail == req.body.userEmail);
-            console.log(currentUserComments);
 
             let allFeedback = caseDoc.upvotes_v2.concat(caseDoc.downvotes_v2).filter(x => x.email == req.body.userEmail).concat(currentUserComments);
-            console.log(allFeedback);
 
             if (allFeedback.length == 0) {
                 return res.json({ feedback: [] });
@@ -1275,6 +1170,7 @@ function caseHandler(dbParent) {
     }
 
     this.getCaseFeedbackPublic = function (req, res) {
+
         let votesChecked = 0;
         let votesTotal = 0;
 
@@ -1282,26 +1178,56 @@ function caseHandler(dbParent) {
         function checkIfDone() {
             //console.log(votesChecked + " / " + votesTotal);
             if (votesChecked == votesTotal) {
+                console.log(feedback);
                 return res.json({ feedback: feedback });
             }
         }
 
         cases.findOne({ _id: ObjectID(req.body.caseId) }, function (err, caseDoc) {
-            // Can't just concat comments, as upvotes/downvotes use "email" field where comments use "userEmail"
-            let nonCurrentUserComments = caseDoc.comments.filter(x => x.userEmail != req.body.userEmail).filter(x => x.public);
+            let nonCurrentUserComments, allFeedback;
+            if (isMicrosoft(req.body.userEmail)) {
+                nonCurrentUserComments = caseDoc.comments.filter(x => x.userEmail != req.body.userEmail);
 
-            let allFeedback = caseDoc.upvotes_v2.concat(caseDoc.downvotes_v2).filter(x => x.email != req.body.userEmail).filter(x => x.public).concat(nonCurrentUserComments);
+                allFeedback = caseDoc.upvotes_v2.concat(caseDoc.downvotes_v2).filter(x => x.email != req.body.userEmail).concat(nonCurrentUserComments);
+            } else {
+                // Can't just concat comments, as upvotes/downvotes use "email" field where comments use "userEmail"
+                nonCurrentUserComments = caseDoc.comments.filter(x => x.userEmail != req.body.userEmail).filter(x => x.public);
+
+                allFeedback = caseDoc.upvotes_v2.concat(caseDoc.downvotes_v2).filter(x => x.email != req.body.userEmail).filter(x => x.public).concat(nonCurrentUserComments);
+            }
+
             //console.log(allFeedback);
 
             votesTotal = allFeedback.length;
 
             allFeedback.forEach(function (fb) {
+                // Remove unnecessary properties
+                delete fb.userTenantId;
+                //if (fb.comment) { delete fb.comment; }
+                //delete fb.comment;
+                //delete fb.attachmentCount;
+                delete fb.windowsBuildType;
+                delete fb.windowsBuildVersion;
+
+                if (!isMicrosoft(req.body.userEmail)) {
+                    if (fb.userEmail) {
+                        delete fb.userEmail;
+                    }
+                    if (fb.email) {
+                        delete fb.email;
+                    }
+
+                    if (fb.id) { delete fb.id; }
+
+                }
+                
+
                 // Legacy feedback doesn't have titles
                 getStateAndReason(caseDoc.validationId, fb, function (updatedCase) {
                     if (fb.upvotes) {
                         fb.userUpvoted = fb.upvotes.includes(req.body.userEmail);
                     }
-
+                    console.log(updatedCase);
                     feedback.push(updatedCase);
 
                     votesChecked++;
@@ -1330,32 +1256,23 @@ function caseHandler(dbParent) {
             if (caseDoc) {
                 cases.updateOne({ "upvotes_v2.id": feedbackId }, { $addToSet: { "upvotes_v2.$.upvotes": req.body.email } }, function (err, caseDoc1) {
                     if (caseDoc1.matchedCount) {
-                        console.log("It was an upvote")
                         feedbackField = "upvotes_v2";
                     }
                     cases.updateOne({ "downvotes_v2.id": feedbackId }, { $addToSet: { "downvotes_v2.$.upvotes": req.body.email } }, function (err, caseDoc2) {
                         if (caseDoc2.matchedCount) {
-                            console.log("It was a downvote");
                             feedbackField = "downvotes_v2";
                         }
 
                         cases.updateOne({ "comments.id": feedbackId }, { $addToSet: { "comments.$.upvotes": req.body.email } }, function (err, caseDoc3) {
                             if (caseDoc3.matchedCount) {
-                                console.log("It was a comment")
                                 feedbackField = "comments";
                             }
 
-                            console.log("Recorded the upvote");
-
                             // Update ADO item
                             let feedbackItem = caseDoc[feedbackField].find(x => x.id == feedbackId);
-                            console.log(feedbackItem);
                             feedbackItem.upvotes.indexOf(req.body.email) === -1 ? feedbackItem.upvotes.push(req.body.email) : console.log("Already present");
 
-
-                            console.log(feedbackItem);
                             let reproSteps = getWindowsReproSteps(feedbackItem);
-                            console.log(reproSteps);
 
                             // Post updates to ADO
 

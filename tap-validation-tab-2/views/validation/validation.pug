@@ -127,18 +127,14 @@ block content
                         - var caseCountInCustomCaseOrder = 0;
                         if validation.customCaseOrder
                             each group in Object.keys(validation.customCaseOrder)
-                                - console.log(group);
                                 - caseCountInCustomCaseOrder += validation.customCaseOrder[group].length;
                         if (Object.keys(validation.customCaseOrder).length > 0) && (caseCountInCustomCaseOrder > 0)
                             // TODO: Are some of these actually arrays??
-                            - console.log("Use customCaseOrder");
                             - groupCases = validation.customCaseOrder[group];
                         else
                             if validation.groups == [""]
-                                - console.log("validation.groups is empty; putting all cases in");
                                 - groupCases = cases;
                             else
-                                - console.log("validation.groups is not empty");
                                 - groupCases = cases.filter(obj => {return obj.group == group}).map(obj => obj._id);
                         - groupCount++;
                         .panel.panel-default.group-panel(id="panel-" + safeGroupName)
@@ -153,7 +149,6 @@ block content
                                     - var caseCount = 1;
 
                                     each kaseId in groupCases
-                                      - console.log(kaseId);
                                       - var kase = cases.find(obj => { return obj._id.toString() === kaseId.toString() });
                                       if kase
                                           if kase.group == group
@@ -453,6 +448,7 @@ block content
                             th(scope="col" style="width: 70%") #[strong Title]
                             th(scope="col" style="width: 10%") #[strong State]
                             th(scope="col" style="width: 10%") #[strong Reason]
+                            th.submitterColumn(scope="col" style="width: 10%; display: none") #[strong Submitter]
                     tbody
                 
           .modal-footer
@@ -618,12 +614,10 @@ block content
                 
           .modal-footer
             button.btn.btn-primary#feedback-comment-submit(title="Submit" name="submit") Submit
-              
-    //script(type="text/javascript", src="/helpers/helpers.js") // ALready defined in layout.pug
-    script(type="text/javascript", src="/controllers/validation/featureRequestController.client.js")
-    script(type="text/javascript", src="/controllers/validation/feedbackController.client.js")
-    script(type="text/javascript", src="/controllers/validation/caseFeedbackController.client.js")
 
-    script(type="text/javascript", src="/controllers/validation/caseController.client.js")
-    script(type="text/javascript", src="/controllers/validation/userPrefsController.client.js")
+    +script("/controllers/validation/caseController.client.js")
+    +script("/controllers/validation/featureRequestController.client.js")
+    +script("/controllers/validation/feedbackController.client.js")
+    +script("/controllers/validation/caseFeedbackController.client.js")
+    +script("/controllers/validation/userPrefsController.client.js")
 

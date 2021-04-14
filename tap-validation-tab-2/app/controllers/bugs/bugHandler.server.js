@@ -31,9 +31,19 @@ function bugHandler (dbParent) {
     const QUERY_BY_WIQL_ENDPOINT = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/wiql?$top=100&api-version=5.1";
     //const QUERY_BY_WIQL_ENDPOINT = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/wiql&api-version=5.1";
 
+    // "P1S1" in TAP Dev Test
+    const TEST_P1S1_WEBHOOK = "https://microsoft.webhook.office.com/webhookb2/37317ed8-68c1-4564-82bb-d2acc4c6b2b4@72f988bf-86f1-41af-91ab-2d7cd011db47/IncomingWebhook/3227247aeb5d484fadbf3d17c0591a4c/512d26c9-aeed-4dbd-a16f-398bcf0ec3fe";
+
+    // Production channel
+    const PROD_P1S1_WEBHOOK = "https://microsoft.webhook.office.com/webhookb2/f486e90b-19bb-4f70-bc58-c819477736e4@72f988bf-86f1-41af-91ab-2d7cd011db47/IncomingWebhook/fe63a3b845914a8aaa42a556b818d5c6/512d26c9-aeed-4dbd-a16f-398bcf0ec3fe";
+    const EDU_P1S1_WEBHOOK = "https://microsoft.webhook.office.com/webhookb2/2e7a9f8e-d374-4f60-9f44-199dcac216ca@72f988bf-86f1-41af-91ab-2d7cd011db47/IncomingWebhook/6f0c0b9075da4ad789e073855ed81150/512d26c9-aeed-4dbd-a16f-398bcf0ec3fe";
+    const FAR_EAST_P1S1_WEBHOOK = "https://microsoft.webhook.office.com/webhookb2/62d3f821-aaa4-4278-bc81-31f4dc0b6533@72f988bf-86f1-41af-91ab-2d7cd011db47/IncomingWebhook/befb6343f0ad48fc88d5353243b7f0d6/512d26c9-aeed-4dbd-a16f-398bcf0ec3fe";
+
+    const P1S1_WEBHOOKS = [TEST_P1S1_WEBHOOK, PROD_P1S1_WEBHOOK, EDU_P1S1_WEBHOOK, FAR_EAST_P1S1_WEBHOOK];
+
     // This one's for production
     // Used to run queries and write comments to workitems
-    var AUTH = process.env.AUTH;
+    var AUTH = process.env["TEAMS-ADO-PAT"];
 
     // Hardcoding this Teams project instead of putting it in the DB
     var TEAMS_PROJECT = {
@@ -305,9 +315,8 @@ function bugHandler (dbParent) {
                     console.log(adoErr);
                     throw adoErr;
                 }
-                //console.log(adoResponse.statusCode);
+                console.log(adoResponse.statusCode);
                 //console.log(adoBody);
-
                 adoBody = JSON.parse(adoBody);
                 //console.log(adoBody);
                 var workitems = adoBody.workItems;
@@ -326,8 +335,13 @@ function bugHandler (dbParent) {
 
                     request.get(witOptions, function (adoErr, adoResponse, adoBody) {
                         //console.log(adoResponse.statusCode);
-                        if (adoErr) { console.log(adoErr); }
+                        if (adoErr) {
+                            console.log("Here's an ado err:");
+                            console.log(adoErr);
+                        }
                         console.log(adoBody);
+                        console.log(adoResponse);
+                        console.log(adoResponse.statusCode);
                         if (adoResponse.statusCode.toString()[0] == "5") {
                             console.log("Server error");
                             return res.status(500).send();
@@ -691,14 +705,14 @@ function bugHandler (dbParent) {
         request.get(getWitOptions, function (adoErr, adoResponse, adoBody) {
             if (adoErr) { throw adoErr; }
             let resp = JSON.parse(adoBody);
-            console.log(resp);
+            //console.log(resp);
 
             let existingTags = resp.fields["System.Tags"];
             // Ignore "undefined" when the existing tag list is empty
             if (existingTags == "undefined") {
                 existingTags = "";
             }
-            console.log(existingTags);
+            //console.log(existingTags);
 
             let tagList = existingTags + "; TAPITAdminTriaged;"
 
@@ -736,7 +750,7 @@ function bugHandler (dbParent) {
 
             request.post(options, function (adoErr, adoResponse, adoBody) {
                 if (adoErr) { throw adoErr; }
-                console.log(adoBody);
+                //console.log(adoBody);
 
                 let patch = [];
 
@@ -791,7 +805,6 @@ function bugHandler (dbParent) {
                     });
                 }
 
-
                 function sendPatch(patch) {
                     console.log(patch);
                     let patchOptions = {
@@ -805,7 +818,7 @@ function bugHandler (dbParent) {
 
                     request.patch(patchOptions, function (adoErr, adoResponse, adoBody) {
                         if (adoErr) { console.log(adoErr); }
-                        console.log(adoBody);
+                        //console.log(adoBody);
 
                         let safeId = parseInt(req.body.id);
 
@@ -827,6 +840,99 @@ function bugHandler (dbParent) {
                             return res.status(200).send();
                         });
                     })
+                }
+
+                function sendTeamsCard() {
+                    console.log("Called sendTeamsCard");
+                    const cardTemplate = {
+                        "@type": "MessageCard",
+                        "@context": "https://schema.org/extensions",
+                        "summary": "{Bug Title}",
+                        "themeColor": "0078D7",
+                        "title": "{Bug Title}",
+                        "sections": [
+                            {
+                                "activityTitle": "#{BUG_ID}](https://domoreexp.visualstudio.com/MSTeams/_workitems/edit/{BUG_ID}) - {BUG_TITLE}",
+                                "activityImage": "https://i.imgur.com/xqG1HMv.png",
+                                "activityText": "{Bug Description}",
+                                "facts": [
+                                    {
+                                        "name": "Reported By",
+                                        "value": "{Bug Tenant Name}"
+                                    },
+                                    {
+                                        "name": "Ask",
+                                        "value": "If your tenant is also experiencing this symptom please, triage the bug from your users and inform your helpdesk ASAP.",
+                                    },
+                                ]
+                            }
+                        ]
+                    }
+
+                    let safeId = parseInt(req.body.id);
+                    triageBugs.findOne({ _id: safeId }, function (err, bugDoc) {
+                        if (err) {
+                            console.log(err);
+                        }
+                        if (bugDoc == null) {
+                            console.log("Bug not found");
+                            return;
+                        }
+
+                        if (bugDoc.notificationSent) {
+                            console.log("This notification has already been sent - skip it");
+                            return;
+                        }
+
+                        tenants.findOne({ tid: bugDoc.tid }, function (err, tenantDoc) {
+                            let tenantName = "A customer";
+                            if (tenantDoc) {
+                                tenantName = tenantDoc.name;
+                            }
+                            var card = Object.assign({}, cardTemplate);
+
+                            let safeTitle = bugDoc.title;
+                            if (safeTitle.split(":").length > 1) {
+                                safeTitle = safeTitle.split(":").slice(2).join(":");
+                            }
+                            bugDoc.safeTitle = safeTitle;
+                            bugDoc.safeReproSteps = bugDoc.reproSteps.replace("Message:", "");
+
+                            //card.summary = "A bug has been marked high-priority";
+                            card.title = `${tenantName} has submitted a high-severity issue`;
+                            card.sections[0].activityTitle = `[${bugDoc.id}](https://domoreexp.visualstudio.com/MSTeams/_workitems/edit/${bugDoc.id}) - ${bugDoc.safeTitle}`;
+                            card.sections[0].activityText = bugDoc.safeReproSteps;
+                            card.sections[0].facts[0].value = tenantName;
+
+                            P1S1_WEBHOOKS.forEach(function (hook) {
+                                let params = {
+                                    url: hook,
+                                    headers: {
+                                        "content-type": "application/json"
+                                    },
+                                    body: JSON.stringify(card),
+                                };
+
+                                console.log(card);
+                                console.log(hook);
+
+                                request.post(params, function (err, resp, body) {
+                                    console.log(resp.body);
+                                    // TODO: This sets notificationSent to true after the first one succeeds, not after they all succeed.
+                                    triageBugs.updateOne({ _id: safeId }, { $set: { notificationSent: true } }, function (err, updateDoc) {
+                                        console.log("Set notificationSent to true");
+                                    });
+                                });
+                            });
+                        })
+                    });
+                }
+
+                // Notify a Teams channel if this is P1S1 or P1S2
+                console.log(priority);
+                if (priority == 1) {
+                    console.log("Sending a Teams card");
+                    sendTeamsCard();
                 }
 
                 if (validationName) {
@@ -1128,7 +1234,7 @@ function bugHandler (dbParent) {
     function createTeamsBug(body, callback) {
         console.log(body);
         let bugTitle = "MTR Bug Report: "
-        let tags = "TAPMTRBugReport; TAP; Ring1_5;";
+        let tags = "TAPMTRBugReport; TAP";
 
         let safeComment = body.comment.replace(/\r?\n/g, '<br />');
         bugTitle += '"' + safeComment + '"';
@@ -1212,7 +1318,6 @@ function bugHandler (dbParent) {
 
         var bugId;
 
-        // TODO: Create ADO bug, assign the response's ID to bugId
         createTeamsBug(req.body, function (adoBody) {
             console.log(adoBody);
             adoBody = JSON.parse(adoBody);

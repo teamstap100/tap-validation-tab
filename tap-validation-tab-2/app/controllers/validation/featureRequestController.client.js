@@ -23,7 +23,7 @@ var setupFeatureRequests = function(context) {
             let id = this.id.replace("feature-request-btn-", "");
             //console.log(id);
             let url = `/api/featureRequests/upvote/${id}`;
-            let params = { userEmail: context['userPrincipalName'] };
+            let params = { userEmail: context['loginHint'] };
 
             ajaxRequest('POST', url, params, function (resp) {
                 //console.log(resp);
@@ -38,7 +38,7 @@ var setupFeatureRequests = function(context) {
 
         // Get all the feature requests this user has already supported
         function showExisitngFeatureRequestSupports() {
-            let url = `/api/featureRequests/supports?email=${context['userPrincipalName']}&validationId=${config.validationId}`;
+            let url = `/api/featureRequests/supports?email=${context['loginHint']}&validationId=${config.validationId}`;
             //console.log(url);
             ajaxRequest('GET', url, {}, function (resp) {
                 //console.log(resp);
@@ -88,7 +88,7 @@ var setupFeatureRequests = function(context) {
 
                 microsoftTeams.getContext(function (context) {
                     let voteParams = {
-                        userEmail: context['userPrincipalName'],
+                        userEmail: context['loginHint'],
                         _id: freq._id,
                         title: $('#edit-report-title-field').val(),
                         description: $('#edit-report-description-field').val(),
@@ -133,7 +133,7 @@ var setupFeatureRequests = function(context) {
                     if (textInput != original) {
                         let url = '/api/featureRequests/' + featureRequestId;
                         let params = {
-                            submitterEmail: context['userPrincipalName'],
+                            submitterEmail: context['loginHint'],
                         };
 
                         params[prop] = textInput;
@@ -167,7 +167,7 @@ var setupFeatureRequests = function(context) {
             let url = '/api/featureRequests/' + featureRequestId;
             let params = {
                 public: this.checked,
-                submitterEmail: context['userPrincipalName'],
+                submitterEmail: context['loginHint'],
             };
 
             if (this.checked) {
@@ -195,7 +195,7 @@ var setupFeatureRequests = function(context) {
                 type: "GET",
                 data: {
                     validationId: config.validationId,
-                    userEmail: context['userPrincipalName'],
+                    userEmail: context['loginHint'],
                 },
                 dataSrc: "featureRequest",
             },
@@ -271,7 +271,7 @@ var setupFeatureRequests = function(context) {
                 validationId: config.validationId,
                 title: titleField.val(),
                 description: descriptionField.val().replace(/\r?\n/g, '<br>'),
-                submitterEmail: context['userPrincipalName'],
+                submitterEmail: context['loginHint'],
                 public: featureRequestPublicField.is(':checked'),
             };
 

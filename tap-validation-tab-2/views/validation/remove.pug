@@ -1,0 +1,15 @@
+extends ../layout.pug
+
+block morescripts
+  //script(src='https://unpkg.com/@microsoft/teams-js@1.3.7/dist/MicrosoftTeams.min.js', integrity='sha384-glExfvkpce98dO2oN+diZ/Luv/5qrZJiOvWCeR8ng/ZxlhpvBgHKeVFRURrh+NEC', crossorigin='anonymous')
+  //link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/v/bs/dt-1.10.18/datatables.min.css')
+  //script(type='text/javascript', src='https://cdn.datatables.net/v/bs/dt-1.10.18/datatables.min.js')
+  //script(type="text/javascript", src="/controllers/layout/layoutController.client.js")
+  script(type="text/javascript", src="/controllers/validation/removeController.client.js")
+  link(rel='stylesheet', type='text/css', href='/public/css/config.css')
+
+
+
+block content
+    button#deleteTab Remove this tab?
+    span(style="display: none")#valId #{vId}

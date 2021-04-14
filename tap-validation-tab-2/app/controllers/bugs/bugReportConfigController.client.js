@@ -15,9 +15,9 @@
       console.log(contentUrlBase);
 
       var settings = {
-          entityId: "Report a Bug",
+          entityId: "Report a Problem",
           contentUrl: contentUrlBase,
-          suggestedDisplayName: "Report a Bug",
+          suggestedDisplayName: "Report a Problem",
       }
 
       console.log(settings);

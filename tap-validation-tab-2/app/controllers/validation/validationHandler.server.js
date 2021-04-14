@@ -3,6 +3,7 @@
 var ObjectID = require('mongodb').ObjectID;
 var request = require('request');
 
+
 function validationHandler(dbParent) {
 
     //var clicks = db.collection('clicks');
@@ -23,7 +24,8 @@ function validationHandler(dbParent) {
     };
 
     this.getValidations = function (req, res) {
-        // Projection excludes/includes various fields.
+        console.log("Called getValidations");
+        // Used in the config page.
 
         var alphaSort = { name: 1 };
 
@@ -46,13 +48,19 @@ function validationHandler(dbParent) {
             }
 
             pms.find({ active: true }).toArray(function (err, pmDocs) {
-                res.render('validation/config', {
+                return res.render('validation/config', {
                     validations: results,
                     pms: pmDocs
                 });
             })
         });
     };
+
+    this.getRemovalPage = function (req, res) {
+        return res.render('validation/remove', {
+            vId: req.params.vId
+        });
+    }
 
     this.getValidation = function (req, res) {
         //console.log(req.params.vId);
@@ -171,23 +179,38 @@ function validationHandler(dbParent) {
         });
     };
 
-    this.updateValidation = function (req, res) {
-        //console.log(req.body.validationId, req.body.tabUrl);
-
-        validations.updateOne({ _id: parseInt(req.body.validationId) }, { $set: { tabUrl: req.body.tabUrl } }, function (err, doc) {
-            if (err) { throw err; }
-
-            res.status(200);
-            res.send();
-        });
+    /*
+    this.updateTabUrlFields = function (req, res) {
+        validations.find({}).toArray(function (err, valDocs) {
+            valDocs.forEach(function (valDoc) {
+                let updateQuery;
+                
+                if (valDoc.tabUrl) {
+                    if (Array.isArray(valDoc.tabUrl)) {
+                        console.log("No need to update");
+                    } else {
+                        updateQuery = { $set: { tabUrl: [valDoc.tabUrl] } };
+                    }
+                } else {
+                    updateQuery = { $set: { tabUrl: [] } };
+                }
+                validations.updateOne({ _id: valDoc._id }, updateQuery, function (err, updateDoc) {
+                    if (err) { console.log(err); } else {
+                        console.log("Updated");
+                    }
+                });
+            });
+        })
+        return res.status(200).send();
     }
+    */
 
-    this.assignPublicIds = function (req, res) {
-        cases.updateOne({ tap: "Windows", "upvotes_v2": { $ne: [] }, "upvotes_v2.publicId": { $exists: false } }, { $set: { "upvotes_v2.$.publicId": new ObjectID() } }, function (err, caseDoc) {
-            if (err) { throw err; }
-            console.log("Done");
-        });
-    }
+    //this.assignPublicIds = function (req, res) {
+    //    cases.updateOne({ tap: "Windows", "upvotes_v2": { $ne: [] }, "upvotes_v2.publicId": { $exists: false } }, { $set: { "upvotes_v2.$.publicId": new ObjectID() } }, function (err, caseDoc) {
+    //        if (err) { throw err; }
+    //        console.log("Done");
+    //    });
+    //}
 };
 
 module.exports = validationHandler;

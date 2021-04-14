@@ -7,7 +7,6 @@
         microsoftTeams.getContext(function (context) {
             let oid = context['userObjectId'];
 
-            console.log("Getting user prefs");
             let userPrefsUrl = userPrefsUrlBase + oid;
             ajaxRequest('GET', userPrefsUrl, {}, function (data) {
                 console.log("Done");
@@ -50,10 +49,9 @@
     }
 
     function setUserPrefs() {
-        console.log("Setting user prefs");
         microsoftTeams.getContext(function (context) {
             let oid = context['userObjectId'];
-            let email = cleanEmail(context['userPrincipalName']);
+            let email = cleanEmail(context['loginHint']);
 
             let prefs = {};
 

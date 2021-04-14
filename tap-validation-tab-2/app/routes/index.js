@@ -10,7 +10,7 @@ var PerformanceHandler = require(process.cwd() + '/app/controllers/performance/p
 var UserHandler = require(process.cwd() + '/app/controllers/users/userHandler.server.js');
 var FeedbackHandler = require(process.cwd() + '/app/controllers/validation/feedbackHandler.server.js');
 var FeatureRequestHandler = require(process.cwd() + "/app/controllers/validation/featureRequestHandler.server.js");
-var InfoHandler = require(process.cwd() + "/app/controllers/tap100-app/infoHandler.server.js");
+//var InfoHandler = require(process.cwd() + "/app/controllers/tap100-app/infoHandler.server.js");
 var AnalyticsHandler = require(process.cwd() + "/app/controllers/analyticsHandler.server.js");
 var FeatureHandler = require(process.cwd() + "/app/controllers/features/featureHandler.server.js");
 var UserHandler = require(process.cwd() + "/app/controllers/users/userHandler.server.js");
@@ -46,7 +46,7 @@ module.exports = function (app, db) {
     var userHandler = new UserHandler(db);
     var feedbackHandler = new FeedbackHandler(db);
     var featureRequestHandler = new FeatureRequestHandler(db);
-    var infoHandler = new InfoHandler(db);
+    //var infoHandler = new InfoHandler(db);
     var analyticsHandler = new AnalyticsHandler(db);
     var featureHandler = new FeatureHandler(db);
     var userHandler = new UserHandler(db);
@@ -89,6 +89,9 @@ module.exports = function (app, db) {
     app.route('/validations/:vId')
         .get(validationHandler.getValidation);
 
+    app.route('/validations/:vId/remove')
+        .get(validationHandler.getRemovalPage);
+
     // Bug triage endpoints
     app.route("/api/bugs/triage")
         .post(bugHandler.triageBug);
@@ -116,7 +119,7 @@ module.exports = function (app, db) {
         .get(caseHandler.getCaseVoteByUser);
 
     app.route('/api/caseVotes')
-        .post(caseHandler.getCaseVotesByCustomer);
+        .get(caseHandler.getCaseVotesByCustomer);
 
     // Endpoints for general feedback (validation-level)
     app.route('/api/feedback')
@@ -175,7 +178,6 @@ module.exports = function (app, db) {
     app.route('/api/featureRequests/upvote/:id')
         .post(featureRequestHandler.addSupport);
 
-
     app.route('/api/comments')
         .post(caseHandler.addComment);
 
@@ -215,8 +217,8 @@ module.exports = function (app, db) {
             });
         });
 
-    app.route('/api/validations')
-        .post(validationHandler.updateValidation);
+    app.route('/api/tabLocations')
+        .post(analyticsHandler.updateValidationTabLocations);
 
     // TODO: Route currently just used by tenant bugs tab. Should use csrf/GET instead
     app.route('/api/tenants')
@@ -267,8 +269,8 @@ module.exports = function (app, db) {
     app.route('/performance/:tid')
         .get(performanceHandler.renderPerformanceTemplate);
 
-    app.route('/info')
-        .get(infoHandler.getInfo);
+    // app.route('/info')
+    //     .get(infoHandler.getInfo);
 
     app.route('/features')
         .get(featureHandler.renderFeatures);
@@ -285,62 +287,14 @@ module.exports = function (app, db) {
     app.route('/api/tenantBugs/:tid/:bugId')
         .get(bugHandler.getTenantBugs);
 
-    app.route("/api/stats")
-        .post(analyticsHandler.updateAnalytics);
-
     app.route("/api/pms/:email/taps")
         .get(userHandler.getPmTaps);
 
     app.route('/api/bugs/report')
         .post(enforceIdToken, bugHandler.submitBugReport);
 
-    // TODO: Don't publish this route
-    //app.route('/api/assignPublicIds')
-    //    .get(validationHandler.assignPublicIds);
-
-    // Auth testing
-    /*
-    app.route("/silent-auth")
-        .get(function (req, res) {
-            return res.render("auth/silent-auth", {});
-        });
-
-    app.route("/silent-auth/silent-end")
-        .get(function (req, res) {
-            return res.render("auth/silent-auth-end", {});
-        });
-
-    app.route("/silent-auth/config")
-        .get(function (req, res) {
-            return res.render("auth/config", {});
-        });
-
-    app.route("/api/validateToken")
-        .get(function (req, res) {
-            let token = req.headers.authorization.replace("Bearer ", "");
-            verifyJwt(token, function(err, verified) {
-                if (err) {
-                    console.log(err);
-                    return res.status(403);
-                }
-                if (verified) {
-                    console.log(verified);
-                    return res.json(verified);
-                } else {
-                    console.log("Not verified");
-                    return res.status(403);
-                }
-            })
-        })
-    */
-
-    // Cron jobs
-    // Every hour at x:15 - update Teams builds
-    //cron.schedule("15 * * * *", function () {
-    //    console.log("Running cron - updating tenant bugs");
-    //    // Not yet implemented
-    //    //tenantHandler.updateTenantBugs();
-    //});
+    //app.route('/api/validations/updateTabUrlFields')
+    //    .get(validationHandler.updateTabUrlFields);
 
     app.use(function (req, res) {
         res.status(404).render('error', {

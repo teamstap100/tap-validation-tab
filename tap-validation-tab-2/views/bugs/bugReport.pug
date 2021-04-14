@@ -3,26 +3,26 @@ extends ../layout.pug
 block content
   .container
     br
-    p.heading-text Report a Problem - MTR
+    p.centered.heading-text Report a Problem
     p.validation-progress.centered
 
-    .alert.alert-success#success(style="display: none") Thank you! Your bug report has been submitted.
+    .alert.alert-success#success(style="display: none") Thank you! Your feedback has been submitted.
 
     .container
         .row
             .col-xs-2
             .col-xs-8
-                p Please use this form to submit a bug.
+                p Having trouble? Tell us about it.
                 form#report-form(enctype="multipart/form-data" method="post")
                     .form-group
                         .form-group
-                            label(for="report-title-field") Title:  
+                            label(for="report-title-field") Feedback:  
                                 span#report-title-required(style="color: red") (*)
-                            input.form-control#report-title-field.report-field(type="text" placeholder="Title your feedback.")
+                            input.form-control#report-title-field.report-field(type="text" placeholder="Briefly describe your feedback")
                         .form-group
-                            label(for="report-description-field") Description:  
+                            label(for="report-description-field") What are you seeing? Has it always been that way?  
                                 span#report-description-required(style="color: red") (*)
-                            textarea.form-control#report-description-field.report-field(rows=4, placeholder="Please describe the problem.")
+                            textarea.form-control#report-description-field.report-field(rows=4, placeholder="Leave a more detailed description")
                         .form-group
                             label(for="windws-report-file") File Upload:
                             p You can upload up to 10 files of any type, up to 60MB each.
@@ -31,7 +31,7 @@ block content
                 
                 div(style="float: right")
                     p#report-submit-status
-                    button.btn.btn-primary#report-submit(title="Submit" name="submit" disabled) Submit
+                    button.btn.btn-primary#report-submit(title="Submit" name="submit" disabled) Send feedback
             .col-xs-2
 
                 

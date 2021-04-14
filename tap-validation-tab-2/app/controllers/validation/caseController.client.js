@@ -7,7 +7,7 @@ var config = {};
     var apiUrl = "../api/cases"
     var commentApiUrl = "../api/cases/comments";
     
-    var updateValidationTabUrlUrl = "../api/validations";
+    var updateValidationTabUrlEndpoint = "../api/tabLocations";
 
     const MSFT_TENANT_ID = "72f988bf-86f1-41af-91ab-2d7cd011db47";
 
@@ -143,7 +143,7 @@ var config = {};
                 if (textInput != original) {
                     let url = '/api/votes/' + voteId;
                     let params = {
-                        submitterEmail: context['userPrincipalName'],
+                        submitterEmail: context['loginHint'],
                     };
 
                     params[prop] = textInput;
@@ -168,7 +168,7 @@ var config = {};
             let url = '/api/votes/' + voteId;
             let params = {
                 public: this.checked,
-                submitterEmail: context['userPrincipalName'],
+                submitterEmail: context['loginHint'],
             };
 
             if (this.checked) {
@@ -189,7 +189,8 @@ var config = {};
     $(document).ready(function () {
         microsoftTeams.initialize();
 
-        scrollToSubEntity();
+        // TODO: Nothing really has a subentity set, so removing this
+        //scrollToSubEntity();
 
         if (!$.fn.modal) {
             //document.write('<script src="/js/bootstrap.min.js"></script>');
@@ -211,6 +212,8 @@ var config = {};
                 config.showVector = config.showVector.substring(1, config.showVector.length);
             });
         }
+
+        console.log(getUrlVars());
 
         config.clientsVector = getUrlVars()["clients"];
         console.log("config.clientsVector is: " + config.clientsVector);
@@ -285,7 +288,7 @@ var config = {};
                 var params = {
                     cId: cId,
                     comment: $('#commentField').val(),
-                    userEmail: context["userPrincipalName"],
+                    userEmail: context["loginHint"],
                     //tId: context["tid"],
                     tap: config.tap,
                     tag: config.tag,
@@ -495,8 +498,8 @@ var config = {};
 
         microsoftTeams.getContext(function (context) {
             config.context = context;
-            // Template for a link to this tab
-            var tabUrl = "https://teams.microsoft.com/l/entity/{APP_ID}/{ENTITY_HASH}?context=%7B%22subEntityId%22%3Anull%2C%22canvasUrl%22%3A%22{TAB_URL_BASE}{VALIDATION_ID}%26show%3D{SHOW_VECTOR}%26clients%3D{CLIENTS_VECTOR}%22%2C%22channelId%22%3A%22{CHANNEL_ID}%22%7D&groupId={GROUP_ID}&tenantId={TENANT_ID}";
+            // Format for tab links - simpler now, doesn't include the tab url anymore
+            var tabUrl = "https://teams.microsoft.com/l/entity/{APP_ID}/{ENTITY_HASH}?context=%7B%22subEntityId%22%3Anull%2C%22channelId%22%3A%22{CHANNEL_ID}%22%7D&groupId={GROUP_ID}&tenantId={TENANT_ID}";
 
             var entityId = context.entityId;
 
@@ -525,19 +528,6 @@ var config = {};
             tabUrl = tabUrl.replace('{APP_ID}', APP_ID);
             tabUrl = tabUrl.replace('{ENTITY_HASH}', deeplinkDjb2Prefix + entityHash);
             tabUrl = tabUrl.replace('{CHANNEL_ID}', channelId);
-            tabUrl = tabUrl.replace('{TAB_URL_BASE}', TAB_URL_BASE);
-            if (config.showVector != null) {
-                tabUrl = tabUrl.replace("{SHOW_VECTOR}", config.showVector);
-            } else {
-                tabUrl = tabUrl.replace("{SHOW_VECTOR}", "");
-            }
-            if (config.clientsVector != null) {
-                tabUrl = tabUrl.replace("{CLIENTS_VECTOR}", config.clientsVector);
-            } else {
-                tabUrl = tabUrl.replace("{CLIENTS_VECTOR}", "");
-            }
-
-            tabUrl = tabUrl.replace("{VALIDATION_ID}", config.validationId);
             tabUrl = tabUrl.replace('{GROUP_ID}', groupId);
             tabUrl = tabUrl.replace('{TENANT_ID}', tid);
             //tabUrl = encodeURI(tabUrl);
@@ -546,9 +536,14 @@ var config = {};
 
             var params = {
                 tabUrl: tabUrl,
-                validationId: config.validationId
+                validationId: config.validationId,
+                channelName: context.channelName,
+                channelId: context.channelId,
+                teamName: context.teamName,
+                teamId: context.teamId,
             }
-            ajaxRequest('POST', updateValidationTabUrlUrl, params, function () {
+            ajaxRequest('POST', updateValidationTabUrlEndpoint, params, function () {
+                console.log(tabUrl);
                 console.log("Updated tab url");
             });
 
@@ -673,8 +668,10 @@ var config = {};
             var commentUrl = commentApiUrl + '/' + cId;
 
             microsoftTeams.getContext(function (context) {
-                let email = context['userPrincipalName']
-                //let email = "test@test.com";
+                //console.log(context);
+                let email = context['loginHint'];
+                //let email = "test@gmail.com";
+
 
                 var emailForVoteLists = cleanEmail(email);
 
@@ -739,8 +736,7 @@ var config = {};
                         sort: false,
                         ajax: {
                             url: "/api/caseVotes",
-                            type: "POST",
-                            contentType: "application/json",
+                            type: "GET",
                             data: function (d) {
                                 let tableId = table.attr("id");
                                 let upDown = "up";
@@ -750,12 +746,12 @@ var config = {};
                                     upDown = "down";
                                 }
 
-                                return JSON.stringify({
+                                return {
                                     cId: cId,
                                     email: emailForVoteLists,
-                                    backupEmail: context["userPrincipalName"],
+                                    backupEmail: context["loginHint"],
                                     upDown: upDown,
-                                });
+                                };
                             },
                             //dataSrc: "tenants"
                             dataSrc: function (json) {
@@ -870,6 +866,15 @@ var config = {};
                     });
 
                 });
+
+                // TODO: Validate size of each uploaded file, <60 MB
+                /*
+                $('#windows-report-form').on('change', function (e) {
+                    console.log("Changed the case form");
+                    console.log(document.getElementById("windows-report-form").files);
+                    console.log($('#windows-report-form')[0].files);
+                });
+                */
 
                 function submitWindowsReport(event, voteParams) {
                     //stop submit the form, we will post it manually.

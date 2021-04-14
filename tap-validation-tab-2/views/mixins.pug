@@ -1,0 +1,7 @@
+mixin loadingContainer()
+  #loadingContainer.centered
+    i.fa.fa-spinner.fa-spin
+    span Loading...
+
+mixin script(path)
+    script(type="text/javascript", crossorigin="anonymous",  src=path + "?v=' + new Date().getTime()" )

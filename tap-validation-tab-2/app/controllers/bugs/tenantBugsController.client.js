@@ -42,7 +42,7 @@
         console.log(tid);
 
         microsoftTeams.getContext(function (context) {
-            let email = context['userPrincipalName'];
+            let email = context['loginHint'];
 
             email = cleanEmail(email);
 
@@ -273,7 +273,14 @@
                     {
                         targets: TRIAGED_COLUMN,
                         render: function (data, type, row, meta) {
-                            if (data) {
+                            // "actionComplete" - if the user has triaged/close requested the bug, or the bug has been closed
+                            let actionComplete = data;
+                            if (row.state == "Closed") {
+                                actionComplete = true;
+                            } else if (row.state == "Close Requested") {
+                                actionComplete = true;
+                            }
+                            if (actionComplete) {
                                 //return check;
                                 return check + "<span style='display: none'>Yes</span>";
                             } else {
@@ -363,11 +370,16 @@
 
                 $('#bug-id').text(id);
                 //$('#bugLabelHeader').text("Bug #" + id + " submitted by " + rowData.submitter);
-                if (rowData.reason) {
-                    $('#bugLabelHeader').text("Bug #" + id + " (" + rowData.state + " - " + rowData.reason + ")");
+                if (rowData) {
+                    if (rowData.reason) {
+                        $('#bugLabelHeader').text("Bug #" + id + " (" + rowData.state + " - " + rowData.reason + ")");
+                    } else {
+                    }
                 } else {
                     $('#bugLabelHeader').text("Bug #" + id + " (" + rowData.state + ")");
+
                 }
+
 
                 $('#bug-submitter').html("<strong>Submitter: </strong>" + rowData.submitter);
                 $('#bug-reproSteps').html(rowData.reproSteps);
@@ -504,7 +516,7 @@
 
                     microsoftTeams.getContext(function (context) {
                         let params = {
-                            submitter: cleanEmail(context["userPrincipalName"]),
+                            submitter: cleanEmail(context["loginHint"]),
                             extent: extent,
                             cfl: cfl,
                             rings: rings,
@@ -567,7 +579,7 @@
 
                     microsoftTeams.getContext(function (context) {
                         let params = {
-                            submitter: cleanEmail(context["userPrincipalName"]),
+                            submitter: cleanEmail(context["loginHint"]),
                             comment: $('#closeCommentField').val(),
                             id: bugId,
                             duplicateId: duplicateId
@@ -624,7 +636,7 @@
 
                             microsoftTeams.getContext(function (context) {
                                 let params = {
-                                    submitter: cleanEmail(context["userPrincipalName"]),
+                                    submitter: cleanEmail(context["loginHint"]),
                                     comment: $('#commentField').val(),
                                     id: bugId,
                                     attachmentFilename: data.filename,
@@ -776,7 +788,7 @@
 
                 microsoftTeams.getContext(function (context) {
                     let params = {
-                        submitter: cleanEmail(context["userPrincipalName"]),
+                        submitter: cleanEmail(context["loginHint"]),
                         comment: $('#bulkCloseCommentField').val(),
                         ids: bugIds,
                         duplicateId: duplicateId

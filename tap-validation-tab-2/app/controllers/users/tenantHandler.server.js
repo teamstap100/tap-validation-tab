@@ -11,6 +11,7 @@ function tenantHandler(dbParent) {
 
     var tenants = db.collection('tenants');
 
+    // TODO: This looks a little different from the other cleanEmail in helpers
     function cleanEmail(email) {
         console.log("Cleaning email");
         console.log(email);

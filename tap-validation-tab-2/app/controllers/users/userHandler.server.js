@@ -43,15 +43,12 @@ function userHandler(dbParent) {
         let email = req.body.email;
         let prefs = req.body.prefs;
 
-        console.log(req.body);
-
         users.findOne({ _id: oid }, function (err, userDoc) {
             if (userDoc) {
 
                 // Keep old pref values, but update any that are in the body
                 let combinedPrefs = userDoc.prefs;
                 PREF_NAMES.forEach(function (pref) {
-                    console.log(pref, prefs[pref]);
                     if (pref in prefs) {
                         combinedPrefs[pref] = prefs[pref];
                     }

@@ -10,6 +10,7 @@
 
     console.log(window.location.href);
     var contentUrlBase = window.location.href.replace("config", "validations") + "/";
+    var removalUrlBase = contentUrlBase;
 
     // This doesn't work
     //var contentUrlBase = "../validations/";
@@ -21,7 +22,7 @@
         $('#loading').html(spinner + "Loading your validations...");
 
         microsoftTeams.getContext(function (context) {
-            let email = context['userPrincipalName'];
+            let email = context['loginHint'];
             //let email = "someone@nowhere.com";
             let apiEndpoint = '/api/pms/' + email + "/taps";
             ajaxRequest('GET', apiEndpoint, {}, function (data) {
@@ -116,7 +117,7 @@
         });
 
         microsoftTeams.getContext(function (context) {
-            var alias = context["userPrincipalName"].split("@")[0];
+            var alias = context["loginHint"].split("@")[0];
         });
 
 
@@ -185,6 +186,7 @@
       console.log("calling registerOnSaveHandler");
 
       let contentUrl = contentUrlBase;
+      let removalUrl = removalUrlBase;
 
       $(".val").each(function (index) {
           //console.log($(this));
@@ -193,6 +195,7 @@
           if (radio.is(':checked')) {
               let safeId = radio[0].id.replace("other-", "").replace("mine-", "")
               contentUrl += safeId;
+              removalUrl += safeId;
 
               var groups = $(this).find('[name="group"]');
               var showVector = "";
@@ -218,12 +221,14 @@
                   }
               })
 
+              // TODO: This should be ?clients=, but my getUrlVars() function doesn't seem to understand "?" at all
               contentUrl += "&clients=" + clientsVector;
 
               var settings = {
                   entityId: radio[0].value,
                   contentUrl: contentUrl,
                   suggestedDisplayName: "V " + radio[0].value,
+                  removeURL: removalUrl + "/remove",
               }
 
               console.log(settings);
