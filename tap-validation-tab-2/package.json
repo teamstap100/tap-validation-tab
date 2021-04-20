@@ -13,6 +13,7 @@
   "dependencies": {
     "applicationinsights": "^1.8.10",
     "atob": "^2.1.2",
+    "bl": ">=2.2.1",
     "body-parser": "^1.15.0",
     "bootstrap-fileinput": "^5.0.8",
     "bunyan": "^1.8.14",

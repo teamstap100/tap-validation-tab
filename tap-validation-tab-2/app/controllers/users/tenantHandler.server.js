@@ -9,16 +9,11 @@ const TEST_USER = {
     nbf: 1615480461,
     exp: 1615484361,
     acct: 0,
-    aio: 'AXQAi/8TAAAAxpQjy4ZTbYYWgPT0PYBGWf9+ZiFdZawVw0fBTvQxbfDhbLFFl8J2QvXEzS13g9I+l28GPsRuhiimuFBRsabeXteCMVQkigu+Q5qzuIw+XzZAoXEvMXrEwr3j004RctFvv3DtCHJt4HbO0vFmYv5E7Q==',
-    email: 'tim@drogerie-markt.com',
+    email: 'tim@test.com',
     name: 'Max Silbiger (MINDTREE LIMITED)',
-    nonce: '2c1fdc960a844857b892f7f8deb1f4e3_20210311164418',
     oid: '512d26c9-aeed-4dbd-a16f-398bcf0ec3fe',
-    preferred_username: 'tim@drogerie-markt.com',
-    rh: '0.ARoAv4j5cvGGr0GRqy180BHbR25xF1um4ARGho-ceBmYAh8aANM.',
-    sub: 'XIFycJoRnMLyXldtNUF-yf6fZXT5EwWpt_h1BpKgNDg',
+    preferred_username: 'tim@test.com',
     tid: '72f988bf-86f1-41af-91ab-2d7cd011db47',
-    uti: 'pKAbpYOqgku-yWcgpwEvAA',
     ver: '2.0'
 }
 

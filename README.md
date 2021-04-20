@@ -1,4 +1,4 @@
-## TAP Validation Tab ==
+## TAP Validation Tab
 * This is a Node/Express/MongoDB web app which runs in Teams. When installed in a team, you can select an active TAP validation and gather scenario works/fails/comments feedback from the team's uesrs.
 
 ### Modules
