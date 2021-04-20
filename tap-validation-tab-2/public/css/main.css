@@ -576,3 +576,19 @@ span.tenant, span.email {
 .modal.in {
     background-color: rgba(0,0,0,0.5);
 }
+
+.upvote-feedback {
+    margin: unset;
+}
+
+.comment-feedback {
+    margin: unset;
+}
+
+.upvote-general-feedback {
+    margin: unset;
+}
+
+.comment-general-feedback {
+    margin: unset;
+}

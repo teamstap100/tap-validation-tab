@@ -28,21 +28,6 @@ block content
         .container
             .well.blurb !{validation.blurb}
     - var clients = ['windows', 'mac', 'android', 'ios', 'web', 'linux'];
-    - var walkie_clients = [];
-    - var walkie_headset_types = [];
-    - var arm_devices = [];
-    if validation.settings
-        if validation.settings.collectDeviceFeedback
-            if validation._id == 767324
-                - walkie_clients = ['Samsung XCP', 'Android + Wired H', 'Android + Wireless H'];
-            if validation._id == 938428
-                - walkie_clients = ['Samsung XCP', 'Zebra', 'Other Android Devices'];
-                - walkie_headset_types = ['No Headset', 'Wired (Klein)', 'Wireless (Jabra)', 'Other'];
-            if validation._id == 1101236
-                - arm_devices = ["Surface Pro X", "Samsung Galaxy Book S", "Lenovo Yoga 5G / Flex 5G", "Asus NoVo Go", "HP Envy x2"];
-
-
-    - var network_scenarios = ["Indoor - Single wi-fi", "Indoor - Roaming", "Indoor to Outdoor (Roaming between Wi-Fi APs and Intermittent to No Internet)", "Indoor to Outdoor (Roaming between Wi-Fi and 4G/LTE)", "Outdoor (Connected to a single cellular tower only)", "Outdoor Roaming (Roaming between cellular towers)", "Outdoor Roaming (Roaming between Cell Towers and intermittent or No Internet)", "Other"];
 
     if validation.settings
         if validation.settings.collectDeviceFeedback
@@ -92,18 +77,6 @@ block content
                         .col-lg-4.col-md-3.col-sm-3
    
                 br
-
-    //if validation.tap == "Teams"
-    //    .container
-    //        .container.knownIssues(style="display: none")
-    //            h4 Known Issues
-    //            p We are aware of these issues, so you don't need to report them again.
-    //            table.table.table-striped.table-bordered#knownIssuesTable(style="font-size: 11px;")
-    //                thead
-    //                    tr
-    //                        th(scope="col") Title
-    //                tbody
-    //            br
 
     .container
       .container.caseList
@@ -212,36 +185,6 @@ block content
                                                                             button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal")
                                                                                 i.fa.fa-comment 
                                                                                 |   Feedback
-                                                            if validation.active
-                                                                if kase._id == 956385
-                                                                    .network-scenario-checkboxes
-                                                                        each ns in network_scenarios
-                                                                            .row
-                                                                                input.col-xs-1(type="checkbox" value=ns name="network-scenarios")
-                                                                                label.safe-label.col-xs-11 #{ns}
-                                                                .walkie-checkboxes(style="display: none")
-                                                                    .row
-                                                                        each client in walkie_clients
-                                                                            - var safeClient = client.replace(/[^\w]/gi, '_');
-                                                                            .div(class=safeClient + "-group")
-                                                                                .btn-group(data-toggle="buttons")
-                                                                                    label.col-xs-8.lighter-label(for=kase._id + '-" + safeClient + "-works') #{client}:  
-                                                                                    label.col-xs-2.btn.radio-btn
-                                                                                        input(type="radio", name=client, value='works', id=kase._id + '-' + safeClient + '-works')
-                                                                                        span.align-middle.thumbContainer
-                                                                                            i.fa.fa-thumbs-up
-                                                                                    label.col-xs-2.btn.radio-btn(type="submit", data-toggle="modal", data-target="#report-modal")
-                                                                                        input(type="radio", name=client, value='fails', id=kase._id + '-' + safeClient + '-fails')
-                                                                                        span.align-middle.thumbContainer
-                                                                                            i.fa.fa-thumbs-down
-                                                                    br
-
-                                                                    .row.btn-container
-                                                                        if validation.settings
-                                                                            if validation.settings.commentsEnabled
-                                                                                button.btn.btn-comment
-                                                                                    i.fa.fa-comment 
-                                                                                    | Feedback
                                                             .no-client-checkboxes.btn-container
                                                                 if validation.active
                                                                     button.btn.btn-upvote(type="submit")
@@ -255,25 +198,11 @@ block content
                                                                     button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal")
                                                                         i.fa.fa-thumbs-down 
                                                                         |   Fails
-                                                                //else
-                                                                //    button.btn.btn-upvote(type="submit" disabled)
-                                                                //        i.fa.fa-thumbs-up 
-                                                                //        |   Works
-                                                                //    if validation.settings
-                                                                //        if validation.settings.commentsEnabled
-                                                                //            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal")
-                                                                //                i.fa.fa-comment 
-                                                                //                |   Feedback
-                                                                //    button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal" disabled)
-                                                                //        i.fa.fa-thumbs-down 
-                                                                //        |   Fails
                                                             .btn-container
-                                                                if validation.tap == "Windows"
-                                                                    br
-                                                                    button.btn(id="view-feedback-" + kase._id, data-title=kase.name, data-toggle="modal", data-target="#view-feedback-modal")
-                                                                        i.fa.fa-comments 
-                                                                        |   View All Feedback
-                                                        //p.centered.timestamp.subtle #{kase.timestamp.toLocaleDateString()}
+                                                                br
+                                                                button.btn(id="view-feedback-" + kase._id, data-title=kase.name, data-toggle="modal", data-target="#view-feedback-modal")
+                                                                    i.fa.fa-comments 
+                                                                    |   View All Feedback
                                                         p.subtle.deep-link(style="display: none")
                                                             i.fa.fa-link   Link
                                                         p.subtle(style="display: none") #{kase._id}
@@ -332,7 +261,7 @@ block content
       br
 
     // Modal shown when clicking "Fails"
-    #report-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='modalLabel', aria-hidden='true')
+    //#report-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='modalLabel', aria-hidden='true')
       .modal-dialog(role='document')
         .modal-content
           .modal-header
@@ -352,7 +281,7 @@ block content
             button.btn.btn-primary(type='button', data-dismiss="modal") OK
             
     // Modal sohwn when clicking "Comment"
-    #comment-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='commentLabel', aria-hidden='true')
+    //#comment-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='commentLabel', aria-hidden='true')
       #comment-id(style="display: none") Test
       #comment-caseTitle(style="display: none") Test
       .modal-dialog(role='document')

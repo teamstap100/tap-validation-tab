@@ -1184,6 +1184,18 @@ function caseHandler(dbParent) {
         }
 
         cases.findOne({ _id: ObjectID(req.body.caseId) }, function (err, caseDoc) {
+            caseDoc.upvotes_v2.forEach(function (vote) {
+                vote.type = "Works";
+            });
+
+            caseDoc.comments.forEach(function (vote) {
+                vote.type = "Feedback";
+            });
+
+            caseDoc.downvotes_v2.forEach(function (vote) {
+                vote.type = "Fails";
+            });
+
             let nonCurrentUserComments, allFeedback;
             if (isMicrosoft(req.body.userEmail)) {
                 nonCurrentUserComments = caseDoc.comments.filter(x => x.userEmail != req.body.userEmail);
@@ -1218,7 +1230,6 @@ function caseHandler(dbParent) {
                     }
 
                     if (fb.id) { delete fb.id; }
-
                 }
                 
 

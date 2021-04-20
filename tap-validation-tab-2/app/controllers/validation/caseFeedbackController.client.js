@@ -184,6 +184,9 @@ $(document).ready(function () {
                 paging: false,
                 //searching: false,
                 //ordering: false,
+                scrollX: true,
+                scrollY: "200px",
+                scrollCollapse: true,
                 autoWidth: false,
                 ajax: {
                     url: "/api/feedback/scenario/mine",
@@ -200,7 +203,6 @@ $(document).ready(function () {
                 },
                 columns: [
                     { "data": "id" },
-                    { "data": "type" },
                     { "data": "title" },
                     { "data": "state" },
                     { "data": "reason" },
@@ -223,17 +225,27 @@ $(document).ready(function () {
                         render: function (data, type, row) {
                             let id = row._id || row.id;
 
+                            let feedbackType = row.type;
+                            let feedbackIcon = "";
+                            if (feedbackType == "Works") {
+                                feedbackIcon = "<i class='fa fa-thumbs-up' title='Works'></i> ";
+                            } else if (feedbackType == "Fails") {
+                                feedbackIcon = "<i class='fa fa-thumbs-down' title='Fails'></i>" ;
+                            } else {
+                                feedbackIcon = "<i class='fa fa-comment' title='Feedback'></i> ";
+                            }
+
                             // data-toggle="modal", data-target="#view-feedback-modal
                             let cell;
                             if (id == "?") {
-                                cell = data;
+                                cell = feedbackIcon + data;
                             } else {
-                                cell = '<a data-feedback=' + b64EncodeUnicode(JSON.stringify(row)) + ' class="edit-existing-feedback" id="feedback-text-' + id + '">' + data + '</span>';
+                                cell = feedbackIcon + ' <a data-feedback=' + b64EncodeUnicode(JSON.stringify(row)) + ' class="edit-existing-feedback" id="feedback-text-' + id + '">' + data + '</span>';
                             }
                             
                             return cell;
                         },
-                        targets: 2
+                        targets: 1
                     },
                     {
                         render: function (data, type, row) {
@@ -244,7 +256,7 @@ $(document).ready(function () {
                                 return "<input type='checkbox' class='scenario-feedback-public-checkbox' id='scenario-feedback-public-" + id + "'></input>";
                             }
                         },
-                        targets: 5
+                        targets: 4
                     }
                 ],
                 initComplete: bindEditButtons,
@@ -255,6 +267,9 @@ $(document).ready(function () {
                 paging: false,
                 //searching: false,
                 //ordering: false,
+                scrollX: true,
+                scrollY: "200px",
+                scrollCollapse: true,
                 autoWidth: false,
                 ajax: {
                     url: "/api/feedback/scenario/public",
@@ -333,13 +348,36 @@ $(document).ready(function () {
                     },
                     {
                         render: function (data, type, row) {
+                            let id = row._id || row.id;
+
+                            let feedbackType = row.type;
+                            let feedbackIcon = "";
+                            if (feedbackType == "Works") {
+                                feedbackIcon = "<i class='fa fa-thumbs-up' title='Works'></i> ";
+                            } else if (feedbackType == "Fails") {
+                                feedbackIcon = "<i class='fa fa-thumbs-down' title='Fails'></i>";
+                            } else {
+                                feedbackIcon = "<i class='fa fa-comment' title='Feedback'></i> ";
+                            }
+
+                            // data-toggle="modal", data-target="#view-feedback-modal
+                            let cell;
+                            if (id == "?") {
+                                cell = feedbackIcon + data;
+                            } else {
+                                cell = feedbackIcon + ' <a data-feedback=' + b64EncodeUnicode(JSON.stringify(row)) + ' class="edit-existing-feedback" id="feedback-text-' + id + '">' + data + '</span>';
+                            }
+
+                            return cell;
+                        },
+                        targets: 3,
+                    },
+                    {
+                        render: function (data, type, row) {
                             if (row.userEmail) {
-                                console.log("Showing submitter column");
                                 $('.submitterColumn').show();
                                 return row.userEmail;
                             } else if (row.email) {
-                                console.log("Showing submitter column");
-
                                 $('.submitterColumn').show();
                                 return row.email;
                             } else {

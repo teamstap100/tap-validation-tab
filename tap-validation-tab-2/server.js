@@ -26,8 +26,6 @@ var methodOverride = require('method-override');
 // set up database for express session
 var mongoose = require('mongoose');
 
-var config = require('./app/config');
-
 //var jquery = require('jquery');
 //var bootstrap = require('bootstrap');
 
@@ -40,7 +38,6 @@ var app = express();
 
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')))
 
-
 app.set('view engine', 'pug');
 app.set('views', './views');
 
@@ -51,30 +48,6 @@ app.use(bodyParser.json({ limit: '80mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(require('express-log-url'));
-
-/*
-mongo.connect(process.env.MONGO_STRING, {
-    useUnifiedTopology: true 
-}, function(err, db) {
-    if (err) {
-        console.log(process.env.MONGO_STRING);
-        throw new Error('Database failed to connect!');
-    } else {
-        console.log('MongoDB successfully connected on port 27017.');
-    }
-
-    app.use('/public', express.static(process.cwd() + '/public'));
-    app.use('/controllers', express.static(process.cwd() + '/app/controllers'));
-    app.use('/helpers', express.static(process.cwd() + '/app/helpers'));
-
-    routes(app, db);
-
-    app.listen(process.env.PORT || 3000, function () {
-        console.log('Listening on port 3000...');
-    });
-
-});
-*/
 
 function fetchSecrets(callback) {
     console.log("Called fetchSecrets");

@@ -73,6 +73,8 @@
                         $('#report-submit-status').text("Complete");
                         $('#report-submit-status').text("");
 
+                        $('#success').show();
+
                         resetReport();
                     });
 

@@ -2,7 +2,7 @@
 
 var ObjectID = require('mongodb').ObjectID;
 var request = require('request');
-const { safeOid, patToAuth, ADO_API_BASE, uploadAttachments, cleanEmail } = require(process.cwd() + "/app/helpers/helpers.server.js");
+const { safeOid, patToAuth, ADO_API_BASE, uploadAttachments, cleanEmail, isMicrosoft } = require(process.cwd() + "/app/helpers/helpers.server.js");
 
 function feedbackHandler(dbParent) {
     var db = dbParent.db("clementine");
@@ -201,8 +201,20 @@ function feedbackHandler(dbParent) {
                 return res.json({ feedback: [] });
             }
 
-            feedbackDocs.forEach(function (feedback) {
-                getStateAndReason(validationId, feedback, function (updatedFeedback) {
+            feedbackDocs.forEach(function (fb) {
+                console.log(req.query.userEmail);
+                console.log(isMicrosoft(req.query.userEmail));
+                if (!isMicrosoft(req.query.userEmail)) {
+                    if (fb.submitterEmail) {
+                        delete fb.submitterEmail;
+                    }
+
+                    if (fb.id) { delete fb.id; }
+                }
+                console.log(fb);
+
+
+                getStateAndReason(validationId, fb, function (updatedFeedback) {
                     if (updatedFeedback.upvotes) {
                         updatedFeedback.userUpvoted = updatedFeedback.upvotes.includes(req.body.userEmail);
                     } else {
@@ -491,7 +503,8 @@ function feedbackHandler(dbParent) {
         // Single function for syncing the changes in the DB obj to the ADO workitem.
         id = safeOid(id);
         feedback.findOne({ _id: id }, function (err, feedbackDoc) {
-            let safeTitle = feedbackDoc.title;
+            console.log(feedbackDoc);
+            let safeTitle = feedbackDoc.title || "Untitled";
             if (safeTitle.length > 120) {
                 safeTitle = safeTitle.substring(0, 117) + "...";
             }

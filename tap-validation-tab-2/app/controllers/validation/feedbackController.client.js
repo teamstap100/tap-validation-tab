@@ -15,6 +15,8 @@ $(document).ready(function () {
     var submitFeedback = $('#submitFeedback');
     var feedbackPublicField = $('#feedbackPublicField');
 
+    var myFeedbackTable, otherFeedbackTable;
+
     // Initialize table
     microsoftTeams.getContext(function (context) {
 
@@ -55,7 +57,8 @@ $(document).ready(function () {
 
                 ajaxRequest('POST', voteUrl, voteParams, function () {
                     console.log("Done");
-                    $(otherFeedbackTable).dataTable().api().ajax.reload();
+                    otherFeedbackTable.ajax.reload(bindVoteButtons);
+                    //$(otherFeedbackTable).dataTable().api().ajax.reload();
                 });
             });
 
@@ -182,11 +185,14 @@ $(document).ready(function () {
             });
         }
 
-        var myFeedbackTable = $('#your-feedback-table').DataTable({
+        myFeedbackTable = $('#your-feedback-table').DataTable({
             info: false,
             paging: false,
             //searching: false,
             //ordering: false,
+            scrollX: true,
+            scrollY: "200px",
+            scrollCollapse: true,
             autoWidth: false,
             ajax: {
                 url: USER_FEEDBACK_API_URL,
@@ -250,11 +256,15 @@ $(document).ready(function () {
             initComplete: bindEditButtons,
         });
 
-        var otherFeedbackTable = $('#feedback-table').DataTable({
+        otherFeedbackTable = $('#feedback-table').DataTable({
             info: false,
             paging: false,
             //searching: false,
             //ordering: false,
+            scrollX: true,
+            scrollY: 200,
+            scrollCollapse: true,
+            autoWidth: false,
             ajax: {
                 url: OTHER_FEEDBACK_API_URL,
                 type: "GET",
@@ -274,6 +284,7 @@ $(document).ready(function () {
                 { "data": "text" },
                 { "data": "state" },
                 { "data": "reason" },
+                {},
             ],
             columnDefs: [
                 {
@@ -301,7 +312,7 @@ $(document).ready(function () {
                             disabled = "disabled";
                         }
 
-                        let cell = "<button class='btn btn-minor upvote-general-feedback " + statusClass + "'" + disabled + " id='upvote-general-feedback-" + id + "'><i class='fa fa-thumbs-up' title='Upvote'></i> " + upvoteCount + "</button>"
+                        let cell = "<button class='btn btn-minor upvote-general-feedback " + statusClass + "'" + disabled + " id='upvote-general-feedback-" + id + "'><i class='fa fa-thumbs-up' title='Upvote'></i> " + upvoteCount + "</button>";
                         return cell;
                     },
                     targets: 1
@@ -315,6 +326,19 @@ $(document).ready(function () {
                         return cell;
                     },
                     targets: 2
+                },
+                {
+                    render: function (data, type, row) {
+                        if (row.submitterEmail) {
+                            console.log("Showing submitter column");
+                            $('.submitterColumn').show();
+                            return row.submitterEmail;
+                        } else {
+
+                            return "";
+                        }
+                    },
+                    targets: 7
                 }
 
             ],
@@ -324,6 +348,7 @@ $(document).ready(function () {
         // Refresh table when modal is launched
         $('#feedback-modal').on('shown.bs.modal', function (e) {
             myFeedbackTable.ajax.reload(bindEditButtons);
+            otherFeedbackTable.ajax.reload(bindVoteButtons);
         });
 
         $('.feedback-field').off();

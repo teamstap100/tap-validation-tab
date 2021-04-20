@@ -14,11 +14,11 @@ const TEST_USER = {
     exp: 1615484361,
     acct: 0,
     aio: 'AXQAi/8TAAAAxpQjy4ZTbYYWgPT0PYBGWf9+ZiFdZawVw0fBTvQxbfDhbLFFl8J2QvXEzS13g9I+l28GPsRuhiimuFBRsabeXteCMVQkigu+Q5qzuIw+XzZAoXEvMXrEwr3j004RctFvv3DtCHJt4HbO0vFmYv5E7Q==',
-    email: 'v-maxsil@microsoft.com',
+    email: 'tim@dm.de',
     name: 'Max Silbiger (MINDTREE LIMITED)',
     nonce: '2c1fdc960a844857b892f7f8deb1f4e3_20210311164418',
     oid: '512d26c9-aeed-4dbd-a16f-398bcf0ec3fe',
-    preferred_username: 'v-maxsil@microsoft.com',
+    preferred_username: 'tim@dm.de',
     rh: '0.ARoAv4j5cvGGr0GRqy180BHbR25xF1um4ARGho-ceBmYAh8aANM.',
     sub: 'XIFycJoRnMLyXldtNUF-yf6fZXT5EwWpt_h1BpKgNDg',
     tid: '72f988bf-86f1-41af-91ab-2d7cd011db47',
@@ -113,17 +113,20 @@ module.exports = {
 
             jwt.verify(token, publicKey, verifyOptions, function (err, verified) {
                 // TOOD: Check "acct" - will be 1 if guest (which is ok here)
+                console.log(verified);
                 return callback(err, verified);
             });
         });
     },
 
     enforceLoginTeams: function (req, res, next) {
+        console.log("Called enforceLoginTeams");
         if (process.env.ENV == "PROD") {
             return enforceLogin(req, res, next, "/login?redirect=");
         } else {
             console.log("Using TEST_USER");
             req.user = TEST_USER;
+            res.locals.user = TEST_USER;
             next();
         }
     },
@@ -137,17 +140,26 @@ module.exports = {
             var decoded = jwt.decode(token, { complete: true });
             //console.log(decoded);
 
-            module.exports.verifyJwt(token, function (err, verified) {
-                if (err) {
-                    console.log(err.message);
-                    return res.status(401).send();
-                }
-
-                console.log("User verified");
-                console.log(verified);
-                req.user = verified;
+            if (process.env.ENV == "TEST") {
+                console.log("Using TEST_USER on enforceIdToken");
+                req.user = TEST_USER;
+                res.locals.user = TEST_USER;
                 return next();
-            });
+            } else {
+                module.exports.verifyJwt(token, function (err, verified) {
+                    if (err) {
+                        console.log(err.message);
+                        return res.status(401).send();
+                    }
+
+                    console.log("User verified");
+                    console.log(verified);
+                    req.user = verified;
+
+                    return next();
+                });
+            }
+
         } else {
             console.log("Warning - no auth on this request");
             return next();
@@ -155,5 +167,7 @@ module.exports = {
     },
 
     csrfMiddleware: [checkCsrf, includeCsrf],
+
+    test_user: TEST_USER,
 
 };

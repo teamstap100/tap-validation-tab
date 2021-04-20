@@ -32,6 +32,8 @@ block content
                     th(scope="col" width="40%") Name
                     th(scope="col" width="55%") Sections
             each validation in validations
+                if !validation.owner
+                    - validation.owner = "someone@microsoft.com";
                 tr(class="val tap-" + validation.tap + " owner-" + validation.owner.split("@")[0] style="display: none")
                     td
                         input(type='radio', name='validation', id='mine-' + validation._id, value= validation.name)
@@ -90,6 +92,8 @@ block content
                     th(scope="col" width="40%") Name
                     th(scope="col" width="55%") Sections
             each validation in validations
+                if !validation.owner
+                    - validation.owner = "someone@microsoft.com";
                 tr(class="val tap-" + validation.tap + " owner-" + validation.owner.split("@")[0])
                     td
                         input(type='radio', name='validation', id='other-' + validation._id, value= validation.name)

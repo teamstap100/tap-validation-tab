@@ -136,7 +136,13 @@ function validationHandler(dbParent) {
                     if (kase.description) {
                         kase.description = kase.description.replace(/background-color: rgb\(255, 255, 255\);/g, "");
                     }
-                    safeCases.push(kase);
+                    if (kase.active) {
+                        console.log(kase.active);
+                        safeCases.push(kase);
+
+                    } else {
+                        console.log(kase.active);
+                    }
                 });
 
                 let feedbackQuery = linkedItemsQuery;

@@ -145,6 +145,8 @@ function userHandler(dbParent) {
 
         console.log(req.user);
 
+        // TODO: OID is not coming in correctly
+
         let provRequests = [
             {
                 "UserOrTenant": "User",

@@ -17,7 +17,7 @@
       var settings = {
           entityId: "View TAP Users",
           contentUrl: contentUrlBase,
-          suggestedDisplayName: "Features",
+          suggestedDisplayName: "View TAP Users",
       }
 
       console.log(settings);

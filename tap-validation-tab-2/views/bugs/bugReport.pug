@@ -6,12 +6,11 @@ block content
     p.centered.heading-text Report a Problem
     p.validation-progress.centered
 
-    .alert.alert-success#success(style="display: none") Thank you! Your feedback has been submitted.
-
     .container
         .row
             .col-xs-2
             .col-xs-8
+                .alert.alert-success#success(style="display: none") Thank you! Your feedback has been submitted.
                 p Having trouble? Tell us about it.
                 form#report-form(enctype="multipart/form-data" method="post")
                     .form-group

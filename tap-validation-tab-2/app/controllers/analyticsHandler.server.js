@@ -20,6 +20,10 @@ function analyticsHandler (dbParent) {
     const AUTH = process.env["TEAMS-ADO-PAT"];
 
     function updateSignOffTabLink(valDoc, callback) {
+        if (valDoc.tabLocations.length == 0) {
+            return callback("No tab link found", {});
+        }
+
         let firstLink = valDoc.tabLocations[0].tabUrl;
         if (firstLink == null) {
             return callback("No tab link found", {});
@@ -90,22 +94,26 @@ function analyticsHandler (dbParent) {
             tabUrl: req.body.tabUrl,
         };
 
-        // TODO: Avoid adding duplicates of the same tab/channel with different links. Check if the same team/channel setup already exists
+        // TODO: Would it be better to check if it exists first? Might avoid unnecessary remove/insert operations
 
-        validations.findOneAndUpdate({ _id: valId }, { $addToSet: { tabUrl: req.body.tabUrl, tabLocations: tabLocation } }, function (err, doc) {
-            if (err) { throw err; }
+        // Pull any previous instances of this same team/channel
+        validations.findOneAndUpdate({ _id: valId }, { $pull: { tabLocations: { teamId: tabLocation.teamId, channelId: tabLocation.channelId } } }, { new: true, multi: true }, function (err, updateDoc) {
+            // Insert the new link
+            validations.findOneAndUpdate({ _id: valId }, { $addToSet: { tabUrl: req.body.tabUrl, tabLocations: tabLocation } }, function (err, doc) {
+                if (err) { throw err; }
 
-            if (doc.value.tap == "Teams") {
-                updateSignOffTabLink(doc.value, function (err, results) {
-                    if (err) { console.log(err); }
+                if (doc.value.tap == "Teams") {
+                    updateSignOffTabLink(doc.value, function (err, results) {
+                        if (err) { console.log(err); }
+                        return res.status(200).send();
+
+                    });
+                } else {
                     return res.status(200).send();
+                }
 
-                });
-            } else {
-                return res.status(200).send();
-            }
-
-        });
+            });
+        })
     }
 }
 
