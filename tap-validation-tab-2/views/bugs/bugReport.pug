@@ -27,11 +27,12 @@ block content
                             p You can upload up to 10 files of any type, up to 60MB each.
                             //p For files larger than 60 MB, please contact this program's owner to arrange a secure file transfer.
                             input#report-file(type="file" name="userFile" multiple)
+                            span.help-block NOTE: Data sent in feedback submissions will be "Support Data" under your agreement for Microsoft 365, including any information that would otherwise be considered "Customer Data" or "Personal Data". Please do not submit feedback that may include data you do not wish to provide to Microsoft as "Support Data".
                 
                 div(style="float: right")
                     p#report-submit-status
                     button.btn.btn-primary#report-submit(title="Submit" name="submit" disabled) Send feedback
             .col-xs-2
 
-                
-    script(type="text/javascript", src="/controllers/bugs/bugReportController.client.js")
+    +script('/controllers/auth/teams-sso.client.js')
+    +script("/controllers/bugs/bugReportController.client.js")

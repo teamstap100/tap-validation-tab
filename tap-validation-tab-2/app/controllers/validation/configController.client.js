@@ -206,14 +206,14 @@
                       showVector += "0";
                   }
               })
-              contentUrl += "&show=" + showVector;
+              // TODO: This should be ?show=, but my getUrlVars() function doesn't seem to understand "?" at all
+              contentUrl += "?show=" + showVector;
 
               console.log("About to look at clientSettings");
 
               let clientsVector = "";
               var clientCheckboxes = $(this).find('[name="clients"]').each(function (e) {
                   let showThisClient = this.id.split("-")[2];
-                  console.log(this.checked);
                   if (this.checked) {
                       clientsVector += "1";
                   } else {
@@ -221,8 +221,10 @@
                   }
               })
 
-              // TODO: This should be ?clients=, but my getUrlVars() function doesn't seem to understand "?" at all
+              
               contentUrl += "&clients=" + clientsVector;
+
+              console.log(contentUrl);
 
               var settings = {
                   entityId: radio[0].value,

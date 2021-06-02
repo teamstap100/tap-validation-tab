@@ -34,8 +34,8 @@ block content
             .well
                 i.fa.fa-check-square(style="margin-right: 5px;") 
                 span Selected bugs: 
-                button.btn.btn-primary#getBugbashList(disabled) Get list for bugbash
-                button.btn.btn-primary#bulkClose(disabled) Bulk close
+                button.btn.btn-secondary#getBugbashList(disabled) Get list for bugbash
+                button.btn.btn-secondary#bulkClose(disabled) Bulk close
         table.table.table-bordered.table-responsive.table-striped.hugeTable#bugsTable
             tfoot(style="display: table-row-group;")
                 tr
@@ -86,7 +86,6 @@ block content
     br
     br
 
-
     #bug-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='commentLabel', aria-hidden='true')
       #bug-id(style="display: none") Test
       .modal-dialog(role='document')
@@ -97,123 +96,166 @@ block content
                 i.fa.fa-times
             h5.modal-title#bugLabelHeader
           .modal-body
-            //h4 Submission
-            p#bug-submitter
-            p#bug-movedToEngineering
+            .row
+                .col-md-6
+                    p#bug-submitter
+                .col-md-6
+                    p#bug-movedToEngineering
             span#bug-reproSteps
             hr
             h4 Activity 
                 span#bug-comments-count (0)
-            .modal-scrollable(style="max-height: 35%; overflow-y: scroll;")
+            .modal-scrollable(style="max-height: 30%; overflow-y: scroll;")
                 span#bug-comments No activity yet.
 
             hr
             h4 Actions
-            button.btn.btn-primary#openTriageForm(type="button" data-toggle="collapse" data-target="#triageForm") Triage...
-            button.btn.btn-primary#openCommentForm(type="button" data-toggle="collapse" data-target="#commentForm") Comment...
-            button.btn.btn-primary#openCloseForm(type="button" data-toggle="collapse" data-target="#closeBugForm") Close the bug...
+            button.btn.btn-secondary#openTriageForm(type="button" data-toggle="collapse" data-target="#triageForm")
+                i.fa.fa-clipboard-list
+                |  Triage
+            button.btn.btn-secondary#openCommentForm(type="button" data-toggle="collapse" data-target="#commentForm")
+                i.fa.fa-comment 
+                |  Comment
+            button.btn.btn-secondary#openCloseForm(type="button" data-toggle="collapse" data-target="#closeBugForm")
+                i.fa.fa-check-square 
+                |  Close the bug
             .collapse#triageForm
                 .card.card-body
-                    h4 Triage
-                    .form-group
-                        label(for="extentField") How many users are affected? 
-                            span(style="color: red") (*)
-                        br
-                        label.radio-inline
-                          input(type='radio', name='extentField', value='One')
-                          | One
-                        label.radio-inline
-                          input(type='radio', name='extentField', value='Several')
-                          | Several
-                        label.radio-inline
-                          input(type='radio', name='extentField', value='All')
-                          | All
-                    .form-group
-                        label(for="ringsField") What rings are affected? 
-                            span(style="color: red") (*)
-                        br
-                        label.checkbox-inline
-                          input(type='checkbox', name='ringsField', value='R1.5')
-                          | R1.5
-                        label.checkbox-inline
-                          input(type='checkbox', name='ringsField', value='R3')
-                          | R3
-                        label.checkbox-inline
-                          input(type='checkbox', name='ringsField', value='R4')
-                          | R4
-                    .form-group
-                        label(for="cflField") Does this bug impact critical business needs? 
-                            span(style="color: red") (*)
-                        br
-                        label.radio-inline
-                          input(type='radio', name='cflField', value='Yes')
-                          | Yes
-                        label.radio-inline
-                          input(type='radio', name='cflField', value='No')
-                          | No
-                    .form-group
-                        label(for="everWorkedField") Has this ever worked? 
-                            span(style="color: red") (*)
-                        br
-                        label.radio-inline
-                          input(type='radio', name='everWorkedField', value='Yes')
-                          | Yes
-                        label.radio-inline
-                          input(type='radio', name='everWorkedField', value='No')
-                          | No
-                    .form-group
-                        label(for="meetingsPerfField") Is this a performance issue in Meetings? 
-                            span(style="color: red") (*)
-                        br
-                        label.radio-inline
-                          input(type='radio', name='meetingsPerfField', value='Yes')
-                          | Yes
-                        label.radio-inline
-                          input(type='radio', name='meetingsPerfField', value='No')
-                          | No
-                    .form-group
-                        label(for='validationField') If this bug is related to an ongoing validation, select the validation.
-                        input.form-control#validationField(type='text' list='validations')
-                        datalist#validations
-                            each val in validations
-                                option(value=val.name) #{val.name}
-                        p#validation-warning(style="display: none; color: red") Please select a validation from the above list.
+                    .well
+                        h4 Triage
+                        .form-group
+                            // TODO: Reinsert this when it's reviewed
+                            span(style="color: red") NOTE: 
+                            a.hover(data-toggle="modal", data-target="#triage-checklist-modal") Please see these instructions on how to submit a helpful triage.
+                            br
+                            br
+
+                            label(for="extentField") How many users are affected? 
+                                span(style="color: red") (*)
+                            br
+                            label.radio-inline
+                              input(type='radio', name='extentField', value='One')
+                              | One
+                            label.radio-inline
+                              input(type='radio', name='extentField', value='Several')
+                              | Several
+                            label.radio-inline
+                              input(type='radio', name='extentField', value='All')
+                              | All
+                        .form-group
+                            label(for="ringsField") What rings are affected? 
+                                span(style="color: red") (*)
+                            br
+                            label.checkbox-inline
+                              input(type='checkbox', name='ringsField', value='R1.5')
+                              | R1.5
+                            label.checkbox-inline
+                              input(type='checkbox', name='ringsField', value='R3')
+                              | R3
+                            label.checkbox-inline
+                              input(type='checkbox', name='ringsField', value='R4')
+                              | R4
+                        .form-group
+                            label(for="cflField") Does this bug impact critical business needs? 
+                                span(style="color: red") (*)
+                            br
+                            label.radio-inline
+                              input(type='radio', name='cflField', value='Yes' aria-describedby="cflHelpBlock")
+                              | Yes
+                            label.radio-inline
+                              input(type='radio', name='cflField', value='No' aria-describedby="cflHelpBlock")
+                              | No
+                            
+                            //span.help-block#cflHelpBlock Note: Engineering will be engaged immediately if this is a critical issue impacting your organization.
+                        .form-group
+                            label(for="everWorkedField") Has this ever worked? 
+                                span(style="color: red") (*)
+                            br
+                            label.radio-inline
+                              input(type='radio', name='everWorkedField', value='Yes')
+                              | Yes
+                            label.radio-inline
+                              input(type='radio', name='everWorkedField', value='No')
+                              | No
+                        .form-group
+                            label(for="meetingsPerfField") Is this a performance issue in Meetings? 
+                                span(style="color: red") (*)
+                            br
+                            label.radio-inline
+                              input(type='radio', name='meetingsPerfField', value='Yes')
+                              | Yes
+                            label.radio-inline
+                              input(type='radio', name='meetingsPerfField', value='No')
+                              | No
+                        .form-group
+                            label(for='validationField') If this bug is related to an ongoing validation, select the validation.
+                            input.form-control#validationField(type='text' list='validations')
+                            datalist#validations
+                                each val in validations
+                                    option(value=val.name) #{val.name}
+                            p#validation-warning(style="display: none; color: red") Please select a validation from the above list.
+                        span.help-block#sevAWarning(style="display: none; color: #990012; font-weight: bold; font-size: 15px") Note: This bug will be marked as Sev A and Engineering will be engaged immediately.
 
                         
-                    button.btn.btn-primary#triageSubmit(style="float: right" disabled) Submit triage
-                    br
+                        button.btn.btn-primary#triageSubmit(style="float: right" disabled) Submit triage
+                        br
+                        br
             .collapse#commentForm
-                h4 Comment
-                .card.card-body
-                    form#comment-submit-form(enctype="multipart/form-data" method="post")
-                        .form-group
-                            label(for="commentField") Comment: 
-                                span(style="color: red") (*)
-                            textarea.form-control#commentField(rows=3, placeholder="Enter your comment...")
-                        .form-group
-                            label(for="windws-report-file") File Upload:
-                            input#commentFileUpload(type="file" name="userFile")
-                        button.btn.btn-primary#commentSubmit(style="float: right" type="submit" name="submit" disabled) Submit
-                    br
+                .well
+                    h4 Comment
+                    .card.card-body
+                        form#comment-submit-form(enctype="multipart/form-data" method="post")
+                            .form-group
+                                label(for="commentField") Comment: 
+                                    span(style="color: red") (*)
+                                textarea.form-control#commentField(rows=3, placeholder="Enter your comment...")
+                            .form-group
+                                label(for="windws-report-file") File Upload:
+                                input#commentFileUpload(type="file" name="userFile")
+                            button.btn.btn-primary#commentSubmit(style="float: right" type="submit" name="submit" disabled) Submit
+                        br
+                        br
             .collapse#closeBugForm
-                h4 Close Bug
-                .card.card-body
-                    .form-group
-                        label(for="closeCommentField") Reason: 
-                            span(style="color: red") (*)
-                        textarea.form-control#closeCommentField(rows=2, placeholder="Explain why the bug should be closed.")
-                        label(for="duplicateIdField") Duplicate of:
-                        input.form-control#duplicateIdField(type="text", placeholder="If this is a duplicate of another bug, enter its ID. ex. 123456")
-                        //input.form-control#duplicateIdField(type='txt' list='duplicateBugs')
-                        p#duplicate-warning(style="display: none; color: red") Please enter a bug ID from the table.
-                        //datalist#duplicateBugs
-                    button.btn.btn-primary#closeSubmit(style="float: right" disabled) Close bug
-                    br
+                .well
+                    h4 Close the Bug
+                    .card.card-body
+                        .form-group
+                            label(for="closeCommentField") Reason: 
+                                span(style="color: red") (*)
+                            textarea.form-control#closeCommentField(rows=2, placeholder="Explain why the bug should be closed.")
+                            label(for="duplicateIdField") Duplicate of:
+                            input.form-control#duplicateIdField(type="text", placeholder="If this is a duplicate of another bug, enter its ID. ex. 123456")
+                            //input.form-control#duplicateIdField(type='txt' list='duplicateBugs')
+                            p#duplicate-warning(style="display: none; color: red") Please enter a bug ID from the table.
+                            //datalist#duplicateBugs
+                        button.btn.btn-primary#closeSubmit(style="float: right" disabled) Close bug
+                        br
+                        br
             br
           .modal-footer
             button.btn.btn-secondary(type='button', data-dismiss='modal') Close
             //button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
             //button.btn.btn-default#submitComment(type='button', data-dismiss="modal") Submit
+
+    // Triage checklist modal
+    #triage-checklist-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='modalLabel', aria-hidden='true')
+      .modal-dialog(role='document')
+        .modal-content
+          .modal-header
+            button.close(type='button', data-dismiss='modal', aria-label='Close')
+              span(aria-hidden='true') &times;
+            h5.modal-title Triage Checklist
+          .modal-body
+            p Please determine these before submitting a triage:
+            ol
+                li Is this issue related to an active TAP validation?
+                li Did this work previously?
+                li Does fully signing out of the Teams client and signing back in again resolve the issue?
+                li Are you able to reproduce the issue on the Teams web client?
+                li Which rings are affected?
+                li Does the issue involve a loss of critical business functionality?
+          .modal-footer
+            button.btn.btn-secondary(type='button', data-dismiss='modal') Close
 
 
     #bugbash-list-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='commentLabel', aria-hidden='true')
@@ -273,5 +315,5 @@ block content
     script(type='text/javascript', src='https://cdn.datatables.net/v/bs/jszip-2.5.0/dt-1.10.20/b-1.6.1/b-html5-1.6.1/datatables.min.js')
     script(type="text/javascript", src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.8.4/moment.min.js")
     script(type="text/javascript", src="https://cdn.datatables.net/plug-ins/1.10.20/sorting/datetime-moment.js")
-    //script(type="text/javascript", src="/controllers/bugs/tenantBugsController.client.js")
+    +script('/controllers/auth/teams-sso.client.js')
     +script("/controllers/bugs/tenantBugsController.client.js")

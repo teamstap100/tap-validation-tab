@@ -39,6 +39,7 @@ function validationHandler(dbParent) {
             owner: 1,
             tap: 1,
             groups: 1,
+            settings: 1,
         };
 
         validations.find(activeNonBugValidations).project(validationProjection).sort(alphaSort).toArray(function (err, results) {
@@ -84,6 +85,7 @@ function validationHandler(dbParent) {
             active: 1,
             customCaseOrder: 1,
             settings: 1,
+            announcement: 1,
         }
 
         //console.log(query);
@@ -114,6 +116,8 @@ function validationHandler(dbParent) {
 
             if (validationDoc.blurb) {
                 validationDoc.blurb = validationDoc.blurb.replace(/background-color: rgb\(255, 255, 255\);/g, "");
+                // TDOO: set target to _blank of any href tags
+                validationDoc.blurb = validationDoc.blurb.replace(/href=/g, 'target="_blank", href=');
             }
 
             let caseQuery = linkedItemsQuery;
@@ -162,7 +166,7 @@ function validationHandler(dbParent) {
 
                                 versions = versions.sort(function (a, b) { return b - a });
 
-                                res.render('validation/validation', {
+                                res.render('validation/windowsValidation', {
                                     validation: validationDoc,
                                     cases: safeCases,
                                     feedback: feedbackDocs,
@@ -174,9 +178,9 @@ function validationHandler(dbParent) {
                             res.render('validation/validation', {
                                 validation: validationDoc,
                                 cases: safeCases,
-                                feedback: feedbackDocs,
-                                featureRequests: featureRequestDocs,
-                                windowsBuilds: versions
+                                feedback: [],
+                                featureRequests: [],
+                                windowsBuilds: [],
                             });
                         }
                     });

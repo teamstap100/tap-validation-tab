@@ -76,18 +76,18 @@
         console.log("User controller running");
 
         microsoftTeams.getContext(function (context) {
-            ajaxRequestWithToken("GET", "/api/tenants", {}, function (data) {
+            ajaxRequestWithSSOToken("GET", "/api/tenants", {}, function (data) {
                 console.log(data);
                 if (data) {
                     $('input.company').val(data.name);
                     $('input.tenantId').val(data.tid);
 
-                    if (data.users) {
+                    if (data.users.length > 0) {
                         data.users.forEach(function (user) {
                             var encodedUser = window.btoa(JSON.stringify(user));
                             let deprovisionButton = `<button class='btn btn-secondary remove-btn ring-1_5' data-user=${encodedUser} id='remove-${user.oid}'>Remove User from {RING}</button>`
                             let removalRequestedButton = `<button class='btn btn-secondary remove-btn ring-1_5' disabled data-user=${JSON.stringify(user)} id='remove-${user.oid}'>User pending removal</button>`
-                            let userRow = `<tr><td>${user.name}</td><td>${user.email}</td><td>${user.oid}</td><td>${deprovisionButton}</td></tr>`;
+                            let userRow = `<tr><td>${user.name}</td><td>${user.email}</td><td>${user.oid}</td><td>${user.tid}</td><td>${deprovisionButton}</td></tr>`;
                             if (user.removalRequested) {
                                 console.log("This user was requested to be removed");
                                 userRow = userRow.replace(deprovisionButton, removalRequestedButton);
@@ -142,7 +142,7 @@
             name: user.name,
             ring: ring,
         };
-        ajaxRequestWithToken("POST", "/api/users/deprovision", params, function (data) {
+        ajaxRequestWithSSOToken("POST", "/api/users/deprovision", params, function (data) {
             $(that).text("User pending removal");
             console.log("Done");
         })

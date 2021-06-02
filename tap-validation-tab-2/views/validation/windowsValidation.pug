@@ -78,6 +78,18 @@ block content
    
                 br
 
+    //if validation.tap == "Teams"
+    //    .container
+    //        .container.knownIssues(style="display: none")
+    //            h4 Known Issues
+    //            p We are aware of these issues, so you don't need to report them again.
+    //            table.table.table-striped.table-bordered#knownIssuesTable(style="font-size: 11px;")
+    //                thead
+    //                    tr
+    //                        th(scope="col") Title
+    //                tbody
+    //            br
+
     .container
       .container.caseList
             h4 Scenarios
@@ -135,9 +147,9 @@ block content
                                                 .panel-collapse.case-collapse.collapse.in(id="collapse-" + kase._id)
                                                     .panel-body
                                                         .col-sm-3.hidden-xs.centered
-                                                            span.upvotes-header Works
+                                                            span.upvotes-header #[strong Works]
                                                             .upvotes
-                                                                table.compact.upvotes-table.votes-table(id="upvotes-" + kase._id)
+                                                                table.compact.upvotes-table.votes-table(id="upvotes-" + kase._id, style="display: none")
                                                                     thead(style="display: none")
                                                                         tr
                                                                             td(scope="col") Vote
@@ -182,35 +194,49 @@ block content
                                                                                             i.fa.fa-thumbs-down
                                                                     if validation.settings
                                                                         if validation.settings.commentsEnabled
-                                                                            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal")
+                                                                            button.btn.btn-comment(type="submit", data-toggle="modal", data-target="#windows-report-modal")
                                                                                 i.fa.fa-comment 
                                                                                 |   Feedback
                                                             .no-client-checkboxes.btn-container
                                                                 if validation.active
-                                                                    button.btn.btn-upvote(type="submit")
+                                                                    button.btn.btn-upvote(type="submit", data-toggle="modal", data-target="#windows-report-modal")
                                                                         i.fa.fa-thumbs-up 
                                                                         |   Works
                                                                     if validation.settings
                                                                         if validation.settings.commentsEnabled
-                                                                            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#comment-modal")
+                                                                            button.btn.btn-comment(type="submit", data-toggle="modal", data-target="#windows-report-modal")
                                                                                 i.fa.fa-comment 
                                                                                 |   Feedback
-                                                                    button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal")
+                                                                    button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#windows-report-modal")
                                                                         i.fa.fa-thumbs-down 
                                                                         |   Fails
+                                                                //else
+                                                                //    button.btn.btn-upvote(type="submit" disabled)
+                                                                //        i.fa.fa-thumbs-up 
+                                                                //        |   Works
+                                                                //    if validation.settings
+                                                                //        if validation.settings.commentsEnabled
+                                                                //            button.btn.btn-comment(type='submit', data-toggle="modal", data-target="#windows-report-modal")
+                                                                //                i.fa.fa-comment 
+                                                                //                |   Feedback
+                                                                //    button.btn.btn-downvote(type="submit", data-toggle="modal", data-target="#report-modal" disabled)
+                                                                //        i.fa.fa-thumbs-down 
+                                                                //        |   Fails
                                                             .btn-container
-                                                                br
-                                                                button.btn(id="view-feedback-" + kase._id, data-title=kase.name, data-toggle="modal", data-target="#view-feedback-modal")
-                                                                    i.fa.fa-comments 
-                                                                    |   View All Feedback
+                                                                if validation.tap == "Windows"
+                                                                    br
+                                                                    button.btn(id="view-feedback-" + kase._id, data-title=kase.name, data-toggle="modal", data-target="#view-feedback-modal")
+                                                                        i.fa.fa-comments 
+                                                                        |   View All Feedback
+                                                        //p.centered.timestamp.subtle #{kase.timestamp.toLocaleDateString()}
                                                         p.subtle.deep-link(style="display: none")
                                                             i.fa.fa-link   Link
                                                         p.subtle(style="display: none") #{kase._id}
 
                                                         .col-sm-3.hidden-xs.centered
-                                                            span.downvotes-header Fails
+                                                            span.downvotes-header #[strong Fails]
                                                             .downvotes
-                                                                table.compact.downvotes-table.votes-table(id="downvotes-" + kase._id)
+                                                                table.compact.downvotes-table.votes-table(id="downvotes-" + kase._id, style="display: none")
                                                                     thead(style="display: none")
                                                                         tr
                                                                             td(scope="col") Vote
@@ -260,45 +286,6 @@ block content
       br
       br
 
-    // Modal shown when clicking "Fails"
-    //#report-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='modalLabel', aria-hidden='true')
-      .modal-dialog(role='document')
-        .modal-content
-          .modal-header
-            button.close(type='button', data-dismiss='modal', aria-label='Close')
-              span(aria-hidden='true') &times;
-            h5.modal-title#modalLabel 
-                if validation.tap == "Teams"
-                    | Please "Report a Problem"
-                else if validation.tap == "ACS"
-                    | Please report on GitHub
-          .modal-body
-            if validation.tap == "Teams"
-                | Your feedback has been recorded. Please submit more details through "Report a Problem" on the device you used for the scenario as well.
-            else if validation.tap == "ACS"
-                | Your feedback has been recorded. Please submit more details on #[a(href="https://github.com/Azure/communication-preview", target="_blank")  GitHub].
-          .modal-footer
-            button.btn.btn-primary(type='button', data-dismiss="modal") OK
-            
-    // Modal sohwn when clicking "Comment"
-    //#comment-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='commentLabel', aria-hidden='true')
-      #comment-id(style="display: none") Test
-      #comment-caseTitle(style="display: none") Test
-      .modal-dialog(role='document')
-        .modal-content
-          .modal-header
-            button.close(type='button', data-dismiss='modal', aria-label='Close')
-              span(aria-hidden='true') &times;
-            h5.modal-title#commentLabel Submit feedback for this scenario
-          .modal-body
-            p Your feedback will be shared with the team.
-            p If the scenario has failed, please "Report a Problem" instead.
-            br
-            textarea.form-control#commentField(rows=3, placeholder="Comment")
-          .modal-footer
-            button.btn.btn-secondary(type='button', data-dismiss="modal") Cancel
-            button.btn.btn-primary#submitComment(type='button', data-dismiss="modal") Submit
-
     // Modal sohwn when clicking "Works/Fails/Feedback" on Windows
     #windows-report-modal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='windowsReportLabel', aria-hidden='true')
       #windows-report-id(style="display: none") Test
@@ -322,7 +309,7 @@ block content
                     .form-group
                         label(for="windows-report-description-field") Description:  
                             span#windows-report-description-required(style="color: red") (*)
-                        textarea.form-control#windows-report-description-field.windows-report-field(rows=4, placeholder="Please describe the problem.")
+                        textarea.form-control#windows-report-description-field.windows-report-field.press-enter-to-line-break(rows=4, placeholder="Please describe the problem.")
                     .form-group
                         label(for="windws-report-file") File Upload:
                         p You can upload up to 10 files of any type, up to 60MB each.
@@ -548,6 +535,7 @@ block content
           .modal-footer
             button.btn.btn-primary#feedback-comment-submit(title="Submit" name="submit") Submit
 
+    +script('/controllers/auth/teams-sso.client.js')
     +script("/controllers/validation/caseController.client.js")
     +script("/controllers/validation/featureRequestController.client.js")
     +script("/controllers/validation/feedbackController.client.js")

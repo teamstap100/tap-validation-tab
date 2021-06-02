@@ -20,6 +20,11 @@ function analyticsHandler (dbParent) {
     const AUTH = process.env["TEAMS-ADO-PAT"];
 
     function updateSignOffTabLink(valDoc, callback) {
+        // In the ADO workitem, set the sign-off tab to the first 
+        if (valDoc.tabLocations == null) {
+            return callback("No tab link found", {});
+        }
+
         if (valDoc.tabLocations.length == 0) {
             return callback("No tab link found", {});
         }
@@ -80,7 +85,7 @@ function analyticsHandler (dbParent) {
 
     }
 
-    this.updateValidationTabLocations = function (req, res) {
+    this.updateValidationTabLocations = async function (req, res) {
         // Update the list of tab locations where this validation is happening.
         console.log(req.body);
 
@@ -92,12 +97,13 @@ function analyticsHandler (dbParent) {
             channelId: req.body.channelId,
             channelName: req.body.channelName,
             tabUrl: req.body.tabUrl,
+            timestamp: new Date(),
         };
 
         // TODO: Would it be better to check if it exists first? Might avoid unnecessary remove/insert operations
 
         // Pull any previous instances of this same team/channel
-        validations.findOneAndUpdate({ _id: valId }, { $pull: { tabLocations: { teamId: tabLocation.teamId, channelId: tabLocation.channelId } } }, { new: true, multi: true }, function (err, updateDoc) {
+        validations.findOneAndUpdate({ _id: valId }, { $pull: { tabLocations: { channelId: tabLocation.channelId } } }, { new: true, multi: true }, function (err, updateDoc) {
             // Insert the new link
             validations.findOneAndUpdate({ _id: valId }, { $addToSet: { tabUrl: req.body.tabUrl, tabLocations: tabLocation } }, function (err, doc) {
                 if (err) { throw err; }

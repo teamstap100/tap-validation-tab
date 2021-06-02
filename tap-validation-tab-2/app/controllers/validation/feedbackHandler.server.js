@@ -389,6 +389,20 @@ function feedbackHandler(dbParent) {
 
                 }
 
+                if (project.org == "MSFTDEVICES") {
+                    reqBody.push({
+                        "op": "Add",
+                        "path": "/fields/Microsoft.VSTS.Common.Bug.BugBugType",
+                        "value": "Suggestion"
+                    });
+
+                    reqBody.push({
+                        "op": "Add",
+                        "path": "/fields/Microsoft.VSTS.Common.Priority",
+                        "value": "3"
+                    })
+                }
+
                 if (err) { throw err; }
                 let ado_endpoint = ADO_WORKITEM_ADD_ENDPOINT
                     .replace("{org}", project.org)

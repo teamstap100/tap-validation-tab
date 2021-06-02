@@ -35,8 +35,10 @@
 
       if (selectedTenantId == "edu-summary") {
           selectedTenantId = "summary/EDU";
-      } else if (selectedTenantId  == "far-east-summary") {
+      } else if (selectedTenantId == "far-east-summary") {
           selectedTenantId = "summary/FarEast";
+      } else if (selectedTenantId == "sev-a") {
+          selectedTenantId = "seva";
       }
 
       var settings = {

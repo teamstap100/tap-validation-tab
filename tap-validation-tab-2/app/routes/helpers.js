@@ -6,6 +6,17 @@ const csurf = require('csurf');
 const jwt = require('jsonwebtoken');
 const request = require('request');
 
+// TODO: These should go in a config
+var APP_ID, DOMAIN, AUDIENCE;
+if (process.env.ENV == "PROD") {
+    APP_ID = "b8d01464-c3fc-4573-a2c3-55ed9113620c";
+    DOMAIN = "tap-validation-tab.azurewebsites.net";
+} else {
+    APP_ID = "7f3150da-ae2e-41d0-8bcd-f04b5dde0299";
+    DOMAIN = "taptools.ngrok.io";
+}
+AUDIENCE = `api://${DOMAIN}/${APP_ID}`;
+
 const TEST_USER = {
     aud: '5b17716e-e0a6-4604-868f-9c781998021f',
     iss: 'https://login.microsoftonline.com/72f988bf-86f1-41af-91ab-2d7cd011db47/v2.0',
@@ -24,7 +35,8 @@ const TEST_USER = {
     tid: '72f988bf-86f1-41af-91ab-2d7cd011db47',
     uti: 'pKAbpYOqgku-yWcgpwEvAA',
     ver: '2.0'
-}
+};
+
 
 const checkCsrf = csurf({
     cookie: true
@@ -103,18 +115,32 @@ module.exports = {
 
             var publicKey = '-----BEGIN CERTIFICATE-----\n' + thisKey.x5c[0] + '\n-----END CERTIFICATE-----';
 
+            // for v2.0 tokens
             const verifyOptions = {
                 // Audience: this app's ID
-                audience: "b8d01464-c3fc-4573-a2c3-55ed9113620c",
+                audience: APP_ID,
 
                 // Issuer: MS tenant
                 issuer: "https://login.microsoftonline.com/72f988bf-86f1-41af-91ab-2d7cd011db47/v2.0",
             };
 
+            // for v1.0 tokens - currently being used for the local test, not sure how to switch
+            const backupVerifyOptions = {
+                audience: AUDIENCE,
+                issuer: "https://sts.windows.net/72f988bf-86f1-41af-91ab-2d7cd011db47/",
+            }
+
             jwt.verify(token, publicKey, verifyOptions, function (err, verified) {
                 // TOOD: Check "acct" - will be 1 if guest (which is ok here)
-                console.log(verified);
-                return callback(err, verified);
+                if (err) {
+                    console.log("Trying backup verify options");
+                    jwt.verify(token, publicKey, backupVerifyOptions, function (err, verified) {
+                        return callback(err, verified);
+                    })
+                } else {
+                    console.log(verified);
+                    return callback(err, verified);
+                }
             });
         });
     },
@@ -134,18 +160,14 @@ module.exports = {
     enforceIdToken: function (req, res, next) {
         let auth = req.headers["authorization"];
         if (auth) {
+            console.log("Got a token");
             let token = auth.replace("Bearer ", "");
             //console.log(token);
 
             var decoded = jwt.decode(token, { complete: true });
-            //console.log(decoded);
+            console.log(decoded);
 
-            if (process.env.ENV == "TEST") {
-                console.log("Using TEST_USER on enforceIdToken");
-                req.user = TEST_USER;
-                res.locals.user = TEST_USER;
-                return next();
-            } else {
+            if (token) {
                 module.exports.verifyJwt(token, function (err, verified) {
                     if (err) {
                         console.log(err.message);
@@ -155,14 +177,24 @@ module.exports = {
                     console.log("User verified");
                     console.log(verified);
                     req.user = verified;
+                    res.locals.user = verified;
 
                     return next();
                 });
+            } else {
+                if (process.env.ENV == "TEST") {
+                    console.log("Using TEST_USER on enforceIdToken");
+                    req.user = TEST_USER;
+                    res.locals.user = TEST_USER;
+                    return next();
+                } else {
+                    console.log("No auth on this request");
+                    return res.status(401).send();
+                }
             }
-
         } else {
-            console.log("Warning - no auth on this request");
-            return next();
+            console.log("No auth on this request");
+            return res.status(401).send();
         }
     },
 

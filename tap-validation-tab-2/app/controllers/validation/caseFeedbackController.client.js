@@ -3,10 +3,9 @@ $(document).ready(function () {
     const UPVOTE_API_URL = "../api/feedback/scenario/{id}/upvote";
     const COMMENT_API_URL = "../api/feedback/scenario/{id}/comment";
 
-    console.log("Hello");
     microsoftTeams.initialize();
 
-    console.log("ScenarioFeedbackController ready");
+    console.log("CaseFeedbackController ready");
 
     function submitEditReport(event, voteParams) {
         //stop submit the form, we will post it manually.
@@ -297,7 +296,13 @@ $(document).ready(function () {
                     {
                         render: function (data, type, row) {
                             if ((row.publicId) && (row.id)) {
-                                return `<span style="font-size: 9px;">${row.publicId} - ${row.id}</span>`;
+                                if (row.link) {
+                                    return `<span style="font-size: 9px;">${row.publicId} - <a style='font-size: 9px;' href='${row.link}' target='_blank'>${row.id}</a></span>`;
+
+                                } else {
+                                    return `<span style="font-size: 9px;">${row.publicId} - ${row.id}</span>`;
+
+                                }
                             } else if (row.publicId) {
                                 return `<span style="font-size: 9px;">${row.publicId}</span>`;
                             } else {
@@ -421,4 +426,6 @@ $(document).ready(function () {
             }
         });
     });
+    /*
+    */
 });

@@ -1,6 +1,7 @@
 'use strict';
 
 (function () {
+    console.log("Running removeController now");
     microsoftTeams.initialize();
     microsoftTeams.settings.registerOnRemoveHandler((removeEvent) => {
         // Here you can designate the tab content to be removed and/or archived.

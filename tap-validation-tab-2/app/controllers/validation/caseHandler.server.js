@@ -330,6 +330,7 @@ function caseHandler(dbParent) {
                 comment: comment,
                 userEmail: clientVoteString,
                 userTenantId: realTenantId,
+                userTenantName: realTenantName,
                 timestamp: new Date(),
             }
 
@@ -619,6 +620,20 @@ function caseHandler(dbParent) {
                     "value": "Cobalt"
                 });
 
+            }
+
+            if (project.org == "MSFTDEVICES") {
+                reqBody.push({
+                    "op": "Add",
+                    "path": "/fields/Microsoft.VSTS.Common.Bug.BugBugType",
+                    "value": "Suggestion"
+                });
+
+                reqBody.push({
+                    "op": "Add",
+                    "path": "/fields/Microsoft.VSTS.Common.Priority",
+                    "value": "3"
+                })
             }
 
         
@@ -1184,68 +1199,74 @@ function caseHandler(dbParent) {
         }
 
         cases.findOne({ _id: ObjectID(req.body.caseId) }, function (err, caseDoc) {
-            caseDoc.upvotes_v2.forEach(function (vote) {
-                vote.type = "Works";
-            });
+            getAuthForCase(caseDoc.validationId, function (err, project) {
 
-            caseDoc.comments.forEach(function (vote) {
-                vote.type = "Feedback";
-            });
-
-            caseDoc.downvotes_v2.forEach(function (vote) {
-                vote.type = "Fails";
-            });
-
-            let nonCurrentUserComments, allFeedback;
-            if (isMicrosoft(req.body.userEmail)) {
-                nonCurrentUserComments = caseDoc.comments.filter(x => x.userEmail != req.body.userEmail);
-
-                allFeedback = caseDoc.upvotes_v2.concat(caseDoc.downvotes_v2).filter(x => x.email != req.body.userEmail).concat(nonCurrentUserComments);
-            } else {
-                // Can't just concat comments, as upvotes/downvotes use "email" field where comments use "userEmail"
-                nonCurrentUserComments = caseDoc.comments.filter(x => x.userEmail != req.body.userEmail).filter(x => x.public);
-
-                allFeedback = caseDoc.upvotes_v2.concat(caseDoc.downvotes_v2).filter(x => x.email != req.body.userEmail).filter(x => x.public).concat(nonCurrentUserComments);
-            }
-
-            //console.log(allFeedback);
-
-            votesTotal = allFeedback.length;
-
-            allFeedback.forEach(function (fb) {
-                // Remove unnecessary properties
-                delete fb.userTenantId;
-                //if (fb.comment) { delete fb.comment; }
-                //delete fb.comment;
-                //delete fb.attachmentCount;
-                delete fb.windowsBuildType;
-                delete fb.windowsBuildVersion;
-
-                if (!isMicrosoft(req.body.userEmail)) {
-                    if (fb.userEmail) {
-                        delete fb.userEmail;
-                    }
-                    if (fb.email) {
-                        delete fb.email;
-                    }
-
-                    if (fb.id) { delete fb.id; }
-                }
-                
-
-                // Legacy feedback doesn't have titles
-                getStateAndReason(caseDoc.validationId, fb, function (updatedCase) {
-                    if (fb.upvotes) {
-                        fb.userUpvoted = fb.upvotes.includes(req.body.userEmail);
-                    }
-                    console.log(updatedCase);
-                    feedback.push(updatedCase);
-
-                    votesChecked++;
-                    checkIfDone();
+                caseDoc.upvotes_v2.forEach(function (vote) {
+                    vote.type = "Works";
                 });
+
+                caseDoc.comments.forEach(function (vote) {
+                    vote.type = "Feedback";
+                });
+
+                caseDoc.downvotes_v2.forEach(function (vote) {
+                    vote.type = "Fails";
+                });
+
+                let nonCurrentUserComments, allFeedback;
+                if (isMicrosoft(req.body.userEmail)) {
+                    nonCurrentUserComments = caseDoc.comments.filter(x => x.userEmail != req.body.userEmail);
+
+                    allFeedback = caseDoc.upvotes_v2.concat(caseDoc.downvotes_v2).filter(x => x.email != req.body.userEmail).concat(nonCurrentUserComments);
+                } else {
+                    // Can't just concat comments, as upvotes/downvotes use "email" field where comments use "userEmail"
+                    nonCurrentUserComments = caseDoc.comments.filter(x => x.userEmail != req.body.userEmail).filter(x => x.public);
+
+                    allFeedback = caseDoc.upvotes_v2.concat(caseDoc.downvotes_v2).filter(x => x.email != req.body.userEmail).filter(x => x.public).concat(nonCurrentUserComments);
+                }
+
+                //console.log(allFeedback);
+
+                votesTotal = allFeedback.length;
+
+                allFeedback.forEach(function (fb) {
+                    // Remove unnecessary properties
+                    delete fb.userTenantId;
+                    //if (fb.comment) { delete fb.comment; }
+                    //delete fb.comment;
+                    //delete fb.attachmentCount;
+                    delete fb.windowsBuildType;
+                    delete fb.windowsBuildVersion;
+
+                    if (!isMicrosoft(req.body.userEmail)) {
+                        if (fb.userEmail) {
+                            delete fb.userEmail;
+                        }
+                        if (fb.email) {
+                            delete fb.email;
+                        }
+
+                        if (fb.id) { delete fb.id; }
+                    } else {
+                        fb.link = `https://dev.azure.com/${project.org}/${project.project}/_workitems/edit/${fb.id}`;
+                        console.log(fb.link);
+                    }
+
+
+                    // Legacy feedback doesn't have titles
+                    getStateAndReason(caseDoc.validationId, fb, function (updatedCase) {
+                        if (fb.upvotes) {
+                            fb.userUpvoted = fb.upvotes.includes(req.body.userEmail);
+                        }
+                        console.log(updatedCase);
+                        feedback.push(updatedCase);
+
+                        votesChecked++;
+                        checkIfDone();
+                    });
+                });
+                checkIfDone();
             });
-            checkIfDone();
         });
     }
 

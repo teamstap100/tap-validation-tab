@@ -2,6 +2,7 @@ extends ../layout
 
 block morescripts
     script(type='text/javascript', src='/controllers/auth/authController.client.js' )
+    script(type='text/javascript', src='/controllers/auth/teams-sso.client.js' )
     script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js')
     script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap.min.js')
     link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap.min.css')
@@ -25,14 +26,15 @@ block content
                         label(for="tenantId") Tenant ID
                         input.tenantId.form-control#tenantIdField(type='text', placeholder="TenantID" name="tenantId" autocomplete="off" style="width: 400px" disabled  pattern='([a-f]|[0-9]){8}-([a-f]|[0-9]){4}-([a-f]|[0-9]){4}-([a-f]|[0-9]){4}-([a-f]|[0-9]){12}')
                 br
-                p#noUsersFound(style="display: none") No TAP users found for this tenant.
+                p#noUsersFound(style="display: none; text-align: center") No TAP users found for this tenant.
                 #r1_5UsersContainer(style="display: none")
                     h4 R1.5 Users
                     table.table.table-striped.table-bordered#r1_5UsersTable(style="font-size: 11px")
                         thead
                             td(scope="col") Name
                             td(scope="col") Email
-                            td(scope="col") OID
+                            td(scope="col") User Object ID
+                            td(scope="col") Tenant ID
                             td(scope="col") Remove
                         tbody#r1_5Users
                 #r3UsersContainer(style="display: none")
@@ -41,7 +43,8 @@ block content
                         thead
                             td(scope="col") Name
                             td(scope="col") Email
-                            td(scope="col") OID
+                            td(scope="col") User Object ID
+                            td(scope="col") Tenant ID
                             td(scope="col") Remove
                         tbody#r3Users
             .col-xs-1

@@ -349,6 +349,15 @@ $(document).ready(function () {
         $('#feedback-modal').on('shown.bs.modal', function (e) {
             myFeedbackTable.ajax.reload(bindEditButtons);
             otherFeedbackTable.ajax.reload(bindVoteButtons);
+
+            $('#feedback-description-field').unbind("keyup");
+            $("#feedback-description-field").keyup(function (event) {
+                var keycode = (event.keyCode ? event.keyCode : event.which);
+                if (keycode == 13) {
+                    var s = $(this).val();
+                    $(this).val(s + "\n");  //\t for tab
+                }
+            });
         });
 
         $('.feedback-field').off();

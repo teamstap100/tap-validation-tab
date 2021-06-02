@@ -24,9 +24,29 @@ block content
     span#collectWindowsInfo(style="display: none") #{validation.settings.collectWindowsInfo}
 
     br
+    // TODO: Switch these order iwhen out of testing
     if validation.blurb
         .container
             .well.blurb !{validation.blurb}
+    else if validation.announcement
+        if validation.announcement.description
+            .container
+                .well.blurb(style="max-height: 250px; overflow-y: scroll;")
+                    | !{validation.announcement.description}
+                    if validation.announcement.issues
+                        h5 Known Issues
+                        | !{validation.announcement.issues}
+                    if validation.announcement.limitations
+                        h5 Known Limitations
+                        | !{validation.announcement.limitationss}
+        else
+            .container
+                .well.blurb !{validation.blurb}
+    //else if validation.blurb
+    //    .container
+    //        .well.blurb !{validation.blurb}
+
+
     - var clients = ['windows', 'mac', 'android', 'ios', 'web', 'linux'];
     - var walkie_clients = [];
     - var walkie_headset_types = [];
@@ -51,10 +71,10 @@ block content
                     .col-sm-3
                     .col-sm-6
                         .row
-                            label.control-label.col-form-label.col-sm-6(for='deviceSelect')
+                            label.control-label.col-form-label.col-sm-12(for='deviceSelect')
                                 span(style="color: red") (*) 
-                                | Select your device type:
-                            select.setUserPrefs#deviceSelect.form-control.col-sm-6(placeholder="Select your device.")
+                                | Select the peripheral you are using to validate:
+                            select.setUserPrefs#deviceSelect.form-control.col-sm-12(placeholder="Select your device.")
                                 option(value="", label="", selected) 
                                 if validation.settings.deviceList
                                     each device in validation.settings.deviceList
@@ -619,6 +639,7 @@ block content
           .modal-footer
             button.btn.btn-primary#feedback-comment-submit(title="Submit" name="submit") Submit
 
+    +script('/controllers/auth/teams-sso.client.js')
     +script("/controllers/validation/caseController.client.js")
     +script("/controllers/validation/featureRequestController.client.js")
     +script("/controllers/validation/feedbackController.client.js")

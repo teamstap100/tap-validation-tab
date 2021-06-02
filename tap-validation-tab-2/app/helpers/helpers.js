@@ -38,7 +38,6 @@ function getUrlVars() {
     var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function (m, key, value) {
         vars[key] = value;
     });
-    console.log(parts);
     return vars;
 }
 
@@ -116,6 +115,68 @@ function ajaxRequestWithToken(method, url, params, callback) {
     console.log(params);
 
     getIdToken(finalRequest);
+}
+
+function getSSOToken(callback) {
+    var authTokenRequest = {
+        successCallback: function (result) {
+            console.log("Success");
+            return callback(null, result);
+        },
+        failureCallback: function (error) {
+            console.log("Failure");
+            return callback(error, null);
+        }
+    };
+    microsoftTeams.authentication.getAuthToken(authTokenRequest);
+}
+
+function ajaxRequestWithSSOToken(method, url, params, callback) {
+    function finalRequest(err, auth) {
+        if (err) {
+            console.log(err);
+        }
+        $.ajax({
+            url: url,
+            type: method,
+            dataType: "json",
+            data: params,
+            beforeSend: function (request) {
+                request.setRequestHeader("xsrf-token", csrf);
+
+                request.setRequestHeader("Authorization", "Bearer " + auth);
+
+            },
+            success: function (data) {
+                // TODO: Most of the old code still consumes this as a string - remove this line when all data = JSON.parse(data) type lines are removed
+                //data = JSON.stringify(data);
+
+                callback(data);
+            },
+            error: function (xhr, textStatus, errorThrown) {
+                callback(errorThrown);
+            }
+        });
+    }
+
+    // Include csrf in request
+    let csrf = $('#_csrf').val();
+
+    console.log(params);
+
+    //getIdToken(finalRequest);
+
+    var authTokenRequest = {
+        successCallback: function (result) {
+            console.log("Success");
+            finalRequest(null, result);
+        },
+        failureCallback: function (error) {
+            console.log("Failure");
+            finalRequest(error, null);
+        }
+    };
+    microsoftTeams.authentication.getAuthToken(authTokenRequest);
 }
 
 var csrf;

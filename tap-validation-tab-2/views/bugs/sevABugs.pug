@@ -1,0 +1,36 @@
+extends ../layout.pug
+
+
+
+block content
+  .container
+    p.heading-text Active Sev A Bugs
+    table.table.table-striped.hugeTable#bugsTable
+        thead
+            tr
+                th(scope="col") ID
+                th(scope="col") Reported
+                th(scope="col") Title
+                th(scope="col") State
+                th(scope="col") Reported by
+        tbody
+            each bug in bugs
+                tr
+                    td #{bug._id}
+                    td #{new Date(bug.timestamp).toLocaleDateString()}
+                    td #{bug.safeTitle}
+                    td #{bug.state}
+                    td #{bug.tenantName}
+    br
+    br
+                
+    script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js')
+    //script(type='text/javascript', src='https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap.min.js')
+    //link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap.min.css')
+    link(rel='stylesheet', type='text/css', href='https://cdn.datatables.net/v/bs/jszip-2.5.0/dt-1.10.20/b-1.6.1/b-html5-1.6.1/datatables.min.css')
+    script(type='text/javascript', src='https://cdn.datatables.net/v/bs/jszip-2.5.0/dt-1.10.20/b-1.6.1/b-html5-1.6.1/datatables.min.js')
+    script(type="text/javascript", src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.8.4/moment.min.js")
+    script(type="text/javascript", src="https://cdn.datatables.net/plug-ins/1.10.20/sorting/datetime-moment.js")
+    //script(type="text/javascript", src="/controllers/bugs/tenantBugsController.client.js")
+    +script('/controllers/auth/teams-sso.client.js')
+    +script("/controllers/bugs/sevABugsController.client.js")

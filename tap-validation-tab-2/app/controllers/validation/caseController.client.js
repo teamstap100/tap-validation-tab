@@ -125,9 +125,10 @@ var config = {};
 
             textField.on('keydown', function (e) {
                 if (e.keyCode == 13) {
+                    console.log("Pressed enter");
                     fixLineBreak();
 
-                    e.preventDefault();
+                    //e.preventDefault();
                 }
             });
 
@@ -278,49 +279,52 @@ var config = {};
         }
 
         var commentModalButton = document.querySelector('#submitComment');
-        commentModalButton.addEventListener('click', function () {
-            // TODO: Get the context, to get the Team and Channel ID. Launch a modal. Clicking submit on the modal creates or contributes to a thread of that item
-            var cId = $('#comment-id').text();
-            var caseTitle = $('#comment-caseTitle').text();
-            var addCommentUrl = "../api/comments";
+        if (commentModalButton) {
+            commentModalButton.addEventListener('click', function () {
+                // TODO: Get the context, to get the Team and Channel ID. Launch a modal. Clicking submit on the modal creates or contributes to a thread of that item
+                var cId = $('#comment-id').text();
+                var caseTitle = $('#comment-caseTitle').text();
+                var addCommentUrl = "../api/comments";
 
-            microsoftTeams.getContext(function (context) {
-                var params = {
-                    cId: cId,
-                    comment: $('#commentField').val(),
-                    userEmail: context["loginHint"],
-                    //tId: context["tid"],
-                    tap: config.tap,
-                    tag: config.tag,
-                    caseTitle: caseTitle,
-                }
-
-                if (config.collectDeviceFeedback) {
-                    var deviceSelect = document.querySelector('#deviceSelect');
-
-                    if (config.collectHeadsetFeedback) {
-                        var headsetSelect = document.querySelector('#walkieHeadset');
-                        params.headset = headsetSelect.value;
+                microsoftTeams.getContext(function (context) {
+                    var params = {
+                        cId: cId,
+                        comment: $('#commentField').val(),
+                        userEmail: context["loginHint"],
+                        //tId: context["tid"],
+                        tap: config.tap,
+                        tag: config.tag,
+                        caseTitle: caseTitle,
                     }
 
-                    params.device = deviceSelect.value;
+                    if (config.collectDeviceFeedback) {
+                        var deviceSelect = document.querySelector('#deviceSelect');
 
-                    if (cId == "956385") {
-                        // networkScenarios = a list of the names of all checked boxes in network-scenarios
-                        let networkScenarios = $('input[type="checkbox"][name="network-scenarios"]:checked').map(function () { return this.value; }).get()
-                        params.networkScenarios = networkScenarios;
-                    } 
-                }
+                        if (config.collectHeadsetFeedback) {
+                            var headsetSelect = document.querySelector('#walkieHeadset');
+                            params.headset = headsetSelect.value;
+                        }
 
-                ajaxRequest('POST', addCommentUrl, params, function () {
-                    console.log("Submitted");
-                    $('#commentField').val("");
+                        params.device = deviceSelect.value;
 
-                });
-            })
+                        //if (cId == "956385") {
+                        //    // networkScenarios = a list of the names of all checked boxes in network-scenarios
+                        //    let networkScenarios = $('input[type="checkbox"][name="network-scenarios"]:checked').map(function () { return this.value; }).get()
+                        //    params.networkScenarios = networkScenarios;
+                        //}
+                    }
+
+                    ajaxRequest('POST', addCommentUrl, params, function () {
+                        console.log("Submitted");
+                        $('#commentField').val("");
+
+                    });
+                })
 
 
-        });
+            });
+        }
+
 
         config.collectDeviceFeedback = false;
         config.collectHeadsetFeedback = false;
@@ -540,7 +544,7 @@ var config = {};
                 channelName: context.channelName,
                 channelId: context.channelId,
                 teamName: context.teamName,
-                teamId: context.teamId,
+                teamId: context.groupId,
             }
             ajaxRequest('POST', updateValidationTabUrlEndpoint, params, function () {
                 console.log(tabUrl);
@@ -1019,6 +1023,16 @@ var config = {};
                             }
                         });
 
+
+                        $('#windows-report-description-field').unbind("keyup");
+                        $("#windows-report-description-field").keyup(function (event) {
+                            var keycode = (event.keyCode ? event.keyCode : event.which);
+                            if (keycode == 13) {
+                                var s = $(this).val();
+                                $(this).val(s + "\n");  //\t for tab
+                            }
+                        });
+
                         $('#windows-report-submit').off();
                         $('#windows-report-submit').click(function () {
                             $('#windows-report-submit').attr('disabled', true);
@@ -1063,6 +1077,16 @@ var config = {};
                             }
                         });
 
+
+                        $('#windows-report-description-field').unbind("keyup");
+                        $("#windows-report-description-field").keyup(function (event) {
+                            var keycode = (event.keyCode ? event.keyCode : event.which);
+                            if (keycode == 13) {
+                                var s = $(this).val();
+                                $(this).val(s + "\n");  //\t for tab
+                            }
+                        });
+
                         $('#windows-report-submit').off();
                         $('#windows-report-submit').click(function () {
                             $('#windows-report-submit').attr('disabled', true);
@@ -1102,6 +1126,16 @@ var config = {};
                                 $('#windows-report-submit').attr('disabled', false);
                             } else {
                                 $('#windows-report-submit').attr('disabled', true);
+                            }
+                        });
+
+
+                        $('#windows-report-description-field').unbind("keyup");
+                        $("#windows-report-description-field").keyup(function (event) {
+                            var keycode = (event.keyCode ? event.keyCode : event.which);
+                            if (keycode == 13) {
+                                var s = $(this).val();
+                                $(this).val(s + "\n");  //\t for tab
                             }
                         });
 

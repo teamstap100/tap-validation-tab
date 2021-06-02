@@ -5,12 +5,15 @@
  * 
 */
 
+// TODO: This is no longer needed after switching to SSO. All SSO tasks are handled in helpers.js with ajaxRequestWithSSOToken.
+
 'use strict';
 
 (function () {
     $().ready(function () {
         console.log("AuthController is running");
 
+        /*
         function getCookie(cname) {
             var name = cname + "=";
             var decodedCookie = decodeURIComponent(document.cookie);
@@ -45,6 +48,7 @@
                 }
             });
         }
+        */
 
         function refreshLogin() {
             console.log("Refreshing login");

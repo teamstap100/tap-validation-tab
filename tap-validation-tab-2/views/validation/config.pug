@@ -47,6 +47,19 @@ block content
                             table.table.table-responsive.sections-table(style="display: none")
                                 - var groupCount = 0;
                                 each group in validation.groups
+                                    - function getChecked(group, client) { 
+                                    - var result = false; 
+                                    - if (validation.settings) {
+                                    - if ("clients" in validation.settings) { 
+                                    - if (group in validation.settings.clients) { 
+                                    - var safeClient = client.charAt(0).toUpperCase() + client.slice(1).toLowerCase();
+                                    - if (safeClient == "Ios") { safeClient = "iOS"; }
+                                    - result = validation.settings.clients[group][safeClient]; 
+                                    - } 
+                                    - } 
+                                    - }
+                                    - return result; 
+                                    - }
                                     tr
                                         td
                                             - var safeGroup = group.replace(/ /g, "_").replace(/,/g, "_").replace(/-/g, "_").replace(/\(|\)/g, "_");
@@ -57,24 +70,28 @@ block content
                                                         label.safe-label(for=safeGroup)     #[strong #{group}]
                                                 .row.client-config
                                                     .col-xs-6
-                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-windows", id=validation._id + "-" + groupCount + "-windows" title="Collect Windows feedback")  
+                                                        //- var checked = false;
+                                                        //if validation.settings.clients
+                                                        //    if validation.settings.clients[group]
+                                                        //        - checked = validation.settings.clients[group].windows;
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-windows", id=validation._id + "-" + groupCount + "-windows" title="Collect Windows feedback" checked=getChecked(group, "windows"))  
                                                         label.safe-label(for=validation._id + "-" + groupCount + "-windows") Windows
                                                     .col-xs-6
-                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-mac", id=validation._id + "-" + groupCount + "-mac" title="Collect Mac feedback")  
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-mac", id=validation._id + "-" + groupCount + "-mac" title="Collect Mac feedback" checked=getChecked(group, "mac"))  
                                                         label.safe-label(for=validation._id + "-" + groupCount + "-mac") Mac
                                                 .row.client-config
                                                     .col-xs-6
-                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-android", id=validation._id + "-" + groupCount + "-android" title="Collect Android feedback")  
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-android", id=validation._id + "-" + groupCount + "-android" title="Collect Android feedback" checked=getChecked(group, "android"))  
                                                         label.safe-label(for=validation._id + "-" + groupCount + "-android") Android
                                                     .col-xs-6
-                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-ios", id=validation._id + "-" + groupCount + "-ios" title="Collect iOS feedback")  
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-ios", id=validation._id + "-" + groupCount + "-ios" title="Collect iOS feedback" checked=getChecked(group, "ios"))  
                                                         label.safe-label(for=validation._id + "-" + groupCount + "-") iOS
                                                 .row.client-config
                                                     .col-xs-6
-                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-web", id=validation._id + "-" + groupCount + "-web" title="Collect Web feedback")  
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-web", id=validation._id + "-" + groupCount + "-web" title="Collect Web feedback" checked=getChecked(group, "web"))  
                                                         label.safe-label(for=validation._id + "-" + groupCount + "-") Web
                                                     .col-xs-6
-                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-linux", id=validation._id + "-" + groupCount + "-linux" title="Collect Linux feedback")  
+                                                        input.client(type="checkbox", name="clients", value=validation._id + "-" + groupCount + "-linux", id=validation._id + "-" + groupCount + "-linux" title="Collect Linux feedback" checked=getChecked(group, "linux"))  
                                                         label.safe-label(for=validation._id + "-" + groupCount + "-") Linux
                                                 .row.client-config
                                                     .col-xs-3

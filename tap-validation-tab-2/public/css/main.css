@@ -592,3 +592,7 @@ span.tenant, span.email {
 .comment-general-feedback {
     margin: unset;
 }
+
+.hover:hover {
+    cursor: pointer;
+}

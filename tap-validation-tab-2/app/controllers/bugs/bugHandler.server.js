@@ -339,8 +339,8 @@ function bugHandler (dbParent) {
                             console.log("Here's an ado err:");
                             console.log(adoErr);
                         }
-                        console.log(adoBody);
-                        console.log(adoResponse);
+                        //console.log(adoBody);
+                        //console.log(adoResponse);
                         console.log(adoResponse.statusCode);
                         if (adoResponse.statusCode.toString()[0] == "5") {
                             console.log("Server error");
@@ -471,6 +471,7 @@ function bugHandler (dbParent) {
                     }
 
                     if (wit.fields["System.Tags"].includes("TAPAdminS1")) {
+                        // TODO: Confusingly, I'm setting wit.priority to the "severity" value. This gets used in the bug triage stats page
                         wit.priority = "P1S1";
                     } else if (wit.fields["System.Tags"].includes("TAPAdminS2")) {
                         wit.priority = "S2";
@@ -682,11 +683,14 @@ function bugHandler (dbParent) {
     this.triageBug = function (req, res) {
         console.log(req.body);
 
+        //let submitter = req.body.submitter;
+        let submitter = req.user.preferred_username;
+        let submitterName = req.user.name;
+
         let rings = req.body.rings;
         let extent = req.body.extent;
         let everWorked = req.body.everWorked;
         let meetingsPerf = req.body.meetingsPerf;
-        let submitter = req.body.submitter;
         let validationName = req.body.validationName;
         let cfl = req.body.cfl;
 
@@ -721,7 +725,7 @@ function bugHandler (dbParent) {
             }
 
             //let comment = submitter + " provided this triage info through the Tenant Bugs tab:<br />Users affected: " + extent + "<br />Rings this repros in: " + rings + "<br />Has this ever worked? " + everWorked + "<br />Related to meetings perf? " + meetingsPerf;
-            let comment = `${submitter} provided this triage info through the Tenant Bugs tab:
+            let comment = `${submitterName} (${submitter}) provided this triage info through the Tenant Bugs tab:
                 Users affected: ${extent}
                 Is this impacting critical business needs? ${cfl}
                 Rings this repros in: ${rings}
@@ -827,7 +831,7 @@ function bugHandler (dbParent) {
                                 triaged: true,
                                 priority: priority,
                                 severity: severity,
-                                triagedBy: req.body.submitter
+                                triagedBy: submitter,
                             }
                         }
 
@@ -862,7 +866,7 @@ function bugHandler (dbParent) {
                                     },
                                     {
                                         "name": "Ask",
-                                        "value": "If your tenant is also experiencing this symptom please, triage the bug from your users and inform your helpdesk ASAP.",
+                                        "value": "If your tenant is also experiencing this symptom, please triage the bug from your users and inform your helpdesk ASAP.",
                                     },
                                 ]
                             }
@@ -919,7 +923,7 @@ function bugHandler (dbParent) {
                                 request.post(params, function (err, resp, body) {
                                     console.log(resp.body);
                                     // TODO: This sets notificationSent to true after the first one succeeds, not after they all succeed.
-                                    triageBugs.updateOne({ _id: safeId }, { $set: { notificationSent: true } }, function (err, updateDoc) {
+                                    triageBugs.updateOne({ _id: safeId }, { $set: { notificationSent: true, sevA: true } }, function (err, updateDoc) {
                                         console.log("Set notificationSent to true");
                                     });
                                 });
@@ -969,7 +973,10 @@ function bugHandler (dbParent) {
     this.addComment = function (req, res) {
         console.log(req.body);
 
-        let comment = 'IT Admin submitted a comment through the Tenant Bugs tab:<br />"' + req.body.comment + '" - ' + req.body.submitter;
+        let submitter = req.user.preferred_username;
+        let submitterName = req.user.name;
+
+        let comment = 'IT Admin submitted a comment through the Tenant Bugs tab:<br />"' + req.body.comment + '" - ' + submitterName + " (" + submitter + ")";
         if (req.body.attachmentFilename) {
             comment += `<br />[Attachment - ${req.body.attachmentFilename}]`;
         }
@@ -1084,7 +1091,7 @@ function bugHandler (dbParent) {
                                 let updateQuery = {
                                     $set: {
                                         commented: true,
-                                        triagedBy: req.body.submitter
+                                        triagedBy: submitter,
                                     }
                                 }
                                 triageBugs.updateOne({ _id: safeId }, updateQuery, function (err, doc) {
@@ -1110,7 +1117,10 @@ function bugHandler (dbParent) {
         console.log("Calling closeBug");
         console.log(req.body);
 
-        let comment = 'IT Admin submitted a request to close this bug through the Tenant Bugs tab. The comment was: <br />"' + req.body.comment + '" - ' + req.body.submitter;
+        let submitter = req.user.preferred_username;
+        let submitterName = req.user.name;
+
+        let comment = 'IT Admin submitted a request to close this bug through the Tenant Bugs tab. The comment was: <br />"' + req.body.comment + '" - ' + submitterName + " (" +  submitter + ")";
 
         let modify_wit_url = "https://dev.azure.com/domoreexp/MSTeams/_apis/wit/workitems/" + req.body.id + "?api-version=5.1";
 
@@ -1172,7 +1182,7 @@ function bugHandler (dbParent) {
                     $set: {
                         closeRequested: true,
                         state: "Close Requested",
-                        triagedBy: req.body.submitter
+                        triagedBy: submitter,
                     }
                 }
                 triageBugs.updateOne({ _id: safeId }, updateQuery, function (err, doc) {
@@ -1221,6 +1231,32 @@ function bugHandler (dbParent) {
             });
         })
 
+    }
+
+    this.renderSevABugs = function (req, res) {
+        tenants.find({}).project({ tid: 1, name: 1 }).toArray(function (err, tenantDocs) {
+            triageBugs.find({ notificationSent: true, state: { $nin: ["Closed", "Resolved", "Close Requested"] } }).toArray(function (err, bugDocs) {
+                console.log(bugDocs);
+                bugDocs.forEach(function (bugDoc) {
+                    let safeTitle = bugDoc.title;
+                    if (safeTitle.split(":").length > 2) {
+                        safeTitle = safeTitle.split(":").slice(2).join(":");
+                    }
+                    bugDoc.safeTitle = safeTitle;
+
+                    let thisTenant = tenantDocs.find(x => x.tid == bugDoc.tid);
+                    if (thisTenant) {
+                        bugDoc.tenantName = thisTenant.name;
+                    } else {
+                        bugDoc.tenantName = "?";
+                    }
+                })
+
+                return res.render('bugs/sevABugs', {
+                    bugs: bugDocs
+                });
+            });
+        })
     }
 
     this.renderBugReportConfig = function (req, res) {

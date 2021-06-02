@@ -19,6 +19,15 @@ var setupFeatureRequests = function(context) {
 
         showExisitngFeatureRequestSupports();
 
+        $('#featureRequestDescriptionField').unbind("keyup");
+        $("#featureRequestDescriptionField").keyup(function (event) {
+            var keycode = (event.keyCode ? event.keyCode : event.which);
+            if (keycode == 13) {
+                var s = $(this).val();
+                $(this).val(s + "\n");  //\t for tab
+            }
+        });
+
         $('.btn-feedback-upvote').click(function () {
             let id = this.id.replace("feature-request-btn-", "");
             //console.log(id);

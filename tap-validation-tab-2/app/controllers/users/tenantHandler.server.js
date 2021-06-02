@@ -9,10 +9,10 @@ const TEST_USER = {
     nbf: 1615480461,
     exp: 1615484361,
     acct: 0,
-    email: 'tim@test.com',
+    email: 'tim@microsoft.com',
     name: 'Max Silbiger (MINDTREE LIMITED)',
     oid: '512d26c9-aeed-4dbd-a16f-398bcf0ec3fe',
-    preferred_username: 'tim@test.com',
+    preferred_username: 'tim@microsoft.com',
     tid: '72f988bf-86f1-41af-91ab-2d7cd011db47',
     ver: '2.0'
 }
@@ -38,6 +38,7 @@ function tenantHandler(dbParent) {
     var validations = db.collection('validations');
 
     var tenants = db.collection('tenants');
+    var unknownTenants = db.collection('unknownTenants');
 
     // TODO: This looks a little different from the other cleanEmail in helpers
     function cleanEmail(email) {
@@ -131,22 +132,22 @@ function tenantHandler(dbParent) {
                 console.log("Got this tenant");
                 if (tenantDoc.users) {
                     console.log(tenantDoc.tid, " has " + tenantDoc.users.length + " users");
-
+                    allUsers = allUsers.concat(tenantDoc.users).unique();
                 }
 
-                allUsers = allUsers.concat(tenantDoc.users).unique();
                 if (tenantDoc.parent) {
                     console.log("Getting parent");
                     tenants.findOne({ tid: tenantDoc.parent }, { projection: tenantProjection }, function (err, parentTenantDoc) {
                         if (parentTenantDoc.users) {
                             console.log(parentTenantDoc.tid, " has " + parentTenantDoc.users.length + " users");
+                            allUsers = allUsers.concat(parentTenantDoc.users).unique();
                         }
 
-                        allUsers = allUsers.concat(parentTenantDoc.users).unique();
                         return callback(null, allUsers);
                     });
+                } else {
+                    return callback(null, allUsers);
                 }
-                return callback(null, allUsers);
             });
         });
     }
@@ -170,16 +171,18 @@ function tenantHandler(dbParent) {
         //    return;
         //}
 
-        if (process.env.ENV == "TEST") {
-            console.log("Using test-user in getTenant");
-            req.user = TEST_USER;
-        }
+        //if (process.env.ENV == "TEST") {
+        //    console.log("Using test-user in getTenant");
+        //    req.user = TEST_USER;
+        // }
 
         var email = req.body.email;
         if (req.user) {
             console.log("Using user in header");
             console.log(req.user);
-            email = req.user.email; // or maybe preferred_username?
+            email = req.user.preferred_username || req.user.upn || req.user.email;
+            // SSO v2.0 uses preferred_username; SSO v1.0 uses upn; easyAuth uses email
+            // Can probably configure v1.0 to use preferred_username too
         }
             
         if (email == null) {
@@ -213,7 +216,16 @@ function tenantHandler(dbParent) {
                     });
                 }
             } else {
-                res.json({ name: '?', tid: '?', itAdmins: "", itAdminIds: [], users: []});
+                // Log an issue if the tenant isn't found
+                let unknownTenantObj = {
+                    _id: domain,
+                    email: req.user.email,
+                    timestamp: new Date(),
+                    resolved: false
+                };
+                unknownTenants.insertOne(unknownTenantObj, function (err, doc) {
+                    return res.json({ name: '?', tid: '?', itAdmins: "", itAdminIds: [], users: [] });
+                });
             }
 
         });
