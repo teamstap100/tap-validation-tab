@@ -686,6 +686,7 @@ function bugHandler (dbParent) {
         //let submitter = req.body.submitter;
         let submitter = req.user.preferred_username;
         let submitterName = req.user.name;
+        console.log(submitter, submitterName);
 
         let rings = req.body.rings;
         let extent = req.body.extent;
@@ -975,6 +976,8 @@ function bugHandler (dbParent) {
 
         let submitter = req.user.preferred_username;
         let submitterName = req.user.name;
+        console.log(submitter, submitterName);
+
 
         let comment = 'IT Admin submitted a comment through the Tenant Bugs tab:<br />"' + req.body.comment + '" - ' + submitterName + " (" + submitter + ")";
         if (req.body.attachmentFilename) {
@@ -1119,6 +1122,8 @@ function bugHandler (dbParent) {
 
         let submitter = req.user.preferred_username;
         let submitterName = req.user.name;
+        console.log(submitter, submitterName);
+
 
         let comment = 'IT Admin submitted a request to close this bug through the Tenant Bugs tab. The comment was: <br />"' + req.body.comment + '" - ' + submitterName + " (" +  submitter + ")";
 

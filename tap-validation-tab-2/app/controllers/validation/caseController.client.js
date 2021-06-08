@@ -3,7 +3,6 @@
 var config = {};
 
 (function () {
-    
     var apiUrl = "../api/cases"
     var commentApiUrl = "../api/cases/comments";
     
@@ -14,7 +13,25 @@ var config = {};
     var userPrefs = {};
 
     // PRODUCTION
-    var APP_ID = "28769a3c-0a17-4c2a-a118-680af5e7a8be";
+    //var APP_ID = "28769a3c-0a17-4c2a-a118-680af5e7a8be";
+    //var APP_ID = "814b5711-876c-432a-a9c4-568f333644a1";
+
+    // If it truly is the appId from the manifest, try this
+    var APP_ID = "b61de858-dfb9-4c0a-aae4-77889f6da957";
+
+    // If it's a per-team thing, try this
+    var APP_ID_MAPPING = {
+        // TAP100
+        "6d896def-4cb5-4c5d-99d4-3b7644211e35": "28769a3c-0a17-4c2a-a118-680af5e7a8be",
+        // MVP100
+        "83d28c15-f89c-435d-bba2-a328b476203d": "db3417b9-f737-4021-830b-3b304ce67997",
+        // EDU TAP
+        "6c3ffeed-5c7f-46f5-93fb-f3c072f1adad": "424d3fd6-1ac7-40bf-9f1b-baf8513c7efc",
+
+        // TAP Dev Test
+        "37317ed8-68c1-4564-82bb-d2acc4c6b2b4": "814b5711-876c-432a-a9c4-568f333644a1",
+    }
+
     var TAB_URL_BASE = "https%3A%2F%2Ftap-validation-tab.azurewebsites.net%2Fvalidations%2F";
 
     var userCleanEmail = "";
@@ -501,11 +518,9 @@ var config = {};
         }
 
         microsoftTeams.getContext(function (context) {
+            console.log("Looking at tab link now");
             config.context = context;
-            // Format for tab links - simpler now, doesn't include the tab url anymore
-            var tabUrl = "https://teams.microsoft.com/l/entity/{APP_ID}/{ENTITY_HASH}?context=%7B%22subEntityId%22%3Anull%2C%22channelId%22%3A%22{CHANNEL_ID}%22%7D&groupId={GROUP_ID}&tenantId={TENANT_ID}";
-
-            var entityId = context.entityId;
+            console.log(context);
 
             var channelId = context.channelId;
             // Make it url-safe
@@ -513,6 +528,40 @@ var config = {};
             channelId = channelId.replace("@", "%40");
 
             var groupId = context.groupId;
+
+            // APP ID apparently depends on the team it's installed in. Otherwise the link will just take you to the same channel
+            // Pretty sure this default one doesn't work.
+            var appId = APP_ID
+            if (APP_ID_MAPPING[groupId]) {
+                appId = APP_ID_MAPPING[groupId];
+            }
+
+            /*
+            var urlContext = encodeURI(JSON.stringify({
+                //subEntityId: null,
+                channelId: channelId
+            }));
+
+            // TODO: Not sure if we need omre info here
+            let tabUrl = TAB_URL_BASE + config.validationId;
+            let entityLabel = encodeURI(context.entityId);
+
+            // Format for tab links - simpler now, doesn't include the tab url anymore
+            //               https://teams.microsoft.com/l/entity/<appId>/<entityId>?label=<entityLabel>&context=<context>
+            var linkToTab = `https://teams.microsoft.com/l/entity/${APP_ID}/${encodeURI(context.entityId)}?label=${entityLabel}&context=${urlContext}`;
+
+            console.log(linkToTab);
+            */
+
+            //microsoftTeams.shareDeepLink({ subEntityId: null, subEntityLabel: "This tab" });
+
+
+            var tabUrl = "https://teams.microsoft.com/l/entity/{APP_ID}/{ENTITY_HASH}?context=%7B%22subEntityId%22%3Anull%2C%22channelId%22%3A%22{CHANNEL_ID}%22%7D&groupId={GROUP_ID}&tenantId={TENANT_ID}";
+            // https://teams.microsoft.com/l/entity/b61de858-dfb9-4c0a-aae4-77889f6da957/_djb2_msteams_prefix_453798930?context=%7B%22subEntityId%22%3Anull%2C%22channelId%22%3A%2219%3A17da8dab7f824f7f87022f4f4c520af5%40thread.skype%22%7D&groupId=6d896def-4cb5-4c5d-99d4-3b7644211e35&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47
+
+            
+
+            var entityId = context.entityId;
 
             var tid = context.tid;
 
@@ -527,14 +576,17 @@ var config = {};
                 showScenariosIfWindowsInfoFilled();
             }
 
-            var entityHash = djb2_hash(APP_ID + ":" + entityId.replace(/\+/g, " "));
+            var entityHash = djb2_hash(appId + ":" + entityId);
+            //var entityHash = djb2_hash(APP_ID+ ":" + eneityId);
 
-            tabUrl = tabUrl.replace('{APP_ID}', APP_ID);
+            tabUrl = tabUrl.replace('{APP_ID}', appId);
             tabUrl = tabUrl.replace('{ENTITY_HASH}', deeplinkDjb2Prefix + entityHash);
             tabUrl = tabUrl.replace('{CHANNEL_ID}', channelId);
             tabUrl = tabUrl.replace('{GROUP_ID}', groupId);
             tabUrl = tabUrl.replace('{TENANT_ID}', tid);
             //tabUrl = encodeURI(tabUrl);
+
+            
 
             config.tabUrl = tabUrl;
 

@@ -162,7 +162,7 @@ module.exports = {
         if (auth) {
             console.log("Got a token");
             let token = auth.replace("Bearer ", "");
-            //console.log(token);
+            console.log(token);
 
             var decoded = jwt.decode(token, { complete: true });
             console.log(decoded);

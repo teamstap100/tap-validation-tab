@@ -60,6 +60,7 @@
                 initEverything();
             } else {
                 console.log("Getting tid");
+                // TODO: This really should be done server side
                 ajaxRequestWithSSOToken('GET', tenantUrl, params, function (data) {
                     if (data == "") {
                         //console.log("Not visible");
