@@ -7,7 +7,9 @@
 * users - View users currently in TAP.
 
 ### Installation
-* Download the Teams app zip from Releases here: [TAPValidationTab.zip][https://github.com/v-masil/tap-validation-tab/releases/tag/1.0.0]
+* Run the app locally.
+* Use a tunneling service like ngrok to host the app on a HTTPS domain.
+* Host your app within a Teams Tab App.
 * Side-load the app into your team, following the [instructions](https://docs.microsoft.com/en-us/microsoftteams/platform/concepts/apps/apps-upload) here.
 * Add the app to the desired channel, and select the validation you want to collect feedback for.
 * Users can now be directed to this tab to provide their feedback.
