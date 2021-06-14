@@ -10,12 +10,14 @@ block content
             p.heading-text #{validation.name}
 
         .col-xs-3
+            span.subtle#version(style="float: right")
             if validation.tap == "Teams"
                 span.label.label-primary.tap-label #{validation.tap} TAP
             else if validation.tap == "Windows"
                 span.label.label-info.tap-label WCCP
             else
                 span.label.label-info.tap-label #{validation.tap} TAP
+            
 
     p#validation-tag(style="display: none") #{validation.tag}
     p.subtle#tap(style="display: none") #{validation.tap}
@@ -28,23 +30,20 @@ block content
     if validation.blurb
         .container
             .well.blurb !{validation.blurb}
-    else if validation.announcement
-        if validation.announcement.description
-            .container
-                .well.blurb(style="max-height: 250px; overflow-y: scroll;")
-                    | !{validation.announcement.description}
-                    if validation.announcement.issues
-                        h5 Known Issues
-                        | !{validation.announcement.issues}
-                    if validation.announcement.limitations
-                        h5 Known Limitations
-                        | !{validation.announcement.limitationss}
-        else
-            .container
-                .well.blurb !{validation.blurb}
-    //else if validation.blurb
-    //    .container
-    //        .well.blurb !{validation.blurb}
+    //else if validation.announcement
+    //    if validation.announcement.description
+    //        .container
+    //            .well.blurb(style="max-height: 250px; overflow-y: scroll;")
+    //                | !{validation.announcement.description}
+    //                if validation.announcement.issues
+    //                    h5 Known Issues
+    //                    | !{validation.announcement.issues}
+    //                if validation.announcement.limitations
+    //                    h5 Known Limitations
+    //                    | !{validation.announcement.limitations}
+    //    else
+    //        .container
+    //            .well.blurb !{validation.blurb}
 
 
     - var clients = ['windows', 'mac', 'android', 'ios', 'web', 'linux'];

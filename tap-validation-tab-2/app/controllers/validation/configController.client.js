@@ -15,7 +15,8 @@
     // This doesn't work
     //var contentUrlBase = "../validations/";
 
-    const NO_TAP_ERROR_MESSAGE = "You are not assigned to any TAPs. Please contact the person who gave you this app and ask them to assign you to a TAP.";
+    const NO_TAP_FORM_URL = "https://forms.office.com/Pages/ResponsePage.aspx?id=v4j5cvGGr0GRqy180BHbR8kmLVHtrr1NoW85i88Ow_5UREVWNEZKVE00UTU0UTM5OENFSEZUWTgxOS4u";
+    const NO_TAP_ERROR_MESSAGE = `<p>You are not currently authorized to set up validation tabs.</p><p><a href="${NO_TAP_FORM_URL}" target="_blank">Please fill out this form</a> to request access.</p>`;
 
     $(function () {
         // New code - get PM's list of taps
@@ -37,6 +38,7 @@
                         $('#tapList').append(tapButton);
                     });
                 } else {
+                    /*
                     // TEMPORARY: We want customers to set up validations in their own tenants. So assume the user has access to Teams TAP.
                     taps = ["Teams"]
                     taps.forEach(function (tap) {
@@ -44,10 +46,11 @@
                         let tapButton = "<button class='btn tapSelect' id=" + tap + ">" + tap + "</button>";
                         $('#tapList').append(tapButton);
                     });
+                    */
 
-                    //$('#validationContainer').text(NO_TAP_ERROR_MESSAGE);
-                    //$('#validationContainer').show();
-                    $('#loading').hide();
+                    $('#validationContainer').html(NO_TAP_ERROR_MESSAGE);
+                    $('#validationContainer').show();
+                    //$('#loading').hide();
                 }
 
                 // TODO: Build the table from these validations, setup JS events for them, etc

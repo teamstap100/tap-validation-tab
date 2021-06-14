@@ -10,6 +10,7 @@ block content
             p.heading-text #{validation.name}
 
         .col-xs-3
+            span.subtle#version(style="float: right") v1.0.1
             if validation.tap == "Teams"
                 span.label.label-primary.tap-label #{validation.tap} TAP
             else if validation.tap == "Windows"
